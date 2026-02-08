@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lihuacat.dev/contracts/story-script.schema.json",
+  "title": "StoryScript",
+  "type": "object",
+  "required": [
+    "version",
+    "input",
+    "video",
+    "style",
+    "timeline",
+    "subtitles"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "input": {
+      "type": "object",
+      "required": ["sourceDir", "imageCount", "assets"],
+      "properties": {
+        "sourceDir": { "type": "string", "minLength": 1 },
+        "imageCount": { "type": "integer", "minimum": 1 },
+        "assets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "path"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "path": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "video": {
+      "type": "object",
+      "required": ["width", "height", "fps", "durationSec"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "fps": { "type": "integer", "minimum": 1 },
+        "durationSec": { "type": "number", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "style": {
+      "type": "object",
+      "required": ["preset"],
+      "properties": {
+        "preset": { "type": "string", "minLength": 1 },
+        "prompt": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "timeline": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["assetId", "startSec", "endSec", "subtitleId"],
+        "properties": {
+          "assetId": { "type": "string", "minLength": 1 },
+          "startSec": { "type": "number", "minimum": 0 },
+          "endSec": { "type": "number", "exclusiveMinimum": 0 },
+          "subtitleId": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "subtitles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "startSec", "endSec"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "text": { "type": "string", "minLength": 1 },
+          "startSec": { "type": "number", "minimum": 0 },
+          "endSec": { "type": "number", "exclusiveMinimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "allAssetsUsedAtLeastOnce": { "type": "boolean" },
+        "minDurationPerAssetSec": { "type": "number", "minimum": 0 },
+        "durationTotalSec": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
