@@ -14,7 +14,7 @@
 
 **Acceptance（验收）:**  
 1. 仅支持图片目录输入，图片上限 20 张，超限直接报错。  
-2. 支持 `jpg/jpeg/png`，预处理统一转 `jpg`。  
+2. 支持 `jpg/jpeg/png`，原格式直通，不做图片预处理转换。  
 3. 生成 `story-script.json` 时：失败自动重试 2 次，重试后仍失败则终止。  
 4. 脚本满足：30 秒、1080x1920、每张图至少出现一次、每张至少 1 秒。  
 5. 每次渲染前都弹二选一：模板渲染 / AI 代码渲染。  
@@ -36,7 +36,6 @@ packages/
     src/domains/
       run-setup/
       material-intake/
-      image-normalization/
       story-script/
       render-choice/
       template-render/
@@ -58,7 +57,7 @@ packages/
 
 ### P1（最高优先级）：打通数据驱动闭环
 
-### Task 1: 建立工作区与业务导向骨架
+### ✅Task 1: 建立工作区与业务导向骨架
 
 **Files:**
 - Create: `pnpm-workspace.yaml`
@@ -88,7 +87,7 @@ Expected: 命令可执行并输出当前状态（若失败则按日志修复后�
 Run: `pnpm --filter @lihuacat/story-pipeline test -- src/workflow/start-story-run.spec.ts`  
 Expected: PASS
 
-### Task 2: 图片输入校验（目录、格式、上限）
+### ✅Task 2: 图片输入校验（目录、格式、上限）
 
 **Files:**
 - Create: `packages/story-pipeline/src/domains/material-intake/collect-images.ts`
@@ -113,29 +112,29 @@ Expected: 命令可执行并输出当前状态（若失败则按日志修复后�
 Run: `pnpm --filter @lihuacat/story-pipeline test -- src/domains/material-intake/collect-images.spec.ts`  
 Expected: PASS
 
-### Task 3: 图片预处理统一转 JPG
+### ✅Task 3: 移除图片预处理能力（保留原格式直通）
 
 **Files:**
-- Create: `packages/story-pipeline/src/domains/image-normalization/normalize-images-to-jpg.ts`
-- Create: `packages/story-pipeline/src/domains/image-normalization/image-normalization.errors.ts`
-- Test: `packages/story-pipeline/src/domains/image-normalization/normalize-images-to-jpg.spec.ts`
+- Delete: `packages/story-pipeline/src/domains/image-normalization/normalize-images-to-jpg.ts`
+- Delete: `packages/story-pipeline/src/domains/image-normalization/image-normalization.errors.ts`
+- Delete: `packages/story-pipeline/src/domains/image-normalization/normalize-images-to-jpg.spec.ts`
 
 **Step 1: 实现最小功能**
 
-验证：输入多格式后输出均为 `.jpg`，命名稳定（`001.jpg` 起），并保留源文件映射。
+验证：`material-intake` 返回的 `jpg/jpeg/png` 文件路径可直接进入后续流程，无中间转码目录。
 
 **Step 2: 运行验证命令并记录结果**
 
-Run: `pnpm --filter @lihuacat/story-pipeline test -- src/domains/image-normalization/normalize-images-to-jpg.spec.ts`  
+Run: `pnpm --filter @lihuacat/story-pipeline test -- src/domains/material-intake/collect-images.spec.ts`  
 Expected: 命令可执行并输出当前状态（若失败则按日志修复后重跑）
 
 **Step 3: 完成功能并补齐必要测试**
 
-实现转码适配器（FFmpeg 或图像库），输出 `preprocessed/` 与映射表。
+删除图片预处理实现，并清理所有对 `image-normalization` 的引用。
 
 **Step 4: 运行测试与回归验证**
 
-Run: `pnpm --filter @lihuacat/story-pipeline test -- src/domains/image-normalization/normalize-images-to-jpg.spec.ts`  
+Run: `pnpm --filter @lihuacat/story-pipeline test -- src/domains/material-intake/collect-images.spec.ts`  
 Expected: PASS
 
 ### Task 4: `story-script` 契约与双层校验
