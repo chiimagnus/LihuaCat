@@ -137,7 +137,7 @@ Expected: 命令可执行并输出当前状态（若失败则按日志修复后�
 Run: `pnpm --filter @lihuacat/story-pipeline test -- src/domains/material-intake/collect-images.spec.ts`  
 Expected: PASS
 
-### Task 4: `story-script` 契约与双层校验
+### ✅Task 4: `story-script` 契约与双层校验
 
 **Files:**
 - Create: `packages/story-pipeline/src/contracts/story-script.schema.json`
@@ -163,7 +163,7 @@ Expected: 命令可执行并输出当前状态（若失败则按日志修复后�
 Run: `pnpm --filter @lihuacat/story-pipeline test -- src/domains/story-script/validate-story-script.spec.ts`  
 Expected: PASS
 
-### Task 5: 故事脚本生成与 2 次自动重试
+### ✅Task 5: 故事脚本生成与 2 次自动重试
 
 **Files:**
 - Create: `packages/story-pipeline/src/domains/story-script/generate-story-script.ts`
@@ -188,7 +188,7 @@ Expected: 命令可执行并输出当前状态（若失败则按日志修复后�
 Run: `pnpm --filter @lihuacat/story-pipeline test -- src/domains/story-script/generate-story-script.spec.ts`  
 Expected: PASS
 
-### Task 6: 渲染二选一循环状态机
+### ✅Task 6: 渲染二选一循环状态机
 
 **Files:**
 - Create: `packages/story-pipeline/src/domains/render-choice/render-choice-machine.ts`
@@ -216,7 +216,7 @@ Expected: 命令可执行并输出当前状态（若失败则按日志修复后�
 Run: `pnpm --filter @lihuacat/story-pipeline test -- src/domains/render-choice/render-choice-machine.spec.ts`  
 Expected: PASS
 
-### Task 7: 模板渲染路径（数据驱动）
+### ✅Task 7: 模板渲染路径（数据驱动）
 
 **Files:**
 - Create: `packages/story-pipeline/src/domains/template-render/render-by-template.ts`
@@ -242,7 +242,7 @@ Expected: 命令可执行并输出当前状态（若失败则按日志修复后�
 Run: `pnpm --filter @lihuacat/story-pipeline test -- src/domains/template-render/render-by-template.spec.ts`  
 Expected: PASS
 
-### Task 8: AI 代码渲染路径（实验模式）
+### ✅Task 8: AI 代码渲染路径（实验模式）
 
 **Files:**
 - Create: `packages/story-pipeline/src/domains/ai-code-render/generate-remotion-scene.ts`
@@ -267,7 +267,7 @@ Expected: 命令可执行并输出当前状态（若失败则按日志修复后�
 Run: `pnpm --filter @lihuacat/story-pipeline test -- src/domains/ai-code-render/render-by-ai-code.spec.ts`  
 Expected: PASS
 
-### Task 9: 产物发布与关键路径汇总
+### ✅Task 9: 产物发布与关键路径汇总
 
 **Files:**
 - Create: `packages/story-pipeline/src/domains/artifact-publish/publish-artifacts.ts`
@@ -292,7 +292,7 @@ Expected: 命令可执行并输出当前状态（若失败则按日志修复后�
 Run: `pnpm --filter @lihuacat/story-pipeline test -- src/domains/artifact-publish/publish-artifacts.spec.ts`  
 Expected: PASS
 
-### Task 10: 编排器端到端（无 TUI）
+### ✅Task 10: 编排器端到端（无 TUI）
 
 **Files:**
 - Modify: `packages/story-pipeline/src/workflow/start-story-run.ts`
@@ -318,7 +318,7 @@ Expected: PASS
 
 ### P2（次优先级）：TUI 交互与命令入口
 
-### Task 11: 创建“生成故事视频”流程界面
+### ✅Task 11: 创建“生成故事视频”流程界面
 
 **Files:**
 - Create: `packages/story-console/src/flows/create-story-video/create-story-video.flow.tsx`
@@ -343,7 +343,7 @@ Expected: 命令可执行并输出当前状态（若失败则按日志修复后�
 Run: `pnpm --filter @lihuacat/story-console test -- src/flows/create-story-video/create-story-video.flow.spec.tsx`  
 Expected: PASS
 
-### Task 12: CLI 命令与最终结果展示
+### ✅Task 12: CLI 命令与最终结果展示
 
 **Files:**
 - Create: `packages/story-console/src/commands/render-story.command.ts`
@@ -370,7 +370,7 @@ Expected: PASS
 
 ### P3（稳定性与回归）：验收脚本与基线
 
-### Task 13: 增加稳定性回归脚本（10 次）
+### ✅Task 13: 增加稳定性回归脚本（10 次）
 
 **Files:**
 - Create: `scripts/stability-run.sh`
@@ -395,7 +395,7 @@ Expected: 命令可执行并输出当前状态（若失败则按日志修复后�
 Run: `pnpm --filter @lihuacat/story-console test -- src/__tests__/stability-smoke.spec.ts`  
 Expected: PASS
 
-### Task 14: 全量回归与发布前验收
+### ✅Task 14: 全量回归与发布前验收
 
 **Files:**
 - Modify: `.github/docs/idea.md`（补充“已实现范围/已验证口径”）

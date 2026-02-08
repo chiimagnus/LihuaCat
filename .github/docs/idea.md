@@ -122,3 +122,37 @@ lihuacat/
 - **Phase 2**：加入 AI 配乐
 - **Phase 3**：迁移到移动端
 - **长期**：如 OpenAI 开放第三方 OAuth，升级为 app 内直接登录 ChatGPT
+
+---
+
+## 当前实现状态（2026-02-09）
+
+### 已实现（MVP 骨架）
+
+- Monorepo 基础结构：`story-pipeline` / `story-console` / `story-video`
+- 图片输入校验：
+  - 仅支持 `jpg/jpeg/png`
+  - 最大 20 张
+  - 检测不支持格式并报错
+- `story-script` 校验体系：
+  - 结构校验（必填字段、类型）
+  - 语义校验（总时长 30 秒、每图至少 1 秒、全量素材覆盖）
+- 生成重试策略：
+  - 故事脚本生成失败自动重试 2 次（总尝试 3 次）
+- 渲染模式编排：
+  - 二选一循环状态机（`template` / `ai_code`）
+  - AI 代码渲染失败后返回二选一菜单
+  - 模板渲染失败后返回二选一菜单
+  - 任一模式成功后结束
+- 产物发布：
+  - 输出 `video.mp4`、`story-script.json`、`run.log`
+  - AI 代码模式生成目录：`generated-remotion/`
+- CLI 命令（开发态）：
+  - `pnpm --filter @lihuacat/story-console dev -- --input <dir> --mode template --mock-agent`
+- 稳定性脚本：
+  - `scripts/stability-run.sh`
+
+### 当前约束
+
+- 仍为本地开发版闭环，渲染实现当前是可测试的“本地占位渲染”路径（非完整 Remotion 成片渲染）。
+- 实验模式编译失败默认输出详细错误信息，便于调试。
