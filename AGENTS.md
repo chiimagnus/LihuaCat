@@ -14,11 +14,23 @@
 ## 构建、测试和开发命令
 - 安装依赖：`pnpm install`
 - 全量测试：`pnpm -r test`
-- 全量构建：`pnpm -r build`
+- 仅全量构建（workspace）：`pnpm -r build`
+- 一键构建并启动主流程（根脚本）：`pnpm run build` 或 `npm run build`
+- 仅启动主流程（不重新构建）：`pnpm run start` 或 `npm run start`
 - 运行 CLI（开发态）：  
+  `pnpm --filter @lihuacat/story-console dev --`
+- 指定模型与推理强度：  
+  `pnpm --filter @lihuacat/story-console dev -- --input scripts/fixtures/photos --model gpt-5.1-codex-mini --model-reasoning-effort medium`
+- 非交互测试（mock agent）：  
   `pnpm --filter @lihuacat/story-console dev -- --input scripts/fixtures/photos --mode template --mock-agent`
+- 如需指定浏览器可执行文件：  
+  `pnpm --filter @lihuacat/story-console dev -- --input scripts/fixtures/photos --mode template --browser-executable "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`
 - 稳定性测试（默认 10 次）：  
   `bash scripts/stability-run.sh scripts/fixtures/photos`
+
+默认模型配置（真实链路）：
+- model：`gpt-5.1-codex-mini`
+- reasoning effort：`medium`
 
 ## 代码风格与命名规范
 - 语言：TypeScript（ESM），保持 `strict` 风格，优先小函数与可测试边界。
@@ -31,6 +43,11 @@
 - `story-pipeline` 与 `story-console` 通过各自 `scripts/run-tests.mjs` 发现并执行测试。
 - 测试命名建议：`<feature>.spec.ts`，覆盖成功路径、失败路径与边界条件。
 - 对关键流程（渲染选择循环、脚本语义约束）必须有回归测试。
+
+## 素材输入规则
+- 仅扫描 `--input` 目录第一层文件，不递归子目录/孙目录。
+- 仅支持 `jpg/jpeg/png`，最大 20 张。
+- 目录内若出现 `webp/heic/heif/gif/bmp/tiff/avif` 会作为不支持格式报错。
 
 ## 安全与配置提示
 - 不提交任何凭证（如 `~/.codex/auth.json`）或本地产物目录。

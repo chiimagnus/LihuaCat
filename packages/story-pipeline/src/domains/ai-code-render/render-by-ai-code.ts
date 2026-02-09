@@ -2,18 +2,32 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { StoryScript } from "../../contracts/story-script.types.ts";
+import { stageRemotionAssets } from "../render-assets/stage-remotion-assets.ts";
+import { locateBrowserExecutable } from "../template-render/browser-locator.ts";
+import {
+  bundleRemotionEntry,
+  renderRemotionVideo,
+  RemotionRenderError,
+} from "../template-render/remotion-renderer.ts";
 import { generateRemotionScene } from "./generate-remotion-scene.ts";
 
 export type RenderByAiCodeInput = {
   storyScript: StoryScript;
   outputDir: string;
+  browserExecutablePath?: string;
   compileAdapter?: (input: {
     generatedCodeDir: string;
     entryFilePath: string;
-  }) => Promise<{ ok: true } | { ok: false; message: string; details?: string }>;
+    compositionId: string;
+    publicDir: string;
+  }) => Promise<{ ok: true; serveUrl: string } | { ok: false; message: string; details?: string }>;
   renderAdapter?: (input: {
     generatedCodeDir: string;
     outputVideoPath: string;
+    compositionId: string;
+    serveUrl: string;
+    browserExecutablePath?: string;
+    inputProps?: Record<string, unknown>;
   }) => Promise<{ ok: true } | { ok: false; message: string; details?: string }>;
 };
 
@@ -39,19 +53,41 @@ export type RenderByAiCodeResult = RenderByAiCodeSuccess | RenderByAiCodeFailure
 export const renderByAiCode = async ({
   storyScript,
   outputDir,
+  browserExecutablePath,
   compileAdapter = defaultCompileAdapter,
   renderAdapter = defaultRenderAdapter,
 }: RenderByAiCodeInput): Promise<RenderByAiCodeResult> => {
   const generatedCodeDir = path.join(outputDir, "generated-remotion");
   await fs.mkdir(generatedCodeDir, { recursive: true });
+  const compositionId = "LihuaCatGeneratedScene";
 
-  const sceneCode = generateRemotionScene({ storyScript });
-  const entryFilePath = path.join(generatedCodeDir, "scene.generated.mjs");
-  await fs.writeFile(entryFilePath, sceneCode, "utf8");
+  const stagedAssets = await stageRemotionAssets({
+    assets: storyScript.input.assets,
+    outputDir,
+  });
+  const renderStoryScript: StoryScript = {
+    ...storyScript,
+    input: {
+      ...storyScript.input,
+      assets: stagedAssets.assets,
+    },
+  };
+
+  const sceneCode = generateRemotionScene({ storyScript: renderStoryScript });
+  const sceneFilePath = path.join(generatedCodeDir, "Scene.tsx");
+  const entryFilePath = path.join(generatedCodeDir, "remotion.entry.tsx");
+  await fs.writeFile(sceneFilePath, sceneCode, "utf8");
+  await fs.writeFile(
+    entryFilePath,
+    buildGeneratedEntryCode({ storyScript: renderStoryScript, compositionId }),
+    "utf8",
+  );
 
   const compile = await compileAdapter({
     generatedCodeDir,
     entryFilePath,
+    compositionId,
+    publicDir: stagedAssets.publicDir,
   });
   if (!compile.ok) {
     return {
@@ -69,6 +105,10 @@ export const renderByAiCode = async ({
   const render = await renderAdapter({
     generatedCodeDir,
     outputVideoPath,
+    compositionId,
+    serveUrl: compile.serveUrl,
+    browserExecutablePath,
+    inputProps: {},
   });
   if (!render.ok) {
     return {
@@ -92,50 +132,107 @@ export const renderByAiCode = async ({
 
 const defaultCompileAdapter = async ({
   entryFilePath,
+  publicDir,
 }: {
   generatedCodeDir: string;
   entryFilePath: string;
-}): Promise<{ ok: true } | { ok: false; message: string; details?: string }> => {
-  const code = await fs.readFile(entryFilePath, "utf8");
-  if (code.includes("__FORCE_COMPILE_ERROR__")) {
+  compositionId: string;
+  publicDir: string;
+}): Promise<{ ok: true; serveUrl: string } | { ok: false; message: string; details?: string }> => {
+  try {
+    const serveUrl = await bundleRemotionEntry({
+      entryPoint: entryFilePath,
+      publicDir,
+    });
+    return { ok: true, serveUrl };
+  } catch (error) {
+    if (error instanceof RemotionRenderError) {
+      return {
+        ok: false,
+        message: error.message,
+        details: error.details,
+      };
+    }
     return {
       ok: false,
-      message: "Generated code failed compile check",
-      details: "Marker __FORCE_COMPILE_ERROR__ found in generated code.",
+      message: "Generated code bundle failed",
+      details: error instanceof Error ? error.stack : String(error),
     };
   }
-  return { ok: true };
 };
 
 const defaultRenderAdapter = async ({
-  generatedCodeDir,
   outputVideoPath,
+  compositionId,
+  serveUrl,
+  browserExecutablePath,
+  inputProps = {},
 }: {
   generatedCodeDir: string;
   outputVideoPath: string;
+  compositionId: string;
+  serveUrl: string;
+  browserExecutablePath?: string;
+  inputProps?: Record<string, unknown>;
 }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> => {
-  const marker = path.join(generatedCodeDir, "force-render-error");
   try {
-    await fs.access(marker);
+    const browser = await locateBrowserExecutable({
+      preferredPath: browserExecutablePath,
+    });
+    await renderRemotionVideo({
+      serveUrl,
+      compositionId,
+      inputProps,
+      outputFilePath: outputVideoPath,
+      browserExecutablePath: browser.executablePath,
+    });
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof RemotionRenderError) {
+      return {
+        ok: false,
+        message: error.message,
+        details: error.details,
+      };
+    }
     return {
       ok: false,
       message: "AI code render failed",
-      details: "force-render-error marker exists",
+      details: error instanceof Error ? error.stack : String(error),
     };
-  } catch {
-    await fs.writeFile(
-      outputVideoPath,
-      JSON.stringify(
-        {
-          mode: "ai_code",
-          generatedCodeDir,
-          generatedAt: new Date().toISOString(),
-        },
-        null,
-        2,
-      ),
-      "utf8",
-    );
-    return { ok: true };
   }
+};
+
+const buildGeneratedEntryCode = ({
+  storyScript,
+  compositionId,
+}: {
+  storyScript: StoryScript;
+  compositionId: string;
+}): string => {
+  const durationInFrames = Math.max(
+    1,
+    Math.round(storyScript.video.durationSec * storyScript.video.fps),
+  );
+
+  return `import React from "react";
+import { Composition, registerRoot } from "remotion";
+import { GeneratedScene } from "./Scene";
+
+const RemotionRoot: React.FC = () => {
+  return (
+    <Composition
+      id="${compositionId}"
+      component={GeneratedScene}
+      width={${storyScript.video.width}}
+      height={${storyScript.video.height}}
+      fps={${storyScript.video.fps}}
+      durationInFrames={${durationInFrames}}
+      defaultProps={{}}
+    />
+  );
+};
+
+registerRoot(RemotionRoot);
+`;
 };

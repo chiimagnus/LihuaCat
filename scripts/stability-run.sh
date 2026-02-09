@@ -16,9 +16,15 @@ RUNS="${LIHUACAT_STABILITY_RUNS:-10}"
 SUCCESS=0
 FAIL=0
 FAILURE_LOG=""
+BROWSER_EXECUTABLE="${LIHUACAT_BROWSER_EXECUTABLE:-}"
 
 for ((i=1; i<=RUNS; i++)); do
-  if OUTPUT=$(pnpm --filter @lihuacat/story-console dev -- --input "$PHOTOS_DIR" --style healing --mode template --mock-agent 2>&1); then
+  CMD=(pnpm --filter @lihuacat/story-console dev -- --input "$PHOTOS_DIR" --style healing --mode template --mock-agent)
+  if [[ -n "$BROWSER_EXECUTABLE" ]]; then
+    CMD+=(--browser-executable "$BROWSER_EXECUTABLE")
+  fi
+
+  if OUTPUT=$("${CMD[@]}" 2>&1); then
     SUCCESS=$((SUCCESS+1))
     echo "[run $i/$RUNS] PASS"
   else

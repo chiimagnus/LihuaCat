@@ -9,25 +9,44 @@ import type { StoryScript } from "../../contracts/story-script.types.ts";
 
 test("generates code into output directory and renders successfully", async () => {
   await withTempDir(async (outputDir) => {
+    const sourceImagePath = path.join(outputDir, "1.jpg");
+    await fs.writeFile(sourceImagePath, "img");
+
     const result = await renderByAiCode({
-      storyScript: buildStoryScript(),
+      storyScript: buildStoryScript(sourceImagePath),
       outputDir,
+      compileAdapter: async () => ({
+        ok: true,
+        serveUrl: "file:///tmp/remotion-bundle/index.html",
+      }),
+      renderAdapter: async ({ outputVideoPath }) => {
+        await fs.writeFile(outputVideoPath, "video");
+        return { ok: true };
+      },
     });
 
     assert.equal(result.ok, true);
     if (result.ok) {
       await assert.doesNotReject(fs.access(result.videoPath));
+      const scenePath = path.join(result.generatedCodeDir, "Scene.tsx");
       await assert.doesNotReject(
-        fs.access(path.join(result.generatedCodeDir, "scene.generated.mjs")),
+        fs.access(scenePath),
       );
+      const sceneCode = await fs.readFile(scenePath, "utf8");
+      assert.match(sceneCode, /"lihuacat-assets\//);
+      assert.doesNotMatch(sceneCode, /file:\/\//);
+      assert.match(sceneCode, /staticFile/);
     }
   });
 });
 
 test("returns structured compile error when compile adapter fails", async () => {
   await withTempDir(async (outputDir) => {
+    const sourceImagePath = path.join(outputDir, "1.jpg");
+    await fs.writeFile(sourceImagePath, "img");
+
     const result = await renderByAiCode({
-      storyScript: buildStoryScript(),
+      storyScript: buildStoryScript(sourceImagePath),
       outputDir,
       compileAdapter: async () => ({
         ok: false,
@@ -47,13 +66,20 @@ test("returns structured compile error when compile adapter fails", async () => 
 
 test("returns structured render error when render adapter fails", async () => {
   await withTempDir(async (outputDir) => {
+    const sourceImagePath = path.join(outputDir, "1.jpg");
+    await fs.writeFile(sourceImagePath, "img");
+
     const result = await renderByAiCode({
-      storyScript: buildStoryScript(),
+      storyScript: buildStoryScript(sourceImagePath),
       outputDir,
       renderAdapter: async () => ({
         ok: false,
         message: "remotion render failed",
         details: "composition not found",
+      }),
+      compileAdapter: async () => ({
+        ok: true,
+        serveUrl: "file:///tmp/remotion-bundle/index.html",
       }),
     });
 
@@ -74,12 +100,12 @@ const withTempDir = async (run: (dir: string) => Promise<void>) => {
   }
 };
 
-const buildStoryScript = (): StoryScript => ({
+const buildStoryScript = (sourceImagePath: string): StoryScript => ({
   version: "1.0",
   input: {
     sourceDir: "/tmp/photos",
     imageCount: 1,
-    assets: [{ id: "img_001", path: "1.jpg" }],
+    assets: [{ id: "img_001", path: sourceImagePath }],
   },
   video: {
     width: 1080,

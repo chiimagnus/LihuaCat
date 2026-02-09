@@ -1,7 +1,10 @@
 import type { RunSummary } from "../../../../story-pipeline/src/domains/artifact-publish/build-run-summary.ts";
 import type { StoryAgentClient } from "../../../../story-pipeline/src/domains/story-script/story-agent.client.ts";
 import type { RenderMode } from "../../../../story-pipeline/src/domains/render-choice/render-choice-machine.ts";
-import { runStoryWorkflow } from "../../../../story-pipeline/src/workflow/start-story-run.ts";
+import {
+  runStoryWorkflow,
+  type WorkflowProgressEvent,
+} from "../../../../story-pipeline/src/workflow/start-story-run.ts";
 
 export type CreateStoryVideoPromptAdapter = {
   askSourceDir: () => Promise<string>;
@@ -15,12 +18,16 @@ export type CreateStoryVideoPromptAdapter = {
 export type CreateStoryVideoFlowInput = {
   prompts: CreateStoryVideoPromptAdapter;
   storyAgentClient: StoryAgentClient;
+  browserExecutablePath?: string;
+  onProgress?: (event: WorkflowProgressEvent) => Promise<void> | void;
   workflowImpl?: typeof runStoryWorkflow;
 };
 
 export const createStoryVideoFlow = async ({
   prompts,
   storyAgentClient,
+  browserExecutablePath,
+  onProgress,
   workflowImpl = runStoryWorkflow,
 }: CreateStoryVideoFlowInput): Promise<RunSummary> => {
   const sourceDir = await prompts.askSourceDir();
@@ -34,7 +41,9 @@ export const createStoryVideoFlow = async ({
       prompt: prompt.trim().length > 0 ? prompt : undefined,
     },
     storyAgentClient,
+    browserExecutablePath,
     chooseRenderMode: prompts.chooseRenderMode,
+    onProgress,
   });
 
   return summary;

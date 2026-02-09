@@ -1,11 +1,28 @@
+import path from "node:path";
+import { createInterface } from "node:readline/promises";
+
 import { createStoryVideoFlow } from "../flows/create-story-video/create-story-video.flow.ts";
-import { NullStoryAgentClient, type StoryAgentClient } from "../../../story-pipeline/src/domains/story-script/story-agent.client.ts";
+import {
+  createCodexStoryAgentClient,
+  DEFAULT_CODEX_MODEL,
+  DEFAULT_CODEX_REASONING_EFFORT,
+  type StoryAgentClient,
+} from "../../../story-pipeline/src/domains/story-script/story-agent.client.ts";
+import { SourceDirectoryNotFoundError } from "../../../story-pipeline/src/domains/material-intake/material-intake.errors.ts";
+import { StoryScriptGenerationFailedError } from "../../../story-pipeline/src/domains/story-script/generate-story-script.ts";
 import { runStoryWorkflow } from "../../../story-pipeline/src/workflow/start-story-run.ts";
 import type { RenderMode } from "../../../story-pipeline/src/domains/render-choice/render-choice-machine.ts";
-import path from "node:path";
 
 type LogWriter = {
   write: (chunk: string) => void;
+};
+
+type PromptSession = {
+  askSourceDir: () => Promise<string>;
+  askStylePreset: () => Promise<string>;
+  askPrompt: () => Promise<string>;
+  askRenderMode: (state: { lastFailure?: { mode: RenderMode; reason: string } }) => Promise<RenderMode | "exit">;
+  close: () => void;
 };
 
 export type RunRenderStoryCommandInput = {
@@ -22,29 +39,54 @@ export const runRenderStoryCommand = async ({
   workflowImpl = runStoryWorkflow,
 }: RunRenderStoryCommandInput): Promise<number> => {
   const args = parseArgs(argv);
-  const inputDir = args.get("input");
-  if (!inputDir) {
-    stderr.write("Missing required option: --input <photos-dir>\n");
-    return 1;
-  }
-  const resolvedInputDir = resolveInputPath(inputDir);
-
-  const style = args.get("style") ?? "healing";
-  const prompt = args.get("prompt") ?? "";
-  const modeSequence = parseModeSequence(args.get("mode-sequence") ?? args.get("mode") ?? "template");
-  const storyAgentClient: StoryAgentClient = args.has("mock-agent")
+  const modeSequence = parseModeSequence(args.get("mode-sequence") ?? args.get("mode") ?? "");
+  const model = args.get("model") ?? DEFAULT_CODEX_MODEL;
+  const modelReasoningEffort = parseModelReasoningEffort(
+    args.get("model-reasoning-effort"),
+  );
+  const resolvedReasoningEffort = modelReasoningEffort ?? DEFAULT_CODEX_REASONING_EFFORT;
+  const browserExecutablePath = args.get("browser-executable")
+    ? path.resolve(args.get("browser-executable")!)
+    : undefined;
+  const useMockAgent = args.has("mock-agent");
+  const storyAgentClient: StoryAgentClient = useMockAgent
     ? createMockStoryAgentClient()
-    : new NullStoryAgentClient();
+    : createCodexStoryAgentClient({
+      model,
+      modelReasoningEffort: resolvedReasoningEffort,
+      workingDirectory: process.cwd(),
+    });
+
+  if (!useMockAgent) {
+    stdout.write(
+      `[info] Using Codex model: ${model} (reasoning: ${resolvedReasoningEffort})\n`,
+    );
+  }
+
+  const promptSession = createPromptSession({ stdout, stderr, args });
 
   try {
     const summary = await createStoryVideoFlow({
       prompts: {
-        askSourceDir: async () => resolvedInputDir,
-        askStylePreset: async () => style,
-        askPrompt: async () => prompt,
-        chooseRenderMode: async () => modeSequence.shift() ?? "exit",
+        askSourceDir: promptSession.askSourceDir,
+        askStylePreset: promptSession.askStylePreset,
+        askPrompt: promptSession.askPrompt,
+        chooseRenderMode: async (state) => {
+          const next = modeSequence.shift();
+          if (next) {
+            return next;
+          }
+          if (!process.stdin.isTTY) {
+            return "exit";
+          }
+          return promptSession.askRenderMode(state);
+        },
       },
       storyAgentClient,
+      browserExecutablePath,
+      onProgress: (event) => {
+        stdout.write(`[progress] ${event.message}\n`);
+      },
       workflowImpl,
     });
 
@@ -64,10 +106,23 @@ export const runRenderStoryCommand = async ({
     const message = error instanceof Error ? error.message : String(error);
     const stack = error instanceof Error ? error.stack : undefined;
     stderr.write(`Render failed: ${message}\n`);
+    if (error instanceof StoryScriptGenerationFailedError && error.reasons.length > 0) {
+      stderr.write("Story script generation failure details:\n");
+      for (const reason of error.reasons) {
+        stderr.write(`- ${reason}\n`);
+      }
+    }
+    if (error instanceof SourceDirectoryNotFoundError) {
+      stderr.write(
+        "Input tip: provide one directory path, e.g. --input /Users/<you>/Downloads/photos\n",
+      );
+    }
     if (stack) {
       stderr.write(`${stack}\n`);
     }
     return 1;
+  } finally {
+    promptSession.close();
   }
 };
 
@@ -97,6 +152,25 @@ const parseModeSequence = (raw: string): RenderMode[] => {
     .filter((item): item is RenderMode => item === "template" || item === "ai_code");
 };
 
+const parseModelReasoningEffort = (
+  raw: string | undefined,
+): "minimal" | "low" | "medium" | "high" | "xhigh" | undefined => {
+  if (!raw) {
+    return undefined;
+  }
+  const normalized = raw.trim().toLowerCase();
+  if (
+    normalized === "minimal" ||
+    normalized === "low" ||
+    normalized === "medium" ||
+    normalized === "high" ||
+    normalized === "xhigh"
+  ) {
+    return normalized;
+  }
+  return undefined;
+};
+
 const resolveInputPath = (input: string): string => {
   if (path.isAbsolute(input)) {
     return input;
@@ -106,6 +180,102 @@ const resolveInputPath = (input: string): string => {
     return path.resolve(initCwd, input);
   }
   return path.resolve(process.cwd(), input);
+};
+
+const createPromptSession = ({
+  stdout,
+  stderr,
+  args,
+}: {
+  stdout: LogWriter;
+  stderr: LogWriter;
+  args: Map<string, string>;
+}): PromptSession => {
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  const ensureInteractive = () => {
+    if (process.stdin.isTTY) {
+      return;
+    }
+    throw new Error("Missing required CLI options in non-interactive mode. Provide --input/--style/--mode.");
+  };
+
+  const askNonEmpty = async (question: string): Promise<string> => {
+    while (true) {
+      const answer = (await rl.question(question)).trim();
+      if (answer.length > 0) {
+        return answer;
+      }
+      stderr.write("Input cannot be empty. Please retry.\n");
+    }
+  };
+
+  const askSourceDir = async (): Promise<string> => {
+    const fromArgs = args.get("input");
+    if (fromArgs) {
+      return resolveInputPath(fromArgs);
+    }
+    ensureInteractive();
+    const answer = await askNonEmpty("图片目录路径（--input）: ");
+    return resolveInputPath(answer);
+  };
+
+  const askStylePreset = async (): Promise<string> => {
+    const fromArgs = args.get("style");
+    if (fromArgs && fromArgs.trim().length > 0) {
+      return fromArgs.trim();
+    }
+    if (!process.stdin.isTTY) {
+      return "healing";
+    }
+    ensureInteractive();
+    return askNonEmpty("风格 preset（如 healing）: ");
+  };
+
+  const askPrompt = async (): Promise<string> => {
+    const fromArgs = args.get("prompt");
+    if (fromArgs !== undefined) {
+      return fromArgs;
+    }
+    if (!process.stdin.isTTY) {
+      return "";
+    }
+    ensureInteractive();
+    return rl.question("补充描述（可留空）: ");
+  };
+
+  const askRenderMode = async ({
+    lastFailure,
+  }: {
+    lastFailure?: { mode: RenderMode; reason: string };
+  }): Promise<RenderMode | "exit"> => {
+    ensureInteractive();
+    if (lastFailure) {
+      stdout.write(
+        `上一轮失败 mode=${lastFailure.mode}\nreason=${lastFailure.reason}\n`,
+      );
+    }
+    while (true) {
+      const answer = (await rl.question("请选择渲染模式（template / ai_code / exit）: "))
+        .trim()
+        .toLowerCase();
+      if (answer === "template" || answer === "ai_code" || answer === "exit") {
+        return answer;
+      }
+      stderr.write("无效输入，请输入 template、ai_code 或 exit。\n");
+    }
+  };
+
+  return {
+    askSourceDir,
+    askStylePreset,
+    askPrompt,
+    askRenderMode,
+    close: () => rl.close(),
+  };
 };
 
 const createMockStoryAgentClient = (): StoryAgentClient => {

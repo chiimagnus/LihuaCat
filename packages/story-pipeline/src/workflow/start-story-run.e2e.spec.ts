@@ -94,6 +94,132 @@ test("workflow ends directly when template succeeds in first attempt", async () 
   });
 });
 
+test("workflow ends directly when AI code render succeeds", async () => {
+  await withTempDir(async (sourceDir) => {
+    await fs.writeFile(path.join(sourceDir, "1.jpg"), "fake-image");
+    const storyScript = buildStoryScript(sourceDir);
+
+    const summary = await runStoryWorkflow(
+      {
+        sourceDir,
+        storyAgentClient: {
+          async generateStoryScript() {
+            throw new Error("should not be called in this test");
+          },
+        },
+        style: { preset: "healing" },
+        chooseRenderMode: async () => "ai_code",
+      },
+      {
+        generateStoryScriptImpl: async () => ({ script: storyScript, attempts: 1 }),
+        renderByAiCodeImpl: async ({ outputDir }) => {
+          const videoPath = path.join(outputDir, "video.mp4");
+          const generatedCodeDir = path.join(outputDir, "generated-remotion");
+          await fs.mkdir(generatedCodeDir, { recursive: true });
+          await fs.writeFile(videoPath, "ai-video");
+          return {
+            ok: true,
+            mode: "ai_code",
+            videoPath,
+            generatedCodeDir,
+          };
+        },
+      },
+    );
+
+    assert.equal(summary.mode, "ai_code");
+    assert.ok(summary.generatedCodePath?.endsWith("generated-remotion"));
+  });
+});
+
+test("workflow emits progress events across core stages", async () => {
+  await withTempDir(async (sourceDir) => {
+    await fs.writeFile(path.join(sourceDir, "1.jpg"), "fake-image");
+    const storyScript = buildStoryScript(sourceDir);
+    const events: string[] = [];
+
+    await runStoryWorkflow(
+      {
+        sourceDir,
+        storyAgentClient: {
+          async generateStoryScript() {
+            throw new Error("should not be called in this test");
+          },
+        },
+        style: { preset: "healing" },
+        chooseRenderMode: async () => "template",
+        onProgress: (event) => {
+          events.push(event.stage);
+        },
+      },
+      {
+        generateStoryScriptImpl: async () => ({ script: storyScript, attempts: 1 }),
+        renderByTemplateImpl: async ({ outputDir }) => {
+          const videoPath = path.join(outputDir, "video.mp4");
+          await fs.mkdir(outputDir, { recursive: true });
+          await fs.writeFile(videoPath, "template-video");
+          return { mode: "template", videoPath };
+        },
+      },
+    );
+
+    assert.ok(events.includes("collect_images_start"));
+    assert.ok(events.includes("collect_images_done"));
+    assert.ok(events.includes("generate_script_start"));
+    assert.ok(events.includes("generate_script_done"));
+    assert.ok(events.includes("render_start"));
+    assert.ok(events.includes("render_success"));
+    assert.ok(events.includes("publish_done"));
+  });
+});
+
+test("persists stage artifacts even when run exits after render failure", async () => {
+  await withTempDir(async (sourceDir) => {
+    await fs.writeFile(path.join(sourceDir, "1.jpg"), "fake-image");
+    const storyScript = buildStoryScript(sourceDir);
+    const modeQueue: Array<"template" | "exit"> = ["template", "exit"];
+
+    await assert.rejects(
+      runStoryWorkflow(
+        {
+          sourceDir,
+          storyAgentClient: {
+            async generateStoryScript() {
+              throw new Error("should not be called in this test");
+            },
+          },
+          style: { preset: "healing" },
+          chooseRenderMode: async () => modeQueue.shift() ?? "exit",
+        },
+        {
+          generateStoryScriptImpl: async () => ({ script: storyScript, attempts: 1 }),
+          renderByTemplateImpl: async () => {
+            throw new Error("template crash");
+          },
+        },
+      ),
+      /Run exited after render failure/,
+    );
+
+    const outputRoot = path.join(sourceDir, "lihuacat-output");
+    const runDirs = (await fs.readdir(outputRoot, { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
+    assert.equal(runDirs.length, 1);
+
+    const runDir = path.join(outputRoot, runDirs[0]!);
+    await assert.doesNotReject(fs.access(path.join(runDir, "story-script.json")));
+    await assert.doesNotReject(fs.access(path.join(runDir, "run.log")));
+    await assert.doesNotReject(fs.access(path.join(runDir, "error.log")));
+    await assert.doesNotReject(fs.access(path.join(runDir, "stages", "material-intake.json")));
+    await assert.doesNotReject(fs.access(path.join(runDir, "stages", "progress-events.jsonl")));
+    await assert.doesNotReject(fs.access(path.join(runDir, "stages", "render-attempts.jsonl")));
+
+    const errorLog = await fs.readFile(path.join(runDir, "error.log"), "utf8");
+    assert.match(errorLog, /template crash/);
+  });
+});
+
 const withTempDir = async (run: (sourceDir: string) => Promise<void>) => {
   const sourceDir = await fs.mkdtemp(path.join(os.tmpdir(), "lihuacat-workflow-"));
   try {

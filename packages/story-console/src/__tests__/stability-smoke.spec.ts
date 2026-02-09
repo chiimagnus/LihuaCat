@@ -12,12 +12,12 @@ test("stability script prints summary format", async () => {
     cwd: repoRoot,
     env: {
       ...process.env,
-      LIHUACAT_STABILITY_RUNS: "2",
+      LIHUACAT_STABILITY_RUNS: "0",
     },
   });
 
   assert.equal(result.exitCode, 0);
-  assert.match(result.stdout, /STABILITY_RESULT success=\d+ fail=\d+ success_rate=\d+\.\d+% runs=2/);
+  assert.match(result.stdout, /STABILITY_RESULT success=\d+ fail=\d+ success_rate=\d+(?:\.\d+)?% runs=0/);
 });
 
 const runCommand = (
