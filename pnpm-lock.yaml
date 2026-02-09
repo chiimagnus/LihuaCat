@@ -37,41 +37,6 @@ importers:
         specifier: ^5.9.2
         version: 5.9.3
 
-  packages/story-console: {}
-
-  packages/story-pipeline:
-    dependencies:
-      '@openai/codex-sdk':
-        specifier: ^0.98.0
-        version: 0.98.0
-      '@remotion/bundler':
-        specifier: ^4.0.419
-        version: 4.0.419(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@remotion/renderer':
-        specifier: ^4.0.343
-        version: 4.0.419(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      remotion:
-        specifier: ^4.0.343
-        version: 4.0.419(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      zod:
-        specifier: 3.22.3
-        version: 3.22.3
-
-  packages/story-video:
-    dependencies:
-      react:
-        specifier: ^18.3.1
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.3.1
-        version: 18.3.1(react@18.3.1)
-      remotion:
-        specifier: ^4.0.343
-        version: 4.0.419(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      zod:
-        specifier: 3.22.3
-        version: 3.22.3
-
 packages:
 
   '@esbuild/aix-ppc64@0.25.0':
