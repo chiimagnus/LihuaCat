@@ -1,5 +1,8 @@
 import { createStoryVideoFlow } from "../flows/create-story-video/create-story-video.flow.ts";
-import { NullStoryAgentClient, type StoryAgentClient } from "../../../story-pipeline/src/domains/story-script/story-agent.client.ts";
+import {
+  createCodexStoryAgentClient,
+  type StoryAgentClient,
+} from "../../../story-pipeline/src/domains/story-script/story-agent.client.ts";
 import { runStoryWorkflow } from "../../../story-pipeline/src/workflow/start-story-run.ts";
 import type { RenderMode } from "../../../story-pipeline/src/domains/render-choice/render-choice-machine.ts";
 import path from "node:path";
@@ -32,9 +35,13 @@ export const runRenderStoryCommand = async ({
   const style = args.get("style") ?? "healing";
   const prompt = args.get("prompt") ?? "";
   const modeSequence = parseModeSequence(args.get("mode-sequence") ?? args.get("mode") ?? "template");
+  const model = args.get("model");
   const storyAgentClient: StoryAgentClient = args.has("mock-agent")
     ? createMockStoryAgentClient()
-    : new NullStoryAgentClient();
+    : createCodexStoryAgentClient({
+      model,
+      workingDirectory: process.cwd(),
+    });
 
   try {
     const summary = await createStoryVideoFlow({
