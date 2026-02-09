@@ -1,8 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 import type { StoryScript } from "../../contracts/story-script.types.ts";
+import { stageRemotionAssets } from "../render-assets/stage-remotion-assets.ts";
 import { validateStoryScriptSemantics } from "../story-script/validate-story-script.semantics.ts";
 import { locateBrowserExecutable } from "./browser-locator.ts";
 import {
@@ -17,6 +18,7 @@ export type RenderByTemplateInput = {
   browserExecutablePath?: string;
   renderAdapter?: (input: {
     storyScript: StoryScript;
+    outputDir: string;
     outputFilePath: string;
     browserExecutablePath?: string;
   }) => Promise<void>;
@@ -53,6 +55,7 @@ export const renderByTemplate = async ({
   const videoPath = path.join(outputDir, "video.mp4");
   await renderAdapter({
     storyScript,
+    outputDir,
     outputFilePath: videoPath,
     browserExecutablePath,
   });
@@ -64,10 +67,12 @@ export const renderByTemplate = async ({
 
 const defaultTemplateRenderAdapter = async ({
   storyScript,
+  outputDir,
   outputFilePath,
   browserExecutablePath,
 }: {
   storyScript: StoryScript;
+  outputDir: string;
   outputFilePath: string;
   browserExecutablePath?: string;
 }): Promise<void> => {
@@ -76,8 +81,14 @@ const defaultTemplateRenderAdapter = async ({
       preferredPath: browserExecutablePath,
     });
 
+    const stagedAssets = await stageRemotionAssets({
+      assets: storyScript.input.assets,
+      outputDir,
+    });
+
     const serveUrl = await bundleRemotionEntry({
       entryPoint: templateEntryPointPath,
+      publicDir: stagedAssets.publicDir,
     });
 
     await renderRemotionVideo({
@@ -87,10 +98,7 @@ const defaultTemplateRenderAdapter = async ({
         ...storyScript,
         input: {
           ...storyScript.input,
-          assets: storyScript.input.assets.map((asset) => ({
-            ...asset,
-            path: toRenderableAssetPath(asset.path),
-          })),
+          assets: stagedAssets.assets,
         },
       },
       outputFilePath,
@@ -113,10 +121,3 @@ const templateEntryPointPath = fileURLToPath(
     import.meta.url,
   ),
 );
-
-const toRenderableAssetPath = (value: string): string => {
-  if (/^https?:\/\//.test(value) || value.startsWith("file://")) {
-    return value;
-  }
-  return pathToFileURL(path.resolve(value)).href;
-};

@@ -3,6 +3,7 @@ import { renderMedia, selectComposition } from "@remotion/renderer";
 
 export type BundleRemotionEntryInput = {
   entryPoint: string;
+  publicDir?: string;
 };
 
 export type RenderRemotionVideoInput = {
@@ -34,10 +35,12 @@ const browserDownloadDisabledMessage =
 
 export const bundleRemotionEntry = async ({
   entryPoint,
+  publicDir,
 }: BundleRemotionEntryInput): Promise<string> => {
   try {
     return await bundle({
       entryPoint,
+      publicDir,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

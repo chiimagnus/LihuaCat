@@ -1,6 +1,3 @@
-import path from "node:path";
-import { pathToFileURL } from "node:url";
-
 import type { StoryScript } from "../../contracts/story-script.types.ts";
 
 export type GenerateRemotionSceneInput = {
@@ -13,7 +10,7 @@ export const generateRemotionScene = ({
   const assetPathById = Object.fromEntries(
     storyScript.input.assets.map((asset) => [
       asset.id,
-      toRenderableAssetPath(asset.path),
+      asset.path,
     ]),
   );
   const subtitleById = Object.fromEntries(
@@ -80,11 +77,4 @@ export const GeneratedScene: React.FC = () => {
   );
 };
 `;
-};
-
-const toRenderableAssetPath = (value: string): string => {
-  if (/^https?:\/\//.test(value) || value.startsWith("file://")) {
-    return value;
-  }
-  return pathToFileURL(path.resolve(value)).href;
 };

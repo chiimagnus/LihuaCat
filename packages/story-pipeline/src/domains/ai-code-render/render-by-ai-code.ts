@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { StoryScript } from "../../contracts/story-script.types.ts";
+import { stageRemotionAssets } from "../render-assets/stage-remotion-assets.ts";
 import { locateBrowserExecutable } from "../template-render/browser-locator.ts";
 import {
   bundleRemotionEntry,
@@ -18,6 +19,7 @@ export type RenderByAiCodeInput = {
     generatedCodeDir: string;
     entryFilePath: string;
     compositionId: string;
+    publicDir: string;
   }) => Promise<{ ok: true; serveUrl: string } | { ok: false; message: string; details?: string }>;
   renderAdapter?: (input: {
     generatedCodeDir: string;
@@ -59,16 +61,33 @@ export const renderByAiCode = async ({
   await fs.mkdir(generatedCodeDir, { recursive: true });
   const compositionId = "LihuaCatGeneratedScene";
 
-  const sceneCode = generateRemotionScene({ storyScript });
+  const stagedAssets = await stageRemotionAssets({
+    assets: storyScript.input.assets,
+    outputDir,
+  });
+  const renderStoryScript: StoryScript = {
+    ...storyScript,
+    input: {
+      ...storyScript.input,
+      assets: stagedAssets.assets,
+    },
+  };
+
+  const sceneCode = generateRemotionScene({ storyScript: renderStoryScript });
   const sceneFilePath = path.join(generatedCodeDir, "Scene.tsx");
   const entryFilePath = path.join(generatedCodeDir, "remotion.entry.tsx");
   await fs.writeFile(sceneFilePath, sceneCode, "utf8");
-  await fs.writeFile(entryFilePath, buildGeneratedEntryCode({ storyScript, compositionId }), "utf8");
+  await fs.writeFile(
+    entryFilePath,
+    buildGeneratedEntryCode({ storyScript: renderStoryScript, compositionId }),
+    "utf8",
+  );
 
   const compile = await compileAdapter({
     generatedCodeDir,
     entryFilePath,
     compositionId,
+    publicDir: stagedAssets.publicDir,
   });
   if (!compile.ok) {
     return {
@@ -113,14 +132,17 @@ export const renderByAiCode = async ({
 
 const defaultCompileAdapter = async ({
   entryFilePath,
+  publicDir,
 }: {
   generatedCodeDir: string;
   entryFilePath: string;
   compositionId: string;
+  publicDir: string;
 }): Promise<{ ok: true; serveUrl: string } | { ok: false; message: string; details?: string }> => {
   try {
     const serveUrl = await bundleRemotionEntry({
       entryPoint: entryFilePath,
+      publicDir,
     });
     return { ok: true, serveUrl };
   } catch (error) {
