@@ -27,16 +27,18 @@ export const validateStoryScriptStructure = (
   if (!isRecord(input.input)) {
     errors.push("input is required");
   } else {
-    if (!isNonEmptyString(input.input.sourceDir)) {
+    const inputNode = input.input;
+    if (!isNonEmptyString(inputNode.sourceDir)) {
       errors.push("input.sourceDir is required");
     }
-    if (!Number.isInteger(input.input.imageCount) || input.input.imageCount < 1) {
+    const imageCount = inputNode.imageCount;
+    if (typeof imageCount !== "number" || !Number.isInteger(imageCount) || imageCount < 1) {
       errors.push("input.imageCount must be >= 1");
     }
-    if (!Array.isArray(input.input.assets) || input.input.assets.length === 0) {
+    if (!Array.isArray(inputNode.assets) || inputNode.assets.length === 0) {
       errors.push("input.assets is required");
     } else {
-      input.input.assets.forEach((asset, index) => {
+      inputNode.assets.forEach((asset, index) => {
         if (!isRecord(asset)) {
           errors.push(`input.assets[${index}] must be an object`);
           return;
@@ -54,16 +56,20 @@ export const validateStoryScriptStructure = (
   if (!isRecord(input.video)) {
     errors.push("video is required");
   } else {
-    if (!Number.isInteger(input.video.width) || input.video.width <= 0) {
+    const videoNode = input.video;
+    const width = videoNode.width;
+    if (typeof width !== "number" || !Number.isInteger(width) || width <= 0) {
       errors.push("video.width must be > 0");
     }
-    if (!Number.isInteger(input.video.height) || input.video.height <= 0) {
+    const height = videoNode.height;
+    if (typeof height !== "number" || !Number.isInteger(height) || height <= 0) {
       errors.push("video.height must be > 0");
     }
-    if (!Number.isInteger(input.video.fps) || input.video.fps <= 0) {
+    const fps = videoNode.fps;
+    if (typeof fps !== "number" || !Number.isInteger(fps) || fps <= 0) {
       errors.push("video.fps must be > 0");
     }
-    if (!isFiniteNumber(input.video.durationSec) || input.video.durationSec <= 0) {
+    if (!isFiniteNumber(videoNode.durationSec) || videoNode.durationSec <= 0) {
       errors.push("video.durationSec must be > 0");
     }
   }
