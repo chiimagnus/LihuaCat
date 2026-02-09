@@ -2,19 +2,20 @@
 
 > 执行方式：建议使用 `executing-plans` 按批次实现与验收。
 
-**Goal（目标）:** 在不改变现有业务行为的前提下，基于 KISS/YAGNI/DRY/WET/SOLID/LoD/SoC/SLAP 对 `story-pipeline` 与 `story-console` 做可读性与可维护性重构。
+**Goal（目标）:** 基于 KISS/YAGNI/DRY/WET/SOLID/LoD/SoC/SLAP 对 `story-pipeline` 与 `story-console` 做一次完整重构，允许破坏性调整，并在实施过程中同步清理旧实现与冗余代码。
 
 **Non-goals（非目标）:**
-- 不新增产品功能，不改变 CLI 参数语义。
+- 不保留兼容层、过渡适配器或双轨实现。
 - 不修改素材输入规则（第一层扫描、格式限制、20 张上限）。
 - 不引入新的框架或运行时依赖。
 - 不做跨包大规模架构迁移（如 monorepo 构建体系变更）。
 
 **Approach（方案）:**
-- 先锁定行为，再做结构重排：测试基线先行，代码重构后逐步回归。
+- 采用“切断式重构（cut-over）”：新结构完成即替换旧结构，不保留向后兼容代码路径。
 - 按“业务能力”拆分 stage（收集素材/生成脚本/渲染循环/发布产物），保持单一职责与单层抽象。
 - 通过“端口 + 实现注入”落实依赖倒置，减少 orchestrator 对细节实现的直接感知。
 - 采用 WET（Write Everything Twice）：相同模式至少出现两处后再抽象，避免过度设计。
+- 每个任务必须包含“遗留代码清理”步骤：删除旧文件、旧导出、旧测试、旧注释。
 
 **Principle Guardrails（原则护栏）:**
 - KISS：优先删除分支与嵌套，不通过“新增层级”伪装简单。
@@ -24,21 +25,46 @@
 - OCP + DIP + ISP：高层依赖小接口，新增实现通过注入扩展，不改编排主干。
 - LSP：同一接口的替换实现必须通过同一契约测试，行为可替换。
 - LoD：跨包只走门面导出，避免深链路访问内部细节。
+- No Compatibility：不引入 deprecated shim / fallback 分支；保留旧路径视为未完成。
 
 **Acceptance（验收）:**
-- `runStoryWorkflow` 行为等价：成功路径、失败路径、重试与退出语义不变。
-- `story-console` 命令层输出与错误提示不回归。
+- 新架构下核心行为可用：成功路径、失败路径、重试与退出语义由新测试重新定义并通过。
+- `story-console` 命令层输出在新规范内一致（允许格式性调整，但必须有测试覆盖）。
 - 关键模块依赖方向清晰：`workflow` 依赖抽象端口，不反向耦合 CLI。
 - 相关测试通过：`pnpm --filter @lihuacat/story-pipeline test`、`pnpm --filter @lihuacat/story-console test`。
 - 每个任务完成后均通过“原则检查清单（见文末）”。
+- 不存在已废弃但仍保留的实现文件、导出符号、死代码分支。
 
 ---
 
 ## Plan A（主方案）
 
-### P1（最高优先级）：锁定行为 + 降低工作流复杂度
+### P1（最高优先级）：先清点并删除遗留，再建立新骨架
 
-### Task 1: 建立重构行为基线（Contract Baseline）
+### Task 0: 建立“遗留代码清理清单”（必须先做）
+
+**Files:**
+- Create: `.github/docs/refactor-legacy-inventory.md`
+- Modify: `packages/story-pipeline/src/workflow/start-story-run.ts`（仅标注待迁移边界）
+- Modify: `packages/story-console/src/commands/render-story.command.ts`（仅标注待迁移边界）
+
+**Step 1: 先定义本任务最小验收（1-3 条）**
+- 列出待删除文件/符号/测试（路径级别），并注明替代落点。
+- 标记“可直接删”和“迁移后删”两类遗留项。
+- 清单纳入后续每个 Task 的完成条件。
+
+**Step 2: 输出清单**
+- 建立 Legacy Inventory 文档，记录 owner、替代点、删除时机。
+
+**Step 3: 验证**
+
+Run: `rg -n "TODO|deprecated|legacy|兼容|向后兼容" packages/story-pipeline packages/story-console .github/docs/refactor-legacy-inventory.md`
+
+Expected: 仅出现清单允许项
+
+---
+
+### Task 1: 建立新架构契约测试（不依赖旧实现）
 
 **Files:**
 - Modify: `packages/story-pipeline/src/workflow/start-story-run.e2e.spec.ts`
@@ -46,9 +72,9 @@
 - Create: `packages/story-pipeline/src/workflow/workflow-contract.spec.ts`
 
 **Step 1: 先定义本任务最小验收（1-3 条）**
-- `runStoryWorkflow` 的阶段事件序列与当前一致。
-- 渲染失败后再选择模式的循环语义保持不变。
-- CLI 成功/失败输出中的关键字段保持不变。
+- 新工作流契约由测试定义（阶段事件、渲染循环、失败退出）。
+- CLI 输出契约由测试定义（关键字段和错误映射）。
+- 测试命名与断言不引用“旧实现必须一致”表述。
 
 **Step 2: 补齐契约测试（只测外部可观察行为）**
 - 为工作流增加“事件顺序 + 产物路径 + 失败退出”契约测试。
@@ -66,7 +92,7 @@ Expected: PASS
 
 ---
 
-### Task 2: 提取工作流端口与上下文（DIP + ISP）
+### Task 2: 提取工作流端口与上下文并删除旧同位逻辑（DIP + ISP）
 
 **Files:**
 - Create: `packages/story-pipeline/src/workflow/workflow-ports.ts`
@@ -83,6 +109,7 @@ Expected: PASS
 - 把依赖类型统一到 `workflow-ports.ts`（收集、脚本生成、渲染、发布）。
 - 把运行时路径与日志集合提取到 `workflow-runtime.ts`。
 - `start-story-run.ts` 仅保留 orchestrator 级别编排逻辑。
+- 删除已被端口/上下文替代的旧类型与辅助函数，避免双轨。
 
 **Step 3: 运行聚焦验证**
 
@@ -96,7 +123,7 @@ Expected: PASS
 
 ---
 
-### Task 3: 按业务阶段拆文件（SoC + SRP + Single Level of Abstraction）
+### Task 3: 按业务阶段拆文件并切断旧入口（SoC + SRP + Single Level of Abstraction）
 
 **Files:**
 - Create: `packages/story-pipeline/src/workflow/stages/collect-images.stage.ts`
@@ -113,7 +140,7 @@ Expected: PASS
 
 **Step 2: 实现最小拆分**
 - 先拆 `collect` 与 `generate`，验证通过后再拆 `render` 与 `publish`。
-- 保留现有命名与日志语义，减少行为漂移风险。
+- 完成每一段拆分后删除旧调用路径，不保留 fallback。
 
 **Step 3: 运行验证**
 
@@ -129,7 +156,7 @@ Expected: PASS
 
 ### P2：减少跨包耦合与知识泄漏（LoD + OCP）
 
-### Task 4: 为 pipeline 提供稳定门面，减少深层相对路径 import
+### Task 4: 为 pipeline 提供稳定门面并删除深层路径依赖
 
 **Files:**
 - Create: `packages/story-pipeline/src/index.ts`
@@ -146,6 +173,7 @@ Expected: PASS
 **Step 2: 最小实现**
 - 由 `story-pipeline/src/index.ts` 暴露 workflow 与必要类型。
 - console 仅依赖门面导出，不直接依赖 pipeline 内部目录结构。
+- 删除 console 内已迁移完成的深层相对路径 import。
 
 **Step 3: 验证**
 
@@ -174,6 +202,7 @@ Expected: PASS
 **Step 2: 实现**
 - 提取错误类型到文案映射函数。
 - `runRenderStoryCommand` 仅做调用与写出，不承担复杂分支拼接。
+- 删除旧错误拼接分支，禁止保留“新旧两套”处理逻辑。
 
 **Step 3: 验证**
 
@@ -199,6 +228,7 @@ Expected: PASS
 **Step 2: 实现**
 - 在业务文档加入“重构后导航图 + 依赖方向图”。
 - 补充“原则 -> 代码位置”清单。
+- 在文档中明确“已删除的旧入口/旧模块”与替代位置。
 
 **Step 3: 验证**
 
@@ -214,11 +244,17 @@ Expected: PASS
 - P2 结束：`pnpm --filter @lihuacat/story-console test` + `pnpm --filter @lihuacat/story-pipeline test`
 - P3 结束：`pnpm -r test` + `pnpm -r build`
 
+## 旧代码清理策略（强制）
+
+- 每个 Task 完成前必须执行一次“引用扫描”，确认无悬空旧引用。
+- 删除旧代码时同步删除对应旧测试或迁移到新契约测试，禁止无主测试残留。
+- 不允许保留 `legacy`/`deprecated` 命名的临时模块跨 Task 存活。
+- 未完成清理视为 Task 未完成。
+
 ## 不确定项（执行前需确认）
 
-- `story-console` 是否允许直接依赖 `story-pipeline/src/index.ts`（而非包导出字段）？
-- 是否希望在本轮处理 `story-video` 模板层的类似拆分，还是仅限 pipeline + console？
-- 失败文案是否允许做轻微统一（不改语义，仅改格式）？
+- 本轮是否覆盖 `story-video` 模板层重构，还是仅限 pipeline + console？
+- CLI 输出是否允许进行“破坏性文案调整”（测试会同步更新）？
 
 ## 原则检查清单（每个 Task 完成后打勾）
 
@@ -234,3 +270,4 @@ Expected: PASS
 - [ ] LoD：是否避免跨层、跨包深路径调用？
 - [ ] SoC：编排、领域、基础设施关注点是否明确分离？
 - [ ] SLAP：同一函数内语句是否处于同一抽象层级？
+- [ ] 清理完成：本任务涉及的旧文件/旧导出/旧分支是否已删除？
