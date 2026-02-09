@@ -3,7 +3,7 @@
 **狸花猫（LihuaCat）产品需求说明（PRD v0.2）**
 
 - **产品定位**
-- 本地优先的"图片/视频 → 故事短视频"生成工具
+- 本地优先的"图片 → 故事短视频"生成工具
 - 用户上传一段视频或一组图片，AI 自动编排成一个带字幕的故事短视频
 - **开发者零运维**：AI 算力由用户自己的 ChatGPT 账号承担，视频渲染在用户本地完成
 - **核心理念**
@@ -31,9 +31,8 @@
     - 认证：复用 Codex CLI 的 ChatGPT 登录凭证（`~/.codex/auth.json`）
     - 用户需先通过 Codex CLI 登录一次 ChatGPT 账号
     - 后续：如 OpenAI 开放第三方 OAuth（"Sign in with ChatGPT"），可升级为 app 内直接登录
-- **视频渲染**：Remotion（本地 Node.js 环境），Codex 生成 Remotion 代码 → 本地渲染 MP4
-- **视频预处理**：FFmpeg（本地二进制，用于视频输入时抽关键帧、格式转换）
-- **TUI 框架**：Ink（React for CLI，与 Remotion / 后续 Tauri GUI 同为 React 生态，心智模型统一）
+- **视频渲染**：Remotion（本地 Node.js 环境），支持模板模式与 AI 代码模式真实渲染 MP4
+- **TUI 交互**：Node.js `readline/promises`（问答式 CLI）
 - **包管理**：pnpm
 - **核心思路**：app 是编排器，Codex 是执行引擎，每一步是一个 skill
 
@@ -42,9 +41,9 @@
 ```
 lihuacat/
 ├── packages/
-│   ├── core/          # workflow 编排、Codex SDK 调用、JSON schema 定义
-│   ├── cli/           # Ink TUI，依赖 core
-│   └── remotion/      # Remotion 视频项目模板
+│   ├── story-pipeline/  # workflow 编排、Codex SDK 调用、业务域逻辑
+│   ├── story-console/   # 问答式 CLI/TUI 入口
+│   └── story-video/     # Remotion 模板与组件
 ├── pnpm-workspace.yaml
 └── package.json
 ```
@@ -53,10 +52,9 @@ lihuacat/
 
 | 包 | 用途 |
 | --- | --- |
-| `@openai/codex-sdk` | 控制本地 Codex agent（AI 理解、故事生成、代码生成） |
-| `remotion`  • `@remotion/cli` | 视频合成与本地渲染 |
-| `ink`  • `react` | TUI 交互界面 |
-| `fluent-ffmpeg` | FFmpeg 封装，视频预处理 |
+| `@openai/codex-sdk` | 控制本地 Codex agent（故事脚本生成） |
+| `remotion` | Remotion 组件与 Composition 定义 |
+| `@remotion/renderer` • `@remotion/bundler` | Node 侧真实渲染与打包 |
 | `pnpm` | 包管理 + monorepo workspace |
 
 ---
@@ -67,12 +65,12 @@ lihuacat/
 
 | 步骤 | 名称 | 输入 | 输出 | 说明 |
 | --- | --- | --- | --- | --- |
-| 1 | **输入收集** | 用户操作 | 图片路径列表 / 视频路径 + 风格 + 自定义描述 | TUI 交互引导用户完成 |
-| 2 | **图片/视频理解** | 素材文件 + Codex | 每张图/关键帧的内容描述（JSON） | Codex 视觉能力分析素材 |
-| 3 | **故事生成** | 内容描述 + 风格 + 自定义描述 | 故事脚本（含每段字幕文本、对应素材、时间分配） | Codex 生成结构化故事脚本 |
-| 4 | **Remotion 代码生成** | 故事脚本 + 素材路径 | Remotion 项目代码 | Codex 生成可渲染的 React 代码 |
-| 5 | **本地渲染** | Remotion 项目 | MP4 视频文件 | Remotion CLI 本地渲染 |
-| 6 | **输出** | MP4 + 故事脚本 | 视频文件路径 + 字幕文本 | TUI 展示结果 |
+| 1 | **输入收集** | 用户操作 | 图片目录 + 风格 + 自定义描述 | 问答式 CLI 引导用户完成 |
+| 2 | **故事生成** | 图片路径 + 风格 + 自定义描述 | `story-script.json` | Codex 生成结构化脚本并校验 |
+| 3 | **渲染模式选择** | 用户二选一 | `template` / `ai_code` | 每次渲染前都需要重新选择 |
+| 4 | **模板渲染** | `story-script.json` | MP4 视频文件 | Remotion 模板真实渲染 |
+| 5 | **AI 代码渲染** | `story-script.json` | 生成代码 + MP4 | 生成 `generated-remotion/` 并真实渲染 |
+| 6 | **输出发布** | 视频 + 脚本 + 日志 | 关键产物路径 | CLI 展示 `video/story-script/run.log/error.log` |
 
 ---
 
@@ -85,7 +83,7 @@ lihuacat/
 
 1. 用户通过 Codex CLI 登录 ChatGPT 账号（首次使用，一次性操作）
 2. 启动狸花猫 TUI
-3. 选择素材：指定图片文件夹路径 / 视频文件路径
+3. 选择素材：指定图片文件夹路径
 4. 选择故事风格：`童话 / 冒险 / 治愈 / 搞笑`
 5. 可选：输入自定义补充描述
 6. 确认后，TUI 显示 workflow 各步骤进度
@@ -93,8 +91,8 @@ lihuacat/
 
 ## 输入与约束（首版硬限制）
 
-- 支持两种输入：`视频` 或 `图片`
-- 视频最长：`60 秒`
+- 仅支持输入：`图片目录`
+- 支持格式：`jpg/jpeg/png`
 - 图片最多：`20 张`
 
 ## 输出规格（首版）
@@ -108,9 +106,9 @@ lihuacat/
 
 - macOS
 - Node.js ≥ 18（Codex SDK + Remotion 依赖）
-- FFmpeg（视频预处理，可通过 Homebrew 安装）
 - Codex CLI（已登录 ChatGPT 账号，`npm i -g @openai/codex`）
 - 狸花猫 CLI/TUI 工具
+- 本机 Chromium 浏览器之一（Google Chrome / Microsoft Edge / Arc / Brave），或通过 `--browser-executable` 指定路径
 
 ---
 
@@ -154,5 +152,6 @@ lihuacat/
 
 ### 当前约束
 
-- 仍为本地开发版闭环，渲染实现当前是可测试的“本地占位渲染”路径（非完整 Remotion 成片渲染）。
-- 实验模式编译失败默认输出详细错误信息，便于调试。
+- 默认已切换到真实链路：真实 Codex SDK + 真实 Remotion 渲染，不再使用占位渲染。
+- `--mock-agent` 仅用于本地测试；默认不启用。
+- AI 代码模式失败会输出详细错误并返回模式选择；不自动回退模板模式。

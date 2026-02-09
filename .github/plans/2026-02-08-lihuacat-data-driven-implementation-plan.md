@@ -1,4 +1,6 @@
-# 狸花猫（图片首版，数据驱动渲染）实施计划
+# 狸花猫（图片首版，数据驱动渲染）实施计划（已废弃）
+
+> 状态：已被 `.github/plans/2026-02-09-lihuacat-real-pipeline-breaking-refactor-implementation-plan.md` 取代。本文档仅保留为历史记录，不再作为当前实现依据。
 
 > 执行方式：建议使用 `executing-plans` 按批次实现与验收。  
 > 执行策略：不使用 TDD，采用“先实现最小可运行功能，再补测试与回归验证”。

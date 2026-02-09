@@ -16,7 +16,11 @@
 - 全量测试：`pnpm -r test`
 - 全量构建：`pnpm -r build`
 - 运行 CLI（开发态）：  
+  `pnpm --filter @lihuacat/story-console dev --`
+- 非交互测试（mock agent）：  
   `pnpm --filter @lihuacat/story-console dev -- --input scripts/fixtures/photos --mode template --mock-agent`
+- 如需指定浏览器可执行文件：  
+  `pnpm --filter @lihuacat/story-console dev -- --input scripts/fixtures/photos --mode template --browser-executable "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`
 - 稳定性测试（默认 10 次）：  
   `bash scripts/stability-run.sh scripts/fixtures/photos`
 

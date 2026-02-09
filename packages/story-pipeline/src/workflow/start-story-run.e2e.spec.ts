@@ -94,6 +94,44 @@ test("workflow ends directly when template succeeds in first attempt", async () 
   });
 });
 
+test("workflow ends directly when AI code render succeeds", async () => {
+  await withTempDir(async (sourceDir) => {
+    await fs.writeFile(path.join(sourceDir, "1.jpg"), "fake-image");
+    const storyScript = buildStoryScript(sourceDir);
+
+    const summary = await runStoryWorkflow(
+      {
+        sourceDir,
+        storyAgentClient: {
+          async generateStoryScript() {
+            throw new Error("should not be called in this test");
+          },
+        },
+        style: { preset: "healing" },
+        chooseRenderMode: async () => "ai_code",
+      },
+      {
+        generateStoryScriptImpl: async () => ({ script: storyScript, attempts: 1 }),
+        renderByAiCodeImpl: async ({ outputDir }) => {
+          const videoPath = path.join(outputDir, "video.mp4");
+          const generatedCodeDir = path.join(outputDir, "generated-remotion");
+          await fs.mkdir(generatedCodeDir, { recursive: true });
+          await fs.writeFile(videoPath, "ai-video");
+          return {
+            ok: true,
+            mode: "ai_code",
+            videoPath,
+            generatedCodeDir,
+          };
+        },
+      },
+    );
+
+    assert.equal(summary.mode, "ai_code");
+    assert.ok(summary.generatedCodePath?.endsWith("generated-remotion"));
+  });
+});
+
 const withTempDir = async (run: (sourceDir: string) => Promise<void>) => {
   const sourceDir = await fs.mkdtemp(path.join(os.tmpdir(), "lihuacat-workflow-"));
   try {
