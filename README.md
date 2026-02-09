@@ -19,7 +19,7 @@ LihuaCat 在本机完成以下流程：
 ## 仓库结构
 
 - `src`: 单一源码目录（CLI + pipeline + template）
-- `tests`: 所有测试、稳定性脚本和测试夹具
+- `tests`: 所有测试与测试夹具
 - `.github/docs`: 业务与架构文档
 - `.github/plans`: 实施计划
 
@@ -35,7 +35,6 @@ pnpm install
 - 全量构建：`pnpm run build`
 - 启动主流程：`pnpm run start`
 - 开发态 CLI：`pnpm run dev --`
-- 稳定性测试：`pnpm run stability`
 
 ## 最小可运行示例
 
@@ -106,18 +105,6 @@ Remotion 渲染需要 Chromium 内核浏览器。默认自动探测：
 ```bash
 pnpm run dev -- --input tests --mode template --browser-executable "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 ```
-
-## 稳定性测试
-
-```bash
-bash tests/stability-run.sh tests
-```
-
-可通过环境变量指定次数和浏览器：
-- `LIHUACAT_STABILITY_RUNS`
-- `LIHUACAT_BROWSER_EXECUTABLE`
-
-说明：稳定性脚本运行时同样需要 TTY 终端。
 
 ## 故障排查
 

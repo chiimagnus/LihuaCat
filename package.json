@@ -8,8 +8,7 @@
     "dev": "node --experimental-strip-types src/index.ts",
     "start": "node --experimental-strip-types src/index.ts",
     "test": "node tests/run-tests.mjs",
-    "build": "tsc -p tsconfig.json",
-    "stability": "bash tests/stability-run.sh tests"
+    "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@clack/prompts": "^1.0.0",

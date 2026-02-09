@@ -4,7 +4,7 @@
 本仓库为单包结构，不再使用 `pnpm workspace` 或 `packages/`。
 
 - `src/`：核心代码（CLI 入口、业务编排、领域能力、模板渲染）。
-- `tests/`：所有测试与测试脚本（含稳定性脚本与示例图片夹具）。
+- `tests/`：所有测试与测试脚本（含示例图片夹具）。
 - `.github/docs/`：业务与架构文档。
 - `.github/plans/`：实施计划文档。
 
@@ -22,8 +22,6 @@
   `pnpm run dev -- --input tests --mode template --mock-agent`
 - 指定浏览器可执行文件：
   `pnpm run dev -- --input tests --mode template --browser-executable "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`
-- 稳定性测试（默认 10 次）：
-  `bash tests/stability-run.sh tests`
 
 说明：CLI 现在是纯交互 TUI，要求在 TTY 终端中运行；非 TTY 环境会直接报错退出。参数未提供时会进入对应步骤的交互提问。
 
