@@ -8,7 +8,6 @@ import {
   runStoryWorkflow,
   SourceDirectoryNotFoundError,
   StoryScriptGenerationFailedError,
-  type StoryAgentClient,
   type RenderMode,
 } from "../pipeline.ts";
 import { buildRenderFailureOutput } from "./render-story.error-mapper.ts";
@@ -47,7 +46,6 @@ export const runRenderStoryCommand = async ({
   const browserExecutablePath = args.get("browser-executable")
     ? path.resolve(args.get("browser-executable")!)
     : undefined;
-  const useMockAgent = args.has("mock-agent");
   const sourceDirInitial = args.get("input");
   const styleInitial = args.get("style");
   const promptInitial = args.get("prompt");
@@ -60,16 +58,13 @@ export const runRenderStoryCommand = async ({
   }
 
   const ui = tui ?? createClackRenderStoryTui();
-  const storyAgentClient: StoryAgentClient = useMockAgent
-    ? createMockStoryAgentClient()
-    : createCodexStoryAgentClient({
-      model,
-      modelReasoningEffort: resolvedReasoningEffort,
-      workingDirectory: process.cwd(),
-    });
+  const storyAgentClient = createCodexStoryAgentClient({
+    model,
+    modelReasoningEffort: resolvedReasoningEffort,
+    workingDirectory: process.cwd(),
+  });
 
   ui.intro({
-    useMockAgent,
     model,
     reasoningEffort: resolvedReasoningEffort,
   });
@@ -178,53 +173,4 @@ const resolveInputPath = (input: string): string => {
     return path.resolve(initCwd, input);
   }
   return path.resolve(process.cwd(), input);
-};
-
-const createMockStoryAgentClient = (): StoryAgentClient => {
-  return {
-    async generateStoryScript(request) {
-      const assetCount = request.assets.length;
-      const base = Math.floor(request.constraints.durationSec / assetCount);
-      const remainder = request.constraints.durationSec - base * assetCount;
-
-      let cursor = 0;
-      const timeline = request.assets.map((asset, index) => {
-        const extra = index === request.assets.length - 1 ? remainder : 0;
-        const duration = base + extra;
-        const item = {
-          assetId: asset.id,
-          startSec: cursor,
-          endSec: cursor + duration,
-          subtitleId: `sub_${String(index + 1).padStart(3, "0")}`,
-        };
-        cursor += duration;
-        return item;
-      });
-
-      const subtitles = timeline.map((item, index) => ({
-        id: item.subtitleId,
-        text: `Scene ${index + 1} in ${request.style.preset} style`,
-        startSec: item.startSec,
-        endSec: item.endSec,
-      }));
-
-      return {
-        version: "1.0",
-        input: {
-          sourceDir: request.sourceDir,
-          imageCount: assetCount,
-          assets: request.assets,
-        },
-        video: {
-          width: 1080,
-          height: 1920,
-          fps: 30,
-          durationSec: request.constraints.durationSec,
-        },
-        style: request.style,
-        timeline,
-        subtitles,
-      };
-    },
-  };
 };

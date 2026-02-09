@@ -18,8 +18,8 @@
 - 开发态运行 CLI：`pnpm run dev --`
 - 指定模型与推理强度：
   `pnpm run dev -- --input tests --model gpt-5.1-codex-mini --model-reasoning-effort medium`
-- 快速运行（mock agent）：
-  `pnpm run dev -- --input tests --mode template --mock-agent`
+- 快速运行：
+  `pnpm run dev -- --input tests --mode template`
 - 指定浏览器可执行文件：
   `pnpm run dev -- --input tests --mode template --browser-executable "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`
 

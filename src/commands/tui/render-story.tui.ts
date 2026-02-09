@@ -17,7 +17,6 @@ import type {
 } from "../../pipeline.ts";
 
 export type RenderStoryTuiIntroInput = {
-  useMockAgent: boolean;
   model: string;
   reasoningEffort: "minimal" | "low" | "medium" | "high" | "xhigh";
 };
@@ -68,10 +67,6 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
   return {
     intro(input) {
       intro("LihuaCat ▸ 创建故事视频");
-      if (input.useMockAgent) {
-        log.info("使用 mock agent（不调用 Codex）");
-        return;
-      }
       log.info(`Codex model: ${input.model} · reasoning: ${input.reasoningEffort}`);
     },
 

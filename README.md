@@ -58,7 +58,6 @@ CLI 仅支持交互式 TTY 终端；在非交互环境（如管道、重定向�
 - `--mode <template|ai_code>`: 预设首轮渲染模式（跳过该步选择）
 - `--mode-sequence <m1,m2,...>`: 预设多轮模式序列（用于失败重试回合）
 - `--browser-executable <path>`: 指定浏览器可执行文件路径
-- `--mock-agent`: 使用 mock 脚本生成（不调用 Codex）
 - `--model <name>`: 覆盖 Codex 模型名
 - `--model-reasoning-effort <minimal|low|medium|high|xhigh>`: 覆盖推理强度
 

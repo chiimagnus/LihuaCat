@@ -24,7 +24,7 @@ test("prints key artifact paths on success", async () => {
   const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
-    argv: ["--mock-agent"],
+    argv: [],
     tui,
     workflowImpl: async () => ({
       runId: "run-1",
@@ -47,7 +47,7 @@ test("prints key artifact paths on success", async () => {
   assert.equal(state.failedLines.length, 0);
 });
 
-test("prints selected Codex model info when using real agent", async () => {
+test("prints selected Codex model info", async () => {
   const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
@@ -71,7 +71,6 @@ test("prints selected Codex model info when using real agent", async () => {
   });
 
   assert.equal(exitCode, 0);
-  assert.equal(state.introInput?.useMockAgent, false);
   assert.equal(state.introInput?.model, "gpt-5.1-codex-mini");
   assert.equal(state.introInput?.reasoningEffort, "medium");
 });
@@ -107,7 +106,7 @@ test("prints readable failure reason", async () => {
   const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
-    argv: ["--mock-agent"],
+    argv: [],
     tui,
     workflowImpl: async () => {
       throw new Error("template render failed: composition missing");
@@ -123,7 +122,7 @@ test("prints generation failure details when story script retries are exhausted"
   const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
-    argv: ["--mock-agent"],
+    argv: [],
     tui,
     workflowImpl: async () => {
       throw new StoryScriptGenerationFailedError(3, [
@@ -144,7 +143,7 @@ test("prints input tip when source directory path is invalid", async () => {
   const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
-    argv: ["--mock-agent"],
+    argv: [],
     tui,
     workflowImpl: async () => {
       throw new SourceDirectoryNotFoundError("/tmp/a.jpg /tmp/b.jpg");
@@ -160,7 +159,7 @@ test("forwards workflow progress events to tui layer", async () => {
   const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
-    argv: ["--mock-agent"],
+    argv: [],
     tui,
     workflowImpl: async ({ onProgress }) => {
       await onProgress?.({
@@ -192,7 +191,7 @@ test("fails fast when terminal is not interactive", async () => {
   const err = createBufferWriter();
 
   const exitCode = await runRenderStoryCommand({
-    argv: ["--mock-agent"],
+    argv: [],
     stderr: err,
     isInteractiveTerminal: () => false,
   });
