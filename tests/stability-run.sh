@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  echo "Usage: bash scripts/stability-run.sh <photos-dir>"
+  echo "Usage: bash tests/stability-run.sh <photos-dir>"
   exit 1
 fi
 
@@ -19,7 +19,7 @@ FAILURE_LOG=""
 BROWSER_EXECUTABLE="${LIHUACAT_BROWSER_EXECUTABLE:-}"
 
 for ((i=1; i<=RUNS; i++)); do
-  CMD=(pnpm --filter @lihuacat/story-console dev -- --input "$PHOTOS_DIR" --style healing --mode template --mock-agent)
+  CMD=(pnpm run dev -- --input "$PHOTOS_DIR" --style healing --mode template --mock-agent)
   if [[ -n "$BROWSER_EXECUTABLE" ]]; then
     CMD+=(--browser-executable "$BROWSER_EXECUTABLE")
   fi

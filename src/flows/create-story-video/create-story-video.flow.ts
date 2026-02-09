@@ -3,10 +3,10 @@ import type {
   StoryAgentClient,
   RenderMode,
   WorkflowProgressEvent,
-} from "../../../../story-pipeline/src/index.ts";
+} from "../../pipeline.ts";
 import {
   runStoryWorkflow,
-} from "../../../../story-pipeline/src/index.ts";
+} from "../../pipeline.ts";
 
 export type CreateStoryVideoPromptAdapter = {
   askSourceDir: () => Promise<string>;

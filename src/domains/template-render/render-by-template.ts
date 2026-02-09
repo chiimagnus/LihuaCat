@@ -117,7 +117,7 @@ const defaultTemplateRenderAdapter = async ({
 
 const templateEntryPointPath = fileURLToPath(
   new URL(
-    "../../../../story-video/src/story-template/remotion-template.entry.tsx",
+    "../../story-template/remotion-template.entry.tsx",
     import.meta.url,
   ),
 );

@@ -11,7 +11,7 @@ import {
   StoryScriptGenerationFailedError,
   type StoryAgentClient,
   type RenderMode,
-} from "../../../story-pipeline/src/index.ts";
+} from "../pipeline.ts";
 import { buildRenderFailureOutput } from "./render-story.error-mapper.ts";
 
 type LogWriter = {

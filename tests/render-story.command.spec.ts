@@ -5,7 +5,7 @@ import { runRenderStoryCommand } from "../src/commands/render-story.command.ts";
 import {
   SourceDirectoryNotFoundError,
   StoryScriptGenerationFailedError,
-} from "../../story-pipeline/src/index.ts";
+} from "../src/pipeline.ts";
 
 test("prints key artifact paths on success", async () => {
   const out = createBufferWriter();

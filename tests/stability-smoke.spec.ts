@@ -4,9 +4,9 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 test("stability script prints summary format", async () => {
-  const repoRoot = path.resolve(import.meta.dirname, "../../../");
-  const scriptPath = path.join(repoRoot, "scripts/stability-run.sh");
-  const fixtureDir = path.join(repoRoot, "scripts/fixtures/photos");
+  const repoRoot = path.resolve(import.meta.dirname, "..");
+  const scriptPath = path.join(repoRoot, "tests/stability-run.sh");
+  const fixtureDir = path.join(repoRoot, "tests");
 
   const result = await runCommand("bash", [scriptPath, fixtureDir], {
     cwd: repoRoot,
