@@ -8,10 +8,10 @@
     "dev": "node --experimental-strip-types src/index.ts",
     "start": "node --experimental-strip-types src/index.ts",
     "test": "node tests/run-tests.mjs",
-    "build": "tsc -p tsconfig.json",
-    "stability": "bash tests/stability-run.sh tests"
+    "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@clack/prompts": "^1.0.0",
     "@openai/codex-sdk": "^0.98.0",
     "@remotion/bundler": "^4.0.419",
     "@remotion/renderer": "^4.0.343",
