@@ -214,7 +214,7 @@ Expected: PASS
 
 ### P3：文档与回归收口
 
-### Task 6: 输出“重构后代码导读”与原则落地说明
+### ✅Task 6: 输出“重构后代码导读”与原则落地说明
 
 **Files:**
 - Modify: `.github/docs/business-logic.md`
