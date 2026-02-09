@@ -147,6 +147,9 @@ lihuacat/
   - AI 代码模式生成目录：`generated-remotion/`
 - CLI 命令（开发态）：
   - `pnpm --filter @lihuacat/story-console dev -- --input <dir> --mode template --mock-agent`
+- 一键启动（根脚本）：
+  - `pnpm run build` / `npm run build`（先构建再启动主流程）
+  - `pnpm run start` / `npm run start`（直接启动主流程）
 - 稳定性脚本：
   - `scripts/stability-run.sh`
 

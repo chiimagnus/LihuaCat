@@ -14,7 +14,9 @@
 ## 构建、测试和开发命令
 - 安装依赖：`pnpm install`
 - 全量测试：`pnpm -r test`
-- 全量构建：`pnpm -r build`
+- 仅全量构建（workspace）：`pnpm -r build`
+- 一键构建并启动主流程（根脚本）：`pnpm run build` 或 `npm run build`
+- 仅启动主流程（不重新构建）：`pnpm run start` 或 `npm run start`
 - 运行 CLI（开发态）：  
   `pnpm --filter @lihuacat/story-console dev --`
 - 非交互测试（mock agent）：  
