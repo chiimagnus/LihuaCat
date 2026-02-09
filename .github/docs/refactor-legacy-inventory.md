@@ -11,9 +11,9 @@
 
 ## A. 可直接删除（Delete Now）
 
-| Item | Path | Reason | Replacement | Owner Stage |
+| Item | Path | Reason | Replacement | Owner Stage | Status |
 |---|---|---|---|---|
-| 未被引用的包装层 | `packages/story-console/src/flows/create-story-video/use-create-story-video.ts` | 仅转发 `createStoryVideoFlow`，全仓库无调用 | 直接调用 `createStoryVideoFlow` | P1 Task 1 |
+| 未被引用的包装层 | `packages/story-console/src/flows/create-story-video/use-create-story-video.ts` | 仅转发 `createStoryVideoFlow`，全仓库无调用 | 直接调用 `createStoryVideoFlow` | P1 Task 1 | Done（2026-02-09） |
 
 ## B. 迁移后删除（Delete After Migration）
 
@@ -51,4 +51,3 @@
 - 引用扫描：每次删除后运行 `rg` 检查是否存在悬空 import/符号。
 - 测试归属：删除旧实现时同步删除旧测试或迁移断言。
 - 命名约束：不允许遗留 `legacy`/`deprecated` 命名模块跨任务存活。
-

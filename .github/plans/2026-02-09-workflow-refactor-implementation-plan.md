@@ -64,7 +64,7 @@ Expected: 匹配仅出现在 `.github/docs/refactor-legacy-inventory.md` 或明�
 
 ---
 
-### Task 1: 建立新架构契约测试（不依赖旧实现）
+### ✅Task 1: 建立新架构契约测试（不依赖旧实现）
 
 **Files:**
 - Modify: `packages/story-pipeline/src/workflow/start-story-run.e2e.spec.ts`
@@ -92,7 +92,7 @@ Expected: PASS
 
 ---
 
-### Task 2: 提取工作流端口与上下文并删除旧同位逻辑（DIP + ISP）
+### ✅Task 2: 提取工作流端口与上下文并删除旧同位逻辑（DIP + ISP）
 
 **Files:**
 - Create: `packages/story-pipeline/src/workflow/workflow-ports.ts`
@@ -123,7 +123,7 @@ Expected: PASS
 
 ---
 
-### Task 3: 按业务阶段拆文件并切断旧入口（SoC + SRP + Single Level of Abstraction）
+### ✅Task 3: 按业务阶段拆文件并切断旧入口（SoC + SRP + Single Level of Abstraction）
 
 **Files:**
 - Create: `packages/story-pipeline/src/workflow/stages/collect-images.stage.ts`
