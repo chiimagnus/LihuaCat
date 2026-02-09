@@ -6,15 +6,18 @@ import {
   SourceDirectoryNotFoundError,
   StoryScriptGenerationFailedError,
 } from "../src/pipeline.ts";
+import type {
+  RenderStoryTui,
+  RenderStoryTuiIntroInput,
+} from "../src/commands/tui/render-story.tui.ts";
+import type { WorkflowProgressEvent } from "../src/workflow/workflow-events.ts";
 
 test("prints key artifact paths on success", async () => {
-  const out = createBufferWriter();
-  const err = createBufferWriter();
+  const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
-    argv: ["--input", "/tmp/photos", "--mock-agent"],
-    stdout: out,
-    stderr: err,
+    argv: ["--mock-agent"],
+    tui,
     workflowImpl: async () => ({
       runId: "run-1",
       outputDir: "/tmp/photos/lihuacat-output/run-1",
@@ -27,15 +30,17 @@ test("prints key artifact paths on success", async () => {
   });
 
   assert.equal(exitCode, 0);
-  assert.match(out.content(), /videoPath:/);
-  assert.match(out.content(), /storyScriptPath:/);
-  assert.match(out.content(), /runLogPath:/);
-  assert.equal(err.content(), "");
+  assert.equal(state.completedSummary?.videoPath, "/tmp/photos/lihuacat-output/run-1/video.mp4");
+  assert.equal(
+    state.completedSummary?.storyScriptPath,
+    "/tmp/photos/lihuacat-output/run-1/story-script.json",
+  );
+  assert.equal(state.completedSummary?.runLogPath, "/tmp/photos/lihuacat-output/run-1/run.log");
+  assert.equal(state.failedLines.length, 0);
 });
 
 test("prints selected Codex model info when using real agent", async () => {
-  const out = createBufferWriter();
-  const err = createBufferWriter();
+  const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
     argv: [
@@ -46,8 +51,7 @@ test("prints selected Codex model info when using real agent", async () => {
       "--model-reasoning-effort",
       "medium",
     ],
-    stdout: out,
-    stderr: err,
+    tui,
     workflowImpl: async () => ({
       runId: "run-model-info",
       outputDir: "/tmp/photos/lihuacat-output/run-model-info",
@@ -59,16 +63,13 @@ test("prints selected Codex model info when using real agent", async () => {
   });
 
   assert.equal(exitCode, 0);
-  assert.match(
-    out.content(),
-    /\[info\] Using Codex model: gpt-5\.1-codex-mini \(reasoning: medium\)/,
-  );
-  assert.equal(err.content(), "");
+  assert.equal(state.introInput?.useMockAgent, false);
+  assert.equal(state.introInput?.model, "gpt-5.1-codex-mini");
+  assert.equal(state.introInput?.reasoningEffort, "medium");
 });
 
 test("accepts xhigh reasoning effort and prints it in model info", async () => {
-  const out = createBufferWriter();
-  const err = createBufferWriter();
+  const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
     argv: [
@@ -79,8 +80,7 @@ test("accepts xhigh reasoning effort and prints it in model info", async () => {
       "--model-reasoning-effort",
       "xhigh",
     ],
-    stdout: out,
-    stderr: err,
+    tui,
     workflowImpl: async () => ({
       runId: "run-model-xhigh",
       outputDir: "/tmp/photos/lihuacat-output/run-model-xhigh",
@@ -92,39 +92,31 @@ test("accepts xhigh reasoning effort and prints it in model info", async () => {
   });
 
   assert.equal(exitCode, 0);
-  assert.match(
-    out.content(),
-    /\[info\] Using Codex model: gpt-5\.1-codex-mini \(reasoning: xhigh\)/,
-  );
-  assert.equal(err.content(), "");
+  assert.equal(state.introInput?.reasoningEffort, "xhigh");
 });
 
 test("prints readable failure reason", async () => {
-  const out = createBufferWriter();
-  const err = createBufferWriter();
+  const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
-    argv: ["--input", "/tmp/photos", "--mock-agent"],
-    stdout: out,
-    stderr: err,
+    argv: ["--mock-agent"],
+    tui,
     workflowImpl: async () => {
       throw new Error("template render failed: composition missing");
     },
   });
 
   assert.equal(exitCode, 1);
-  assert.match(err.content(), /Render failed:/);
-  assert.match(err.content(), /template render failed/);
+  assert.match(state.failedLines.join("\n"), /Render failed:/);
+  assert.match(state.failedLines.join("\n"), /template render failed/);
 });
 
 test("prints generation failure details when story script retries are exhausted", async () => {
-  const out = createBufferWriter();
-  const err = createBufferWriter();
+  const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
-    argv: ["--input", "/tmp/photos", "--mock-agent"],
-    stdout: out,
-    stderr: err,
+    argv: ["--mock-agent"],
+    tui,
     workflowImpl: async () => {
       throw new StoryScriptGenerationFailedError(3, [
         "attempt 1: missing codex auth",
@@ -135,37 +127,33 @@ test("prints generation failure details when story script retries are exhausted"
   });
 
   assert.equal(exitCode, 1);
-  assert.match(err.content(), /Story script generation failure details:/);
-  assert.match(err.content(), /attempt 1: missing codex auth/);
-  assert.match(err.content(), /attempt 3: timeline duration mismatch/);
+  assert.match(state.failedLines.join("\n"), /Story script generation failure details:/);
+  assert.match(state.failedLines.join("\n"), /attempt 1: missing codex auth/);
+  assert.match(state.failedLines.join("\n"), /attempt 3: timeline duration mismatch/);
 });
 
 test("prints input tip when source directory path is invalid", async () => {
-  const out = createBufferWriter();
-  const err = createBufferWriter();
+  const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
-    argv: ["--input", "/tmp/a.jpg /tmp/b.jpg", "--mock-agent"],
-    stdout: out,
-    stderr: err,
+    argv: ["--mock-agent"],
+    tui,
     workflowImpl: async () => {
       throw new SourceDirectoryNotFoundError("/tmp/a.jpg /tmp/b.jpg");
     },
   });
 
   assert.equal(exitCode, 1);
-  assert.match(err.content(), /Expected one directory path/);
-  assert.match(err.content(), /Input tip:/);
+  assert.match(state.failedLines.join("\n"), /Expected one directory path/);
+  assert.match(state.failedLines.join("\n"), /Input tip:/);
 });
 
-test("prints workflow progress events", async () => {
-  const out = createBufferWriter();
-  const err = createBufferWriter();
+test("forwards workflow progress events to tui layer", async () => {
+  const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
-    argv: ["--input", "/tmp/photos", "--mock-agent"],
-    stdout: out,
-    stderr: err,
+    argv: ["--mock-agent"],
+    tui,
     workflowImpl: async ({ onProgress }) => {
       await onProgress?.({
         stage: "collect_images_start",
@@ -187,10 +175,91 @@ test("prints workflow progress events", async () => {
   });
 
   assert.equal(exitCode, 0);
-  assert.match(out.content(), /\[progress\] Collecting images from input directory/);
-  assert.match(out.content(), /\[progress\] Generating story script with Codex/);
-  assert.equal(err.content(), "");
+  assert.equal(state.progressEvents.length, 2);
+  assert.equal(state.progressEvents[0]?.stage, "collect_images_start");
+  assert.equal(state.progressEvents[1]?.stage, "generate_script_start");
 });
+
+test("fails fast when terminal is not interactive", async () => {
+  const out = createBufferWriter();
+  const err = createBufferWriter();
+
+  const exitCode = await runRenderStoryCommand({
+    argv: ["--mock-agent"],
+    stdout: out,
+    stderr: err,
+    isInteractiveTerminal: () => false,
+  });
+
+  assert.equal(exitCode, 1);
+  assert.match(err.content(), /requires a TTY terminal/);
+  assert.equal(out.content(), "");
+});
+
+const createMockTui = (): {
+  tui: RenderStoryTui;
+  state: {
+    introInput?: RenderStoryTuiIntroInput;
+    progressEvents: WorkflowProgressEvent[];
+    failedLines: string[];
+    completedSummary?: {
+      mode: string;
+      videoPath: string;
+      storyScriptPath: string;
+      runLogPath: string;
+      generatedCodePath?: string;
+      errorLogPath?: string;
+    };
+  };
+} => {
+  const state: {
+    introInput?: RenderStoryTuiIntroInput;
+    progressEvents: WorkflowProgressEvent[];
+    failedLines: string[];
+    completedSummary?: {
+      mode: string;
+      videoPath: string;
+      storyScriptPath: string;
+      runLogPath: string;
+      generatedCodePath?: string;
+      errorLogPath?: string;
+    };
+  } = {
+    progressEvents: [],
+    failedLines: [],
+  };
+
+  const tui: RenderStoryTui = {
+    intro(input) {
+      state.introInput = input;
+    },
+    async askSourceDir() {
+      return "/tmp/photos";
+    },
+    async askStylePreset() {
+      return "healing";
+    },
+    async askPrompt() {
+      return "";
+    },
+    async chooseRenderMode() {
+      return "template";
+    },
+    onWorkflowProgress(event) {
+      state.progressEvents.push(event);
+    },
+    complete(summary) {
+      state.completedSummary = summary;
+    },
+    fail(lines) {
+      state.failedLines = [...lines];
+    },
+    close() {
+      // no-op for tests
+    },
+  };
+  return { tui, state };
+};
 
 const createBufferWriter = () => {
   const chunks: string[] = [];

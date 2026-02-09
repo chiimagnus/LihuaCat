@@ -18,12 +18,14 @@
 - 开发态运行 CLI：`pnpm run dev --`
 - 指定模型与推理强度：
   `pnpm run dev -- --input tests --model gpt-5.1-codex-mini --model-reasoning-effort medium`
-- 非交互测试（mock agent）：
+- 快速运行（mock agent）：
   `pnpm run dev -- --input tests --mode template --mock-agent`
 - 指定浏览器可执行文件：
   `pnpm run dev -- --input tests --mode template --browser-executable "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`
 - 稳定性测试（默认 10 次）：
   `bash tests/stability-run.sh tests`
+
+说明：CLI 现在是纯交互 TUI，要求在 TTY 终端中运行；非 TTY 环境会直接报错退出。
 
 默认模型配置（真实链路）：
 - model：`gpt-5.1-codex-mini`

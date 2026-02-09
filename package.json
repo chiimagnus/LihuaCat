@@ -12,6 +12,7 @@
     "stability": "bash tests/stability-run.sh tests"
   },
   "dependencies": {
+    "@clack/prompts": "^1.0.0",
     "@openai/codex-sdk": "^0.98.0",
     "@remotion/bundler": "^4.0.419",
     "@remotion/renderer": "^4.0.343",

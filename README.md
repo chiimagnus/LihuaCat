@@ -45,9 +45,11 @@ pnpm run dev -- --input /ABS/PATH/TO/PHOTOS
 
 运行后会按顺序询问：
 1. 图片目录路径
-2. 风格 preset
+2. 风格 preset（方向键选择，支持 custom）
 3. 可选补充描述
-4. 渲染模式选择（`template` / `ai_code` / `exit`）
+4. 渲染模式选择（方向键：`template` / `ai_code` / `exit`）
+
+CLI 仅支持交互式 TTY 终端；在非交互环境（如管道、重定向、CI 非 TTY）会直接报错退出。
 
 ## CLI 参数
 
@@ -65,8 +67,7 @@ pnpm run dev -- --input /ABS/PATH/TO/PHOTOS
 - model: `gpt-5.1-codex-mini`
 - reasoning effort: `medium`
 
-CLI 在真实模式下会打印：
-`[info] Using Codex model: ... (reasoning: ...)`
+CLI 在真实模式下会显示模型信息与阶段进度（spinner + 成功/失败确认行）。
 
 ## 输入规则与限制
 

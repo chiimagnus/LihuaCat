@@ -32,9 +32,5 @@ export const buildRenderFailureOutput = ({
     );
   }
 
-  if (error instanceof Error && error.stack) {
-    lines.push(error.stack);
-  }
-
   return { lines };
 };

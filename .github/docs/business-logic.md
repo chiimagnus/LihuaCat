@@ -20,6 +20,7 @@ LihuaCat 是本地优先的「图片 -> 故事短视频」生成工具。核心�
 - 入口：`src/index.ts`
 - 命令层：`src/commands/render-story.command.ts`
 - 错误映射：`src/commands/render-story.error-mapper.ts`
+- TUI 适配：`src/commands/tui/render-story.tui.ts`（`@clack/prompts`）
 - 交互流程：`src/flows/create-story-video/create-story-video.flow.ts`
 
 ### Pipeline 编排核心

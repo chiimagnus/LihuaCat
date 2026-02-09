@@ -1,5 +1,4 @@
 import path from "node:path";
-import { createInterface } from "node:readline/promises";
 
 import { createStoryVideoFlow } from "../flows/create-story-video/create-story-video.flow.ts";
 import {
@@ -13,17 +12,14 @@ import {
   type RenderMode,
 } from "../pipeline.ts";
 import { buildRenderFailureOutput } from "./render-story.error-mapper.ts";
+import {
+  createClackRenderStoryTui,
+  type RenderStoryTui,
+  TuiCancelledError,
+} from "./tui/render-story.tui.ts";
 
 type LogWriter = {
   write: (chunk: string) => void;
-};
-
-type PromptSession = {
-  askSourceDir: () => Promise<string>;
-  askStylePreset: () => Promise<string>;
-  askPrompt: () => Promise<string>;
-  askRenderMode: (state: { lastFailure?: { mode: RenderMode; reason: string } }) => Promise<RenderMode | "exit">;
-  close: () => void;
 };
 
 export type RunRenderStoryCommandInput = {
@@ -31,6 +27,8 @@ export type RunRenderStoryCommandInput = {
   stdout?: LogWriter;
   stderr?: LogWriter;
   workflowImpl?: typeof runStoryWorkflow;
+  tui?: RenderStoryTui;
+  isInteractiveTerminal?: () => boolean;
 };
 
 export const runRenderStoryCommand = async ({
@@ -38,6 +36,8 @@ export const runRenderStoryCommand = async ({
   stdout = process.stdout,
   stderr = process.stderr,
   workflowImpl = runStoryWorkflow,
+  tui,
+  isInteractiveTerminal = () => Boolean(process.stdin.isTTY && process.stdout.isTTY),
 }: RunRenderStoryCommandInput): Promise<number> => {
   const args = parseArgs(argv);
   const modeSequence = parseModeSequence(args.get("mode-sequence") ?? args.get("mode") ?? "");
@@ -50,6 +50,18 @@ export const runRenderStoryCommand = async ({
     ? path.resolve(args.get("browser-executable")!)
     : undefined;
   const useMockAgent = args.has("mock-agent");
+  const sourceDirInitial = args.get("input");
+  const styleInitial = args.get("style");
+  const promptInitial = args.get("prompt");
+
+  if (!tui && !isInteractiveTerminal()) {
+    stderr.write(
+      "Interactive TUI requires a TTY terminal. Please run this command directly in a terminal session.\n",
+    );
+    return 1;
+  }
+
+  const ui = tui ?? createClackRenderStoryTui();
   const storyAgentClient: StoryAgentClient = useMockAgent
     ? createMockStoryAgentClient()
     : createCodexStoryAgentClient({
@@ -58,63 +70,59 @@ export const runRenderStoryCommand = async ({
       workingDirectory: process.cwd(),
     });
 
-  if (!useMockAgent) {
-    stdout.write(
-      `[info] Using Codex model: ${model} (reasoning: ${resolvedReasoningEffort})\n`,
-    );
-  }
-
-  const promptSession = createPromptSession({ stdout, stderr, args });
+  ui.intro({
+    useMockAgent,
+    model,
+    reasoningEffort: resolvedReasoningEffort,
+  });
 
   try {
     const summary = await createStoryVideoFlow({
       prompts: {
-        askSourceDir: promptSession.askSourceDir,
-        askStylePreset: promptSession.askStylePreset,
-        askPrompt: promptSession.askPrompt,
+        askSourceDir: async () =>
+          resolveInputPath(sourceDirInitial ?? (await ui.askSourceDir())),
+        askStylePreset: async () => {
+          if (styleInitial && styleInitial.trim().length > 0) {
+            return styleInitial.trim();
+          }
+          return ui.askStylePreset();
+        },
+        askPrompt: async () => {
+          if (promptInitial !== undefined) {
+            return promptInitial;
+          }
+          return ui.askPrompt();
+        },
         chooseRenderMode: async (state) => {
           const next = modeSequence.shift();
           if (next) {
             return next;
           }
-          if (!process.stdin.isTTY) {
-            return "exit";
-          }
-          return promptSession.askRenderMode(state);
+          return ui.chooseRenderMode(state);
         },
       },
       storyAgentClient,
       browserExecutablePath,
-      onProgress: (event) => {
-        stdout.write(`[progress] ${event.message}\n`);
-      },
+      onProgress: (event) => ui.onWorkflowProgress(event),
       workflowImpl,
     });
 
-    stdout.write("Story video generated successfully.\n");
-    stdout.write(`mode: ${summary.mode}\n`);
-    stdout.write(`videoPath: ${summary.videoPath}\n`);
-    stdout.write(`storyScriptPath: ${summary.storyScriptPath}\n`);
-    stdout.write(`runLogPath: ${summary.runLogPath}\n`);
-    if (summary.errorLogPath) {
-      stdout.write(`errorLogPath: ${summary.errorLogPath}\n`);
-    }
-    if (summary.generatedCodePath) {
-      stdout.write(`generatedCodePath: ${summary.generatedCodePath}\n`);
-    }
+    ui.complete(summary);
     return 0;
   } catch (error) {
+    if (error instanceof TuiCancelledError) {
+      ui.fail([error.message]);
+      return 1;
+    }
     const output = buildRenderFailureOutput({
       error,
       SourceDirectoryNotFoundErrorClass: SourceDirectoryNotFoundError,
       StoryScriptGenerationFailedErrorClass: StoryScriptGenerationFailedError,
     });
-    for (const line of output.lines) {
-      stderr.write(`${line}\n`);
-    }
+    ui.fail(output.lines);
     return 1;
   } finally {
-    promptSession.close();
+    ui.close();
   }
 };
 
@@ -172,102 +180,6 @@ const resolveInputPath = (input: string): string => {
     return path.resolve(initCwd, input);
   }
   return path.resolve(process.cwd(), input);
-};
-
-const createPromptSession = ({
-  stdout,
-  stderr,
-  args,
-}: {
-  stdout: LogWriter;
-  stderr: LogWriter;
-  args: Map<string, string>;
-}): PromptSession => {
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  const ensureInteractive = () => {
-    if (process.stdin.isTTY) {
-      return;
-    }
-    throw new Error("Missing required CLI options in non-interactive mode. Provide --input/--style/--mode.");
-  };
-
-  const askNonEmpty = async (question: string): Promise<string> => {
-    while (true) {
-      const answer = (await rl.question(question)).trim();
-      if (answer.length > 0) {
-        return answer;
-      }
-      stderr.write("Input cannot be empty. Please retry.\n");
-    }
-  };
-
-  const askSourceDir = async (): Promise<string> => {
-    const fromArgs = args.get("input");
-    if (fromArgs) {
-      return resolveInputPath(fromArgs);
-    }
-    ensureInteractive();
-    const answer = await askNonEmpty("图片目录路径（--input）: ");
-    return resolveInputPath(answer);
-  };
-
-  const askStylePreset = async (): Promise<string> => {
-    const fromArgs = args.get("style");
-    if (fromArgs && fromArgs.trim().length > 0) {
-      return fromArgs.trim();
-    }
-    if (!process.stdin.isTTY) {
-      return "healing";
-    }
-    ensureInteractive();
-    return askNonEmpty("风格 preset（如 healing）: ");
-  };
-
-  const askPrompt = async (): Promise<string> => {
-    const fromArgs = args.get("prompt");
-    if (fromArgs !== undefined) {
-      return fromArgs;
-    }
-    if (!process.stdin.isTTY) {
-      return "";
-    }
-    ensureInteractive();
-    return rl.question("补充描述（可留空）: ");
-  };
-
-  const askRenderMode = async ({
-    lastFailure,
-  }: {
-    lastFailure?: { mode: RenderMode; reason: string };
-  }): Promise<RenderMode | "exit"> => {
-    ensureInteractive();
-    if (lastFailure) {
-      stdout.write(
-        `上一轮失败 mode=${lastFailure.mode}\nreason=${lastFailure.reason}\n`,
-      );
-    }
-    while (true) {
-      const answer = (await rl.question("请选择渲染模式（template / ai_code / exit）: "))
-        .trim()
-        .toLowerCase();
-      if (answer === "template" || answer === "ai_code" || answer === "exit") {
-        return answer;
-      }
-      stderr.write("无效输入，请输入 template、ai_code 或 exit。\n");
-    }
-  };
-
-  return {
-    askSourceDir,
-    askStylePreset,
-    askPrompt,
-    askRenderMode,
-    close: () => rl.close(),
-  };
 };
 
 const createMockStoryAgentClient = (): StoryAgentClient => {

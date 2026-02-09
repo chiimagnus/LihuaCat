@@ -19,18 +19,17 @@ FAILURE_LOG=""
 BROWSER_EXECUTABLE="${LIHUACAT_BROWSER_EXECUTABLE:-}"
 
 for ((i=1; i<=RUNS; i++)); do
-  CMD=(pnpm run dev -- --input "$PHOTOS_DIR" --style healing --mode template --mock-agent)
+  CMD=(pnpm run dev -- --input "$PHOTOS_DIR" --style healing --prompt "" --mode template --mock-agent)
   if [[ -n "$BROWSER_EXECUTABLE" ]]; then
     CMD+=(--browser-executable "$BROWSER_EXECUTABLE")
   fi
 
-  if OUTPUT=$("${CMD[@]}" 2>&1); then
+  if "${CMD[@]}"; then
     SUCCESS=$((SUCCESS+1))
     echo "[run $i/$RUNS] PASS"
   else
     FAIL=$((FAIL+1))
-    LAST_LINE=$(echo "$OUTPUT" | tail -n 1)
-    FAILURE_LOG="${FAILURE_LOG}[run $i] ${LAST_LINE}"$'\n'
+    FAILURE_LOG="${FAILURE_LOG}[run $i] command exited with non-zero status"$'\n'
     echo "[run $i/$RUNS] FAIL"
   fi
 done
