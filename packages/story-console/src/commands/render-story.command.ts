@@ -6,6 +6,7 @@ import {
   createCodexStoryAgentClient,
   type StoryAgentClient,
 } from "../../../story-pipeline/src/domains/story-script/story-agent.client.ts";
+import { StoryScriptGenerationFailedError } from "../../../story-pipeline/src/domains/story-script/generate-story-script.ts";
 import { runStoryWorkflow } from "../../../story-pipeline/src/workflow/start-story-run.ts";
 import type { RenderMode } from "../../../story-pipeline/src/domains/render-choice/render-choice-machine.ts";
 
@@ -87,6 +88,12 @@ export const runRenderStoryCommand = async ({
     const message = error instanceof Error ? error.message : String(error);
     const stack = error instanceof Error ? error.stack : undefined;
     stderr.write(`Render failed: ${message}\n`);
+    if (error instanceof StoryScriptGenerationFailedError && error.reasons.length > 0) {
+      stderr.write("Story script generation failure details:\n");
+      for (const reason of error.reasons) {
+        stderr.write(`- ${reason}\n`);
+      }
+    }
     if (stack) {
       stderr.write(`${stack}\n`);
     }
