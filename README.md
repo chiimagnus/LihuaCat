@@ -2,28 +2,26 @@
 
 本地优先的「图片 -> 故事短视频」生成工具。
 
-LihuaCat 会在本机完成以下流程：
+LihuaCat 在本机完成以下流程：
 1. 收集图片素材（`jpg`/`jpeg`/`png`）
 2. 使用用户自己的 Codex（ChatGPT 账号）生成结构化故事脚本
-3. 让用户每次都二选一：`template` 或 `ai_code`
+3. 让用户二选一：`template` 或 `ai_code`
 4. 用 Remotion 在本机渲染 `video.mp4`
-5. 输出脚本与分阶段日志，便于复盘和重试
+5. 输出脚本与阶段日志，便于复盘和重试
 
 ## 技术栈
 
 - Node.js（建议 >= 20）
 - TypeScript（ESM）
-- `pnpm workspace`
 - `@openai/codex-sdk`
 - Remotion（`remotion` + `@remotion/bundler` + `@remotion/renderer`）
 
 ## 仓库结构
 
-- `packages/story-pipeline`: 业务编排核心（素材收集、脚本生成、渲染选择、产物发布）
-- `packages/story-console`: CLI/TUI 入口
-- `packages/story-video`: Remotion 模板与组合
-- `scripts`: 稳定性脚本与示例素材
-- `.github/docs`: 需求与业务文档
+- `src`: 单一源码目录（CLI + pipeline + template）
+- `tests`: 所有测试、稳定性脚本和测试夹具
+- `.github/docs`: 业务与架构文档
+- `.github/plans`: 实施计划
 
 ## 安装
 
@@ -33,16 +31,16 @@ pnpm install
 
 ## 常用命令
 
-- 全量测试：`pnpm -r test`
-- 全量构建：`pnpm -r build`
-- 一键构建并启动：`pnpm run build` 或 `npm run build`
-- 仅启动主流程：`pnpm run start` 或 `npm run start`
-- 开发态 CLI：`pnpm --filter @lihuacat/story-console dev --`
+- 全量测试：`pnpm test`
+- 全量构建：`pnpm run build`
+- 启动主流程：`pnpm run start`
+- 开发态 CLI：`pnpm run dev --`
+- 稳定性测试：`pnpm run stability`
 
 ## 最小可运行示例
 
 ```bash
-pnpm --filter @lihuacat/story-console dev -- --input /ABS/PATH/TO/PHOTOS
+pnpm run dev -- --input /ABS/PATH/TO/PHOTOS
 ```
 
 运行后会按顺序询问：
@@ -63,7 +61,7 @@ pnpm --filter @lihuacat/story-console dev -- --input /ABS/PATH/TO/PHOTOS
 - `--model <name>`: 覆盖 Codex 模型名
 - `--model-reasoning-effort <minimal|low|medium|high|xhigh>`: 覆盖推理强度
 
-当前项目默认（不传时）为：
+当前默认（不传时）：
 - model: `gpt-5.1-codex-mini`
 - reasoning effort: `medium`
 
@@ -105,13 +103,13 @@ Remotion 渲染需要 Chromium 内核浏览器。默认自动探测：
 也可显式指定：
 
 ```bash
-pnpm --filter @lihuacat/story-console dev -- --input scripts/fixtures/photos --browser-executable "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+pnpm run dev -- --input tests --mode template --browser-executable "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 ```
 
 ## 稳定性测试
 
 ```bash
-bash scripts/stability-run.sh scripts/fixtures/photos
+bash tests/stability-run.sh tests
 ```
 
 可通过环境变量指定次数和浏览器：
@@ -120,8 +118,8 @@ bash scripts/stability-run.sh scripts/fixtures/photos
 
 ## 故障排查
 
-- 报错 `Source directory does not exist ...`：`--input` 必须是一个目录，不是多个文件路径
-- 报错 `Unsupported image format ...`：目录中有非 `jpg/jpeg/png` 图片
+- 报错 `Source directory does not exist ...`：`--input` 必须是目录，不是多个文件路径
+- 报错 `Unsupported image format ...`：目录中有不支持格式图片
 - 报错浏览器启动失败：安装 Chrome/Edge/Arc/Brave 或使用 `--browser-executable`
 - 报错脚本生成失败：检查 Codex 登录状态与模型参数，查看 `error.log`
 
