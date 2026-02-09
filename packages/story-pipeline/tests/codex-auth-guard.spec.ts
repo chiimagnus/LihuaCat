@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   assertCodexCliAuthenticated,
   CodexAuthMissingError,
-} from "./codex-auth-guard.ts";
+} from "../src/domains/story-script/codex-auth-guard.ts";
 
 test("passes when auth file exists", async () => {
   await assert.doesNotReject(

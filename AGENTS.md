@@ -59,7 +59,7 @@
 
 ## 测试指南
 - 测试框架使用 Node 内置 test runner。
-- `story-pipeline` 与 `story-console` 通过各自 `scripts/run-tests.mjs` 发现并执行测试。
+- `story-pipeline`、`story-console` 与 `story-video` 通过各自 `tests/run-tests.mjs` 发现并执行测试。
 - 测试命名建议：`<feature>.spec.ts`，覆盖成功路径、失败路径与边界条件。
 - 对关键流程（渲染选择循环、脚本语义约束）必须有回归测试。
 

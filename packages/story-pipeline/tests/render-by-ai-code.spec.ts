@@ -4,8 +4,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { renderByAiCode } from "./render-by-ai-code.ts";
-import type { StoryScript } from "../../contracts/story-script.types.ts";
+import { renderByAiCode } from "../src/domains/ai-code-render/render-by-ai-code.ts";
+import type { StoryScript } from "../src/contracts/story-script.types.ts";
 
 test("generates code into output directory and renders successfully", async () => {
   await withTempDir(async (outputDir) => {

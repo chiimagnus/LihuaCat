@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createStoryVideoFlow } from "./create-story-video.flow.ts";
+import { createStoryVideoFlow } from "../src/flows/create-story-video/create-story-video.flow.ts";
 
 test("flow asks input, style, prompt then enters render mode selection", async () => {
   const steps: string[] = [];

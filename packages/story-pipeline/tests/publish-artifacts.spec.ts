@@ -4,8 +4,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { publishArtifacts } from "./publish-artifacts.ts";
-import type { StoryScript } from "../../contracts/story-script.types.ts";
+import { publishArtifacts } from "../src/domains/artifact-publish/publish-artifacts.ts";
+import type { StoryScript } from "../src/contracts/story-script.types.ts";
 
 test("publishes artifacts and returns summary with key paths", async () => {
   await withTempDir(async (outputDir) => {

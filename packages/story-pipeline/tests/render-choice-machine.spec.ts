@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { RenderChoiceMachine } from "./render-choice-machine.ts";
+import { RenderChoiceMachine } from "../src/domains/render-choice/render-choice-machine.ts";
 
 test("each round starts with selecting a render mode", () => {
   const machine = new RenderChoiceMachine();

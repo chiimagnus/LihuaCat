@@ -4,8 +4,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { runStoryWorkflow } from "./start-story-run.ts";
-import type { StoryScript } from "../contracts/story-script.types.ts";
+import { runStoryWorkflow } from "../src/workflow/start-story-run.ts";
+import type { StoryScript } from "../src/contracts/story-script.types.ts";
 
 test("workflow loops back to selection after AI code failure and ends on template success", async () => {
   await withTempDir(async (sourceDir) => {

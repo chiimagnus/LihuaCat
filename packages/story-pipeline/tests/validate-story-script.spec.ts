@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { validateStoryScriptStructure } from "./validate-story-script.ts";
-import { validateStoryScriptSemantics } from "./validate-story-script.semantics.ts";
-import type { StoryScript } from "../../contracts/story-script.types.ts";
+import { validateStoryScriptStructure } from "../src/domains/story-script/validate-story-script.ts";
+import { validateStoryScriptSemantics } from "../src/domains/story-script/validate-story-script.semantics.ts";
+import type { StoryScript } from "../src/contracts/story-script.types.ts";
 
 test("structure validation fails when required fields are missing", () => {
   const result = validateStoryScriptStructure({});

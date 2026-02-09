@@ -4,8 +4,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { renderByTemplate, TemplateRenderError } from "./render-by-template.ts";
-import type { StoryScript } from "../../contracts/story-script.types.ts";
+import { renderByTemplate, TemplateRenderError } from "../src/domains/template-render/render-by-template.ts";
+import type { StoryScript } from "../src/contracts/story-script.types.ts";
 
 test("template render consumes story-script and produces video file", async () => {
   await withTempDir(async (outputDir) => {

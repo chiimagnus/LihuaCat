@@ -3,7 +3,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 
 const args = process.argv.slice(2);
-const files = args.length > 0 ? args : findSpecFiles(path.resolve("src"));
+const files = args.length > 0 ? args : findSpecFiles(path.resolve("tests"));
 
 if (files.length === 0) {
   console.log("No test files found.");

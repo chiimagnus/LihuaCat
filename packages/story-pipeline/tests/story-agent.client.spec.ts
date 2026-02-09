@@ -5,7 +5,7 @@ import {
   createCodexStoryAgentClient,
   StoryAgentResponseParseError,
   type GenerateStoryScriptRequest,
-} from "./story-agent.client.ts";
+} from "../src/domains/story-script/story-agent.client.ts";
 
 test("calls Codex SDK with model override and parses JSON result", async () => {
   const calls: {

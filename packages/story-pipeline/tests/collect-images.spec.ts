@@ -4,13 +4,13 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { collectImages } from "./collect-images.ts";
+import { collectImages } from "../src/domains/material-intake/collect-images.ts";
 import {
   NoSupportedImagesError,
   SourceDirectoryNotFoundError,
   TooManyImagesError,
   UnsupportedImageFormatError,
-} from "./material-intake.errors.ts";
+} from "../src/domains/material-intake/material-intake.errors.ts";
 
 test("throws when source directory is missing", async () => {
   await assert.rejects(

@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createDefaultStoryTemplateProps } from "./StoryComposition.schema.ts";
+import { createDefaultStoryTemplateProps } from "../src/story-template/StoryComposition.schema.ts";
 import {
   buildTemplateSequences,
   secondsToFrames,
-} from "./StoryComposition.logic.ts";
+} from "../src/story-template/StoryComposition.logic.ts";
 
 test("secondsToFrames keeps at least 1 frame", () => {
   assert.equal(secondsToFrames(0, 30), 1);

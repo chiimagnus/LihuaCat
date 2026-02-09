@@ -4,9 +4,9 @@ import assert from "node:assert/strict";
 import {
   generateStoryScript,
   StoryScriptGenerationFailedError,
-} from "./generate-story-script.ts";
-import type { StoryAgentClient } from "./story-agent.client.ts";
-import type { StoryScript } from "../../contracts/story-script.types.ts";
+} from "../src/domains/story-script/generate-story-script.ts";
+import type { StoryAgentClient } from "../src/domains/story-script/story-agent.client.ts";
+import type { StoryScript } from "../src/contracts/story-script.types.ts";
 
 test("retries until script becomes valid", async () => {
   const client = new QueueStoryAgentClient([

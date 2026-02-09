@@ -6,7 +6,7 @@ import path from "node:path";
 import {
   BrowserExecutableNotFoundError,
   locateBrowserExecutable,
-} from "./browser-locator.ts";
+} from "../src/domains/template-render/browser-locator.ts";
 
 test("returns preferred executable when provided and existing", async () => {
   const preferred = "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge";
