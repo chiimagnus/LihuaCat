@@ -41,7 +41,7 @@
 
 ### P1（最高优先级）：先清点并删除遗留，再建立新骨架
 
-### Task 0: 建立“遗留代码清理清单”（必须先做）
+### ✅Task 0: 建立“遗留代码清理清单”（必须先做）
 
 **Files:**
 - Create: `.github/docs/refactor-legacy-inventory.md`
@@ -58,9 +58,9 @@
 
 **Step 3: 验证**
 
-Run: `rg -n "TODO|deprecated|legacy|兼容|向后兼容" packages/story-pipeline packages/story-console .github/docs/refactor-legacy-inventory.md`
+Run: `rg -n "legacy|deprecated|向后兼容|兼容层|fallback" packages/story-pipeline packages/story-console packages/story-video .github/docs/refactor-legacy-inventory.md`
 
-Expected: 仅出现清单允许项
+Expected: 匹配仅出现在 `.github/docs/refactor-legacy-inventory.md` 或明确保留说明中
 
 ---
 
