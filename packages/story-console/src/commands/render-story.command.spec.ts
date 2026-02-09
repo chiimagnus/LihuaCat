@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { runRenderStoryCommand } from "./render-story.command.ts";
+import { SourceDirectoryNotFoundError } from "../../../story-pipeline/src/domains/material-intake/material-intake.errors.ts";
 import { StoryScriptGenerationFailedError } from "../../../story-pipeline/src/domains/story-script/generate-story-script.ts";
 
 test("prints key artifact paths on success", async () => {
@@ -69,6 +70,24 @@ test("prints generation failure details when story script retries are exhausted"
   assert.match(err.content(), /Story script generation failure details:/);
   assert.match(err.content(), /attempt 1: missing codex auth/);
   assert.match(err.content(), /attempt 3: timeline duration mismatch/);
+});
+
+test("prints input tip when source directory path is invalid", async () => {
+  const out = createBufferWriter();
+  const err = createBufferWriter();
+
+  const exitCode = await runRenderStoryCommand({
+    argv: ["--input", "/tmp/a.jpg /tmp/b.jpg", "--mock-agent"],
+    stdout: out,
+    stderr: err,
+    workflowImpl: async () => {
+      throw new SourceDirectoryNotFoundError("/tmp/a.jpg /tmp/b.jpg");
+    },
+  });
+
+  assert.equal(exitCode, 1);
+  assert.match(err.content(), /Expected one directory path/);
+  assert.match(err.content(), /Input tip:/);
 });
 
 const createBufferWriter = () => {

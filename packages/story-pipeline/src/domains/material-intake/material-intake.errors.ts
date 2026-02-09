@@ -9,7 +9,9 @@ export class SourceDirectoryNotFoundError extends MaterialIntakeError {
   public readonly sourceDir: string;
 
   constructor(sourceDir: string) {
-    super(`Source directory does not exist: ${sourceDir}`);
+    super(
+      `Source directory does not exist: ${sourceDir}. Expected one directory path that contains jpg/jpeg/png files (not multiple file paths).`,
+    );
     this.sourceDir = sourceDir;
     this.name = "SourceDirectoryNotFoundError";
   }

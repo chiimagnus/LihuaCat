@@ -6,6 +6,7 @@ import {
   createCodexStoryAgentClient,
   type StoryAgentClient,
 } from "../../../story-pipeline/src/domains/story-script/story-agent.client.ts";
+import { SourceDirectoryNotFoundError } from "../../../story-pipeline/src/domains/material-intake/material-intake.errors.ts";
 import { StoryScriptGenerationFailedError } from "../../../story-pipeline/src/domains/story-script/generate-story-script.ts";
 import { runStoryWorkflow } from "../../../story-pipeline/src/workflow/start-story-run.ts";
 import type { RenderMode } from "../../../story-pipeline/src/domains/render-choice/render-choice-machine.ts";
@@ -93,6 +94,11 @@ export const runRenderStoryCommand = async ({
       for (const reason of error.reasons) {
         stderr.write(`- ${reason}\n`);
       }
+    }
+    if (error instanceof SourceDirectoryNotFoundError) {
+      stderr.write(
+        "Input tip: provide one directory path, e.g. --input /Users/<you>/Downloads/photos\n",
+      );
     }
     if (stack) {
       stderr.write(`${stack}\n`);
