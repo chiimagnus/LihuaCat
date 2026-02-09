@@ -1,30 +1,56 @@
-export type StoryTemplateProps = {
-  timeline: Array<{
-    assetId: string;
-    startSec: number;
-    endSec: number;
-    subtitleId: string;
-  }>;
-  subtitles: Array<{
-    id: string;
-    text: string;
-    startSec: number;
-    endSec: number;
-  }>;
-  video: {
-    width: number;
-    height: number;
-    fps: number;
-    durationSec: number;
-  };
-};
+import React from "react";
+import { AbsoluteFill, Img, Sequence, useVideoConfig } from "remotion";
 
-export const buildTemplateRenderPlan = (props: StoryTemplateProps) => {
-  return {
-    mode: "template",
-    sceneCount: props.timeline.length,
-    subtitleCount: props.subtitles.length,
-    durationSec: props.video.durationSec,
-    frameCount: props.video.durationSec * props.video.fps,
-  };
+import type { StoryTemplateProps } from "./StoryComposition.schema.ts";
+import { buildTemplateSequences } from "./StoryComposition.logic.ts";
+
+export const StoryComposition: React.FC<StoryTemplateProps> = (props) => {
+  const { fps } = useVideoConfig();
+  const sequences = buildTemplateSequences(props, fps);
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#0f172a" }}>
+      {sequences.map((sequence) => {
+        return (
+          <Sequence
+            key={sequence.key}
+            from={sequence.from}
+            durationInFrames={sequence.durationInFrames}
+            premountFor={fps}
+          >
+            <AbsoluteFill>
+              <Img
+                src={sequence.assetPath}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              />
+              <AbsoluteFill
+                style={{
+                  justifyContent: "flex-end",
+                  padding: "0 60px 120px",
+                  background:
+                    "linear-gradient(180deg, rgba(15,23,42,0) 50%, rgba(15,23,42,0.82) 100%)",
+                }}
+              >
+                <div
+                  style={{
+                    color: "#e2e8f0",
+                    fontFamily: "Helvetica, Arial, sans-serif",
+                    fontSize: 52,
+                    lineHeight: 1.3,
+                    textShadow: "0 8px 24px rgba(0,0,0,0.55)",
+                  }}
+                >
+                  {sequence.subtitle}
+                </div>
+              </AbsoluteFill>
+            </AbsoluteFill>
+          </Sequence>
+        );
+      })}
+    </AbsoluteFill>
+  );
 };

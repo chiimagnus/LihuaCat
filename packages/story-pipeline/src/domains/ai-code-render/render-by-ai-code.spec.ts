@@ -12,13 +12,21 @@ test("generates code into output directory and renders successfully", async () =
     const result = await renderByAiCode({
       storyScript: buildStoryScript(),
       outputDir,
+      compileAdapter: async () => ({
+        ok: true,
+        serveUrl: "file:///tmp/remotion-bundle/index.html",
+      }),
+      renderAdapter: async ({ outputVideoPath }) => {
+        await fs.writeFile(outputVideoPath, "video");
+        return { ok: true };
+      },
     });
 
     assert.equal(result.ok, true);
     if (result.ok) {
       await assert.doesNotReject(fs.access(result.videoPath));
       await assert.doesNotReject(
-        fs.access(path.join(result.generatedCodeDir, "scene.generated.mjs")),
+        fs.access(path.join(result.generatedCodeDir, "Scene.tsx")),
       );
     }
   });
@@ -54,6 +62,10 @@ test("returns structured render error when render adapter fails", async () => {
         ok: false,
         message: "remotion render failed",
         details: "composition not found",
+      }),
+      compileAdapter: async () => ({
+        ok: true,
+        serveUrl: "file:///tmp/remotion-bundle/index.html",
       }),
     });
 

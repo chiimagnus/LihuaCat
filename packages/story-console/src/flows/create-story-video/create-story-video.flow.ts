@@ -15,12 +15,14 @@ export type CreateStoryVideoPromptAdapter = {
 export type CreateStoryVideoFlowInput = {
   prompts: CreateStoryVideoPromptAdapter;
   storyAgentClient: StoryAgentClient;
+  browserExecutablePath?: string;
   workflowImpl?: typeof runStoryWorkflow;
 };
 
 export const createStoryVideoFlow = async ({
   prompts,
   storyAgentClient,
+  browserExecutablePath,
   workflowImpl = runStoryWorkflow,
 }: CreateStoryVideoFlowInput): Promise<RunSummary> => {
   const sourceDir = await prompts.askSourceDir();
@@ -34,6 +36,7 @@ export const createStoryVideoFlow = async ({
       prompt: prompt.trim().length > 0 ? prompt : undefined,
     },
     storyAgentClient,
+    browserExecutablePath,
     chooseRenderMode: prompts.chooseRenderMode,
   });
 

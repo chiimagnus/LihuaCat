@@ -12,6 +12,9 @@ test("template render consumes story-script and produces video file", async () =
     const result = await renderByTemplate({
       storyScript: buildValidStoryScript(),
       outputDir,
+      renderAdapter: async ({ outputFilePath }) => {
+        await fs.writeFile(outputFilePath, "video");
+      },
     });
     assert.equal(result.mode, "template");
     await assert.doesNotReject(fs.access(result.videoPath));

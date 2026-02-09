@@ -10,7 +10,7 @@
     "zod": "3.22.3"
   },
   "scripts": {
-    "test": "node --test",
+    "test": "node scripts/run-tests.mjs",
     "build": "node -e \"console.log('story-video build placeholder')\""
   }
 }

@@ -1,15 +1,24 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import type { StoryScript } from "../../contracts/story-script.types.ts";
 import { validateStoryScriptSemantics } from "../story-script/validate-story-script.semantics.ts";
+import { locateBrowserExecutable } from "./browser-locator.ts";
+import {
+  bundleRemotionEntry,
+  renderRemotionVideo,
+  RemotionRenderError,
+} from "./remotion-renderer.ts";
 
 export type RenderByTemplateInput = {
   storyScript: StoryScript;
   outputDir: string;
+  browserExecutablePath?: string;
   renderAdapter?: (input: {
     storyScript: StoryScript;
     outputFilePath: string;
+    browserExecutablePath?: string;
   }) => Promise<void>;
 };
 
@@ -28,6 +37,7 @@ export class TemplateRenderError extends Error {
 export const renderByTemplate = async ({
   storyScript,
   outputDir,
+  browserExecutablePath,
   renderAdapter = defaultTemplateRenderAdapter,
 }: RenderByTemplateInput): Promise<RenderByTemplateResult> => {
   const semantic = validateStoryScriptSemantics(storyScript, {
@@ -44,6 +54,7 @@ export const renderByTemplate = async ({
   await renderAdapter({
     storyScript,
     outputFilePath: videoPath,
+    browserExecutablePath,
   });
   return {
     mode: "template",
@@ -54,16 +65,58 @@ export const renderByTemplate = async ({
 const defaultTemplateRenderAdapter = async ({
   storyScript,
   outputFilePath,
+  browserExecutablePath,
 }: {
   storyScript: StoryScript;
   outputFilePath: string;
+  browserExecutablePath?: string;
 }): Promise<void> => {
-  const payload = {
-    mode: "template",
-    video: storyScript.video,
-    timelineCount: storyScript.timeline.length,
-    subtitleCount: storyScript.subtitles.length,
-    generatedAt: new Date().toISOString(),
-  };
-  await fs.writeFile(outputFilePath, JSON.stringify(payload, null, 2), "utf8");
+  try {
+    const browser = await locateBrowserExecutable({
+      preferredPath: browserExecutablePath,
+    });
+
+    const serveUrl = await bundleRemotionEntry({
+      entryPoint: templateEntryPointPath,
+    });
+
+    await renderRemotionVideo({
+      serveUrl,
+      compositionId: "LihuaCatStoryTemplate",
+      inputProps: {
+        ...storyScript,
+        input: {
+          ...storyScript.input,
+          assets: storyScript.input.assets.map((asset) => ({
+            ...asset,
+            path: toRenderableAssetPath(asset.path),
+          })),
+        },
+      },
+      outputFilePath,
+      browserExecutablePath: browser.executablePath,
+    });
+  } catch (error) {
+    if (error instanceof RemotionRenderError) {
+      throw new TemplateRenderError(
+        `${error.stage}: ${error.message}${error.details ? ` | ${error.details}` : ""}`,
+      );
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    throw new TemplateRenderError(message);
+  }
+};
+
+const templateEntryPointPath = fileURLToPath(
+  new URL(
+    "../../../../story-video/src/story-template/remotion-template.entry.tsx",
+    import.meta.url,
+  ),
+);
+
+const toRenderableAssetPath = (value: string): string => {
+  if (/^https?:\/\//.test(value) || value.startsWith("file://")) {
+    return value;
+  }
+  return pathToFileURL(path.resolve(value)).href;
 };

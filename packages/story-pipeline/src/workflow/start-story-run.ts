@@ -22,6 +22,7 @@ export type StartStoryRunResult = {
 export type RunStoryWorkflowInput = {
   sourceDir: string;
   storyAgentClient: StoryAgentClient;
+  browserExecutablePath?: string;
   style: {
     preset: string;
     prompt?: string;
@@ -58,6 +59,7 @@ export const runStoryWorkflow = async (
   {
     sourceDir,
     storyAgentClient,
+    browserExecutablePath,
     style,
     chooseRenderMode,
     onRenderFailure,
@@ -108,6 +110,11 @@ export const runStoryWorkflow = async (
     });
 
     if (mode === "exit") {
+      if (state.phase === "select_mode" && state.lastFailure) {
+        throw new Error(
+          `Run exited after render failure (${state.lastFailure.mode}): ${state.lastFailure.reason}`,
+        );
+      }
       throw new Error("Run exited by user before successful rendering.");
     }
 
@@ -119,6 +126,7 @@ export const runStoryWorkflow = async (
         const rendered = await renderByTemplateImpl({
           storyScript: scriptResult.script,
           outputDir,
+          browserExecutablePath,
         });
         machine.markSuccess(rendered.videoPath);
       } catch (error) {
@@ -135,6 +143,7 @@ export const runStoryWorkflow = async (
     const aiRendered = await renderByAiCodeImpl({
       storyScript: scriptResult.script,
       outputDir,
+      browserExecutablePath,
     });
     if (!aiRendered.ok) {
       const reason = `${aiRendered.error.stage}: ${aiRendered.error.message}${
