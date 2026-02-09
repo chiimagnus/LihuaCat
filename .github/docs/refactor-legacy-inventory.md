@@ -17,14 +17,14 @@
 
 ## B. 迁移后删除（Delete After Migration）
 
-| Item | Path | Reason | Replacement | Delete Gate | Owner Stage |
-|---|---|---|---|---|---|
-| CLI 深层跨包 import（命令层） | `packages/story-console/src/commands/render-story.command.ts` | 违反 LoD，耦合 pipeline 内部目录 | `@lihuacat/story-pipeline` 门面导出（`src/index.ts`） | 门面导出可用且命令测试通过 | P2 Task 4 |
-| CLI 深层跨包 import（flow 层） | `packages/story-console/src/flows/create-story-video/create-story-video.flow.ts` | 违反 LoD，耦合 pipeline 内部类型与实现 | `@lihuacat/story-pipeline` 门面导出 | flow/command 测试通过 | P2 Task 4 |
-| CLI 测试深层依赖 pipeline 内部错误类型 | `packages/story-console/src/commands/render-story.command.spec.ts` | 测试绑定内部结构，阻碍破坏性重构 | 通过命令层公开错误映射进行断言 | 错误映射模块落地 | P2 Task 5 |
-| Pipeline 模板入口的跨包源码路径 | `packages/story-pipeline/src/domains/template-render/render-by-template.ts` (`templateEntryPointPath`) | 直接引用 `story-video/src` 内部路径 | 改为稳定入口常量/包级导出 | template render 测试通过 | P2 Task 4 + story-video track |
-| 占位构建脚本（console） | `packages/story-console/package.json` (`build`) | placeholder 无真实构建价值 | 最小可用 build（或显式移除并在根脚本调整） | workspace build 可通过 | P3 |
-| 占位构建脚本（video） | `packages/story-video/package.json` (`build`) | placeholder 无真实构建价值 | 最小可用 build（或显式移除并在根脚本调整） | workspace build 可通过 | P3 |
+| Item | Path | Reason | Replacement | Delete Gate | Owner Stage | Status |
+|---|---|---|---|---|---|---|
+| CLI 深层跨包 import（命令层） | `packages/story-console/src/commands/render-story.command.ts` | 违反 LoD，耦合 pipeline 内部目录 | `@lihuacat/story-pipeline` 门面导出（`src/index.ts`） | 门面导出可用且命令测试通过 | P2 Task 4 | Done（2026-02-09） |
+| CLI 深层跨包 import（flow 层） | `packages/story-console/src/flows/create-story-video/create-story-video.flow.ts` | 违反 LoD，耦合 pipeline 内部类型与实现 | `@lihuacat/story-pipeline` 门面导出 | flow/command 测试通过 | P2 Task 4 | Done（2026-02-09） |
+| CLI 测试深层依赖 pipeline 内部错误类型 | `packages/story-console/tests/render-story.command.spec.ts` | 测试绑定内部结构，阻碍破坏性重构 | 通过命令层公开错误映射进行断言 | 错误映射模块落地 | P2 Task 5 | Done（2026-02-09） |
+| Pipeline 模板入口的跨包源码路径 | `packages/story-pipeline/src/domains/template-render/render-by-template.ts` (`templateEntryPointPath`) | 直接引用 `story-video/src` 内部路径 | 改为稳定入口常量/包级导出 | template render 测试通过 | P2 Task 4 + story-video track | Pending |
+| 占位构建脚本（console） | `packages/story-console/package.json` (`build`) | placeholder 无真实构建价值 | 最小可用 build（或显式移除并在根脚本调整） | workspace build 可通过 | P3 | Pending |
+| 占位构建脚本（video） | `packages/story-video/package.json` (`build`) | placeholder 无真实构建价值 | 最小可用 build（或显式移除并在根脚本调整） | workspace build 可通过 | P3 | Pending |
 
 ## C. 结构性清理目标（按模块）
 

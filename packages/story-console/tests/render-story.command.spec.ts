@@ -2,8 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { runRenderStoryCommand } from "../src/commands/render-story.command.ts";
-import { SourceDirectoryNotFoundError } from "../../story-pipeline/src/domains/material-intake/material-intake.errors.ts";
-import { StoryScriptGenerationFailedError } from "../../story-pipeline/src/domains/story-script/generate-story-script.ts";
+import {
+  SourceDirectoryNotFoundError,
+  StoryScriptGenerationFailedError,
+} from "../../story-pipeline/src/index.ts";
 
 test("prints key artifact paths on success", async () => {
   const out = createBufferWriter();

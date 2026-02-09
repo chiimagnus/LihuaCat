@@ -6,12 +6,13 @@ import {
   createCodexStoryAgentClient,
   DEFAULT_CODEX_MODEL,
   DEFAULT_CODEX_REASONING_EFFORT,
+  runStoryWorkflow,
+  SourceDirectoryNotFoundError,
+  StoryScriptGenerationFailedError,
   type StoryAgentClient,
-} from "../../../story-pipeline/src/domains/story-script/story-agent.client.ts";
-import { SourceDirectoryNotFoundError } from "../../../story-pipeline/src/domains/material-intake/material-intake.errors.ts";
-import { StoryScriptGenerationFailedError } from "../../../story-pipeline/src/domains/story-script/generate-story-script.ts";
-import { runStoryWorkflow } from "../../../story-pipeline/src/workflow/start-story-run.ts";
-import type { RenderMode } from "../../../story-pipeline/src/domains/render-choice/render-choice-machine.ts";
+  type RenderMode,
+} from "../../../story-pipeline/src/index.ts";
+import { buildRenderFailureOutput } from "./render-story.error-mapper.ts";
 
 type LogWriter = {
   write: (chunk: string) => void;
@@ -103,22 +104,13 @@ export const runRenderStoryCommand = async ({
     }
     return 0;
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const stack = error instanceof Error ? error.stack : undefined;
-    stderr.write(`Render failed: ${message}\n`);
-    if (error instanceof StoryScriptGenerationFailedError && error.reasons.length > 0) {
-      stderr.write("Story script generation failure details:\n");
-      for (const reason of error.reasons) {
-        stderr.write(`- ${reason}\n`);
-      }
-    }
-    if (error instanceof SourceDirectoryNotFoundError) {
-      stderr.write(
-        "Input tip: provide one directory path, e.g. --input /Users/<you>/Downloads/photos\n",
-      );
-    }
-    if (stack) {
-      stderr.write(`${stack}\n`);
+    const output = buildRenderFailureOutput({
+      error,
+      SourceDirectoryNotFoundErrorClass: SourceDirectoryNotFoundError,
+      StoryScriptGenerationFailedErrorClass: StoryScriptGenerationFailedError,
+    });
+    for (const line of output.lines) {
+      stderr.write(`${line}\n`);
     }
     return 1;
   } finally {

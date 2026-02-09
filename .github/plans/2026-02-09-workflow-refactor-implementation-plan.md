@@ -156,7 +156,7 @@ Expected: PASS
 
 ### P2：减少跨包耦合与知识泄漏（LoD + OCP）
 
-### Task 4: 为 pipeline 提供稳定门面并删除深层路径依赖
+### ✅Task 4: 为 pipeline 提供稳定门面并删除深层路径依赖
 
 **Files:**
 - Create: `packages/story-pipeline/src/index.ts`
@@ -187,7 +187,7 @@ Expected: PASS
 
 ---
 
-### Task 5: 统一错误映射与输出边界（KISS + DRY）
+### ✅Task 5: 统一错误映射与输出边界（KISS + DRY）
 
 **Files:**
 - Create: `packages/story-console/src/commands/render-story.error-mapper.ts`

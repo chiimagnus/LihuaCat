@@ -1,10 +1,12 @@
-import type { RunSummary } from "../../../../story-pipeline/src/domains/artifact-publish/build-run-summary.ts";
-import type { StoryAgentClient } from "../../../../story-pipeline/src/domains/story-script/story-agent.client.ts";
-import type { RenderMode } from "../../../../story-pipeline/src/domains/render-choice/render-choice-machine.ts";
+import type {
+  RunSummary,
+  StoryAgentClient,
+  RenderMode,
+  WorkflowProgressEvent,
+} from "../../../../story-pipeline/src/index.ts";
 import {
   runStoryWorkflow,
-  type WorkflowProgressEvent,
-} from "../../../../story-pipeline/src/workflow/start-story-run.ts";
+} from "../../../../story-pipeline/src/index.ts";
 
 export type CreateStoryVideoPromptAdapter = {
   askSourceDir: () => Promise<string>;
