@@ -2,7 +2,7 @@
 
 > 执行方式：建议使用 `executing-plans` 按批次实现与验收。
 
-**Goal（目标）:** 基于 KISS/YAGNI/DRY/WET/SOLID/LoD/SoC/SLAP 对 `story-pipeline` 与 `story-console` 做一次完整重构，允许破坏性调整，并在实施过程中同步清理旧实现与冗余代码。
+**Goal（目标）:** 基于 KISS/YAGNI/DRY/WET/SOLID/LoD/SoC/SLAP 对 `story-pipeline`、`story-console`、`story-video` 做一次完整重构，允许破坏性调整，并在实施过程中同步清理旧实现与冗余代码。
 
 **Non-goals（非目标）:**
 - 不保留兼容层、过渡适配器或双轨实现。
@@ -252,9 +252,8 @@ Expected: PASS
 - 未完成清理视为 Task 未完成。
 
 ## 不确定项（执行前需确认）
-
-- 本轮是否覆盖 `story-video` 模板层重构，还是仅限 pipeline + console？
-- CLI 输出是否允许进行“破坏性文案调整”（测试会同步更新）？
+- 已确认：本轮覆盖 `story-video` 模板层重构（非仅 pipeline + console）。
+- 已确认：CLI 输出允许进行破坏性文案调整（测试同步更新）。
 
 ## 原则检查清单（每个 Task 完成后打勾）
 
