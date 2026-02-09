@@ -29,9 +29,15 @@ export const generateRemotionScene = ({
   }));
 
   return `import React from "react";
-import { AbsoluteFill, Img, Sequence } from "remotion";
+import { AbsoluteFill, Img, Sequence, staticFile } from "remotion";
 
 const scenes = ${JSON.stringify(scenes, null, 2)};
+const toRenderableAssetSrc = (value: string) => {
+  if (/^https?:\\/\\//.test(value) || value.startsWith("data:")) {
+    return value;
+  }
+  return staticFile(value.replace(/^\\/+/, ""));
+};
 
 export const GeneratedScene: React.FC = () => {
   return (
@@ -46,7 +52,7 @@ export const GeneratedScene: React.FC = () => {
           >
             <AbsoluteFill>
               <Img
-                src={scene.assetPath}
+                src={toRenderableAssetSrc(scene.assetPath)}
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
               <AbsoluteFill

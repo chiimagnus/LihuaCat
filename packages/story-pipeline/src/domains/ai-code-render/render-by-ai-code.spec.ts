@@ -33,8 +33,9 @@ test("generates code into output directory and renders successfully", async () =
         fs.access(scenePath),
       );
       const sceneCode = await fs.readFile(scenePath, "utf8");
-      assert.match(sceneCode, /"\/lihuacat-assets\//);
+      assert.match(sceneCode, /"lihuacat-assets\//);
       assert.doesNotMatch(sceneCode, /file:\/\//);
+      assert.match(sceneCode, /staticFile/);
     }
   });
 });

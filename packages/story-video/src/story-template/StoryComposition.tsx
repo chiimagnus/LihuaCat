@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Img, Sequence, useVideoConfig } from "remotion";
+import { AbsoluteFill, Img, Sequence, staticFile, useVideoConfig } from "remotion";
 
 import type { StoryTemplateProps } from "./StoryComposition.schema.ts";
 import { buildTemplateSequences } from "./StoryComposition.logic.ts";
@@ -20,7 +20,7 @@ export const StoryComposition: React.FC<StoryTemplateProps> = (props) => {
           >
             <AbsoluteFill>
               <Img
-                src={sequence.assetPath}
+                src={toRenderableAssetSrc(sequence.assetPath)}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -53,4 +53,11 @@ export const StoryComposition: React.FC<StoryTemplateProps> = (props) => {
       })}
     </AbsoluteFill>
   );
+};
+
+const toRenderableAssetSrc = (value: string): string => {
+  if (/^https?:\/\//.test(value) || value.startsWith("data:")) {
+    return value;
+  }
+  return staticFile(value.replace(/^\/+/, ""));
 };

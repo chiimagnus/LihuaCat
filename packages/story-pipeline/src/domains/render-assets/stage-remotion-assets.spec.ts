@@ -17,7 +17,7 @@ test("stages local assets into remotion public directory", async () => {
       assets: [{ id: "img_001", path: sourceFile }],
     });
 
-    assert.equal(result.assets[0]?.path, "/lihuacat-assets/001-img_001.jpg");
+    assert.equal(result.assets[0]?.path, "lihuacat-assets/001-img_001.jpg");
     const stagedFile = path.join(
       result.publicDir,
       "lihuacat-assets",
@@ -37,7 +37,7 @@ test("stages file URL assets into remotion public directory", async () => {
       assets: [{ id: "img_002", path: pathToFileURL(sourceFile).href }],
     });
 
-    assert.equal(result.assets[0]?.path, "/lihuacat-assets/001-img_002.png");
+    assert.equal(result.assets[0]?.path, "lihuacat-assets/001-img_002.png");
   });
 });
 

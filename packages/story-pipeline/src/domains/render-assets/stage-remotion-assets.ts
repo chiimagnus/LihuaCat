@@ -40,7 +40,7 @@ export const stageRemotionAssets = async ({
 
     stagedAssets.push({
       ...asset,
-      path: `/${stagedRootDirName}/${fileName}`,
+      path: `${stagedRootDirName}/${fileName}`,
     });
   }
 
