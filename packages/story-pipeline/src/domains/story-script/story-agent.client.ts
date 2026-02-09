@@ -26,9 +26,17 @@ export interface StoryAgentClient {
   generateStoryScript(request: GenerateStoryScriptRequest): Promise<unknown>;
 }
 
+type ModelReasoningEffort =
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh";
+
 type CodexLike = {
   startThread: (options?: {
     model?: string;
+    modelReasoningEffort?: ModelReasoningEffort;
     workingDirectory?: string;
     skipGitRepoCheck?: boolean;
   }) => Pick<Thread, "run">;
@@ -36,10 +44,14 @@ type CodexLike = {
 
 export type CreateCodexStoryAgentClientInput = {
   model?: string;
+  modelReasoningEffort?: ModelReasoningEffort;
   workingDirectory?: string;
   codexFactory?: () => CodexLike;
   assertAuthenticated?: () => Promise<void>;
 };
+
+export const DEFAULT_CODEX_MODEL = "gpt-5.1-codex-mini";
+export const DEFAULT_CODEX_REASONING_EFFORT = "medium" as const;
 
 export class StoryAgentResponseParseError extends Error {
   constructor(message: string) {
@@ -49,7 +61,8 @@ export class StoryAgentResponseParseError extends Error {
 }
 
 export const createCodexStoryAgentClient = ({
-  model,
+  model = DEFAULT_CODEX_MODEL,
+  modelReasoningEffort = DEFAULT_CODEX_REASONING_EFFORT,
   workingDirectory,
   codexFactory = () => new Codex(),
   assertAuthenticated = async () => assertCodexCliAuthenticated(),
@@ -63,6 +76,7 @@ export const createCodexStoryAgentClient = ({
     const codex = codexFactory();
     thread = codex.startThread({
       model,
+      modelReasoningEffort,
       workingDirectory,
       skipGitRepoCheck: true,
     });

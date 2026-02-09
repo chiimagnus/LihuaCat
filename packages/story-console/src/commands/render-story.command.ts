@@ -4,6 +4,8 @@ import { createInterface } from "node:readline/promises";
 import { createStoryVideoFlow } from "../flows/create-story-video/create-story-video.flow.ts";
 import {
   createCodexStoryAgentClient,
+  DEFAULT_CODEX_MODEL,
+  DEFAULT_CODEX_REASONING_EFFORT,
   type StoryAgentClient,
 } from "../../../story-pipeline/src/domains/story-script/story-agent.client.ts";
 import { SourceDirectoryNotFoundError } from "../../../story-pipeline/src/domains/material-intake/material-intake.errors.ts";
@@ -38,16 +40,28 @@ export const runRenderStoryCommand = async ({
 }: RunRenderStoryCommandInput): Promise<number> => {
   const args = parseArgs(argv);
   const modeSequence = parseModeSequence(args.get("mode-sequence") ?? args.get("mode") ?? "");
-  const model = args.get("model");
+  const model = args.get("model") ?? DEFAULT_CODEX_MODEL;
+  const modelReasoningEffort = parseModelReasoningEffort(
+    args.get("model-reasoning-effort"),
+  );
+  const resolvedReasoningEffort = modelReasoningEffort ?? DEFAULT_CODEX_REASONING_EFFORT;
   const browserExecutablePath = args.get("browser-executable")
     ? path.resolve(args.get("browser-executable")!)
     : undefined;
-  const storyAgentClient: StoryAgentClient = args.has("mock-agent")
+  const useMockAgent = args.has("mock-agent");
+  const storyAgentClient: StoryAgentClient = useMockAgent
     ? createMockStoryAgentClient()
     : createCodexStoryAgentClient({
       model,
+      modelReasoningEffort: resolvedReasoningEffort,
       workingDirectory: process.cwd(),
     });
+
+  if (!useMockAgent) {
+    stdout.write(
+      `[info] Using Codex model: ${model} (reasoning: ${resolvedReasoningEffort})\n`,
+    );
+  }
 
   const promptSession = createPromptSession({ stdout, stderr, args });
 
@@ -136,6 +150,25 @@ const parseModeSequence = (raw: string): RenderMode[] => {
     .split(",")
     .map((item) => item.trim())
     .filter((item): item is RenderMode => item === "template" || item === "ai_code");
+};
+
+const parseModelReasoningEffort = (
+  raw: string | undefined,
+): "minimal" | "low" | "medium" | "high" | "xhigh" | undefined => {
+  if (!raw) {
+    return undefined;
+  }
+  const normalized = raw.trim().toLowerCase();
+  if (
+    normalized === "minimal" ||
+    normalized === "low" ||
+    normalized === "medium" ||
+    normalized === "high" ||
+    normalized === "xhigh"
+  ) {
+    return normalized;
+  }
+  return undefined;
 };
 
 const resolveInputPath = (input: string): string => {

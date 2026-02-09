@@ -31,6 +31,72 @@ test("prints key artifact paths on success", async () => {
   assert.equal(err.content(), "");
 });
 
+test("prints selected Codex model info when using real agent", async () => {
+  const out = createBufferWriter();
+  const err = createBufferWriter();
+
+  const exitCode = await runRenderStoryCommand({
+    argv: [
+      "--input",
+      "/tmp/photos",
+      "--model",
+      "gpt-5.1-codex-mini",
+      "--model-reasoning-effort",
+      "medium",
+    ],
+    stdout: out,
+    stderr: err,
+    workflowImpl: async () => ({
+      runId: "run-model-info",
+      outputDir: "/tmp/photos/lihuacat-output/run-model-info",
+      mode: "template",
+      videoPath: "/tmp/photos/lihuacat-output/run-model-info/video.mp4",
+      storyScriptPath: "/tmp/photos/lihuacat-output/run-model-info/story-script.json",
+      runLogPath: "/tmp/photos/lihuacat-output/run-model-info/run.log",
+    }),
+  });
+
+  assert.equal(exitCode, 0);
+  assert.match(
+    out.content(),
+    /\[info\] Using Codex model: gpt-5\.1-codex-mini \(reasoning: medium\)/,
+  );
+  assert.equal(err.content(), "");
+});
+
+test("accepts xhigh reasoning effort and prints it in model info", async () => {
+  const out = createBufferWriter();
+  const err = createBufferWriter();
+
+  const exitCode = await runRenderStoryCommand({
+    argv: [
+      "--input",
+      "/tmp/photos",
+      "--model",
+      "gpt-5.1-codex-mini",
+      "--model-reasoning-effort",
+      "xhigh",
+    ],
+    stdout: out,
+    stderr: err,
+    workflowImpl: async () => ({
+      runId: "run-model-xhigh",
+      outputDir: "/tmp/photos/lihuacat-output/run-model-xhigh",
+      mode: "template",
+      videoPath: "/tmp/photos/lihuacat-output/run-model-xhigh/video.mp4",
+      storyScriptPath: "/tmp/photos/lihuacat-output/run-model-xhigh/story-script.json",
+      runLogPath: "/tmp/photos/lihuacat-output/run-model-xhigh/run.log",
+    }),
+  });
+
+  assert.equal(exitCode, 0);
+  assert.match(
+    out.content(),
+    /\[info\] Using Codex model: gpt-5\.1-codex-mini \(reasoning: xhigh\)/,
+  );
+  assert.equal(err.content(), "");
+});
+
 test("prints readable failure reason", async () => {
   const out = createBufferWriter();
   const err = createBufferWriter();

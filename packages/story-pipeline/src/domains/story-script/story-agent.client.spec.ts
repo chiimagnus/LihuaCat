@@ -9,13 +9,19 @@ import {
 
 test("calls Codex SDK with model override and parses JSON result", async () => {
   const calls: {
-    threadOptions?: { model?: string; workingDirectory?: string; skipGitRepoCheck?: boolean };
+    threadOptions?: {
+      model?: string;
+      modelReasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
+      workingDirectory?: string;
+      skipGitRepoCheck?: boolean;
+    };
     runInput?: unknown;
     runOptions?: unknown;
   } = {};
 
   const client = createCodexStoryAgentClient({
     model: "gpt-5-codex",
+    modelReasoningEffort: "high",
     workingDirectory: "/tmp/project",
     codexFactory: () => ({
       startThread(options) {
@@ -39,6 +45,7 @@ test("calls Codex SDK with model override and parses JSON result", async () => {
   const result = await client.generateStoryScript(buildRequest());
   assert.equal((result as { version: string }).version, "1.0");
   assert.equal(calls.threadOptions?.model, "gpt-5-codex");
+  assert.equal(calls.threadOptions?.modelReasoningEffort, "high");
   assert.equal(calls.threadOptions?.workingDirectory, "/tmp/project");
   assert.equal(calls.threadOptions?.skipGitRepoCheck, true);
   assert.deepEqual(
@@ -46,6 +53,37 @@ test("calls Codex SDK with model override and parses JSON result", async () => {
     ["text", "local_image", "local_image"],
   );
   assert.ok((calls.runOptions as { outputSchema?: unknown }).outputSchema);
+});
+
+test("uses project defaults when no model options are provided", async () => {
+  const calls: {
+    threadOptions?: {
+      model?: string;
+      modelReasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
+    };
+  } = {};
+
+  const client = createCodexStoryAgentClient({
+    codexFactory: () => ({
+      startThread(options) {
+        calls.threadOptions = options;
+        return {
+          async run() {
+            return {
+              finalResponse: JSON.stringify(buildValidStoryScript(), null, 2),
+            };
+          },
+        };
+      },
+    }),
+    assertAuthenticated: async () => {
+      return;
+    },
+  });
+
+  await client.generateStoryScript(buildRequest());
+  assert.equal(calls.threadOptions?.model, "gpt-5.1-codex-mini");
+  assert.equal(calls.threadOptions?.modelReasoningEffort, "medium");
 });
 
 test("throws parse error when SDK returns non-JSON content", async () => {
