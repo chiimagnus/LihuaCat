@@ -25,7 +25,7 @@
 - 稳定性测试（默认 10 次）：
   `bash tests/stability-run.sh tests`
 
-说明：CLI 现在是纯交互 TUI，要求在 TTY 终端中运行；非 TTY 环境会直接报错退出。
+说明：CLI 现在是纯交互 TUI，要求在 TTY 终端中运行；非 TTY 环境会直接报错退出。参数未提供时会进入对应步骤的交互提问。
 
 默认模型配置（真实链路）：
 - model：`gpt-5.1-codex-mini`

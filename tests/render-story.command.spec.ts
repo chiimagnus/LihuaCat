@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { runRenderStoryCommand } from "../src/commands/render-story.command.ts";
 import {
+  type RunSummary,
   SourceDirectoryNotFoundError,
   StoryScriptGenerationFailedError,
 } from "../src/pipeline.ts";
@@ -11,6 +12,13 @@ import type {
   RenderStoryTuiIntroInput,
 } from "../src/commands/tui/render-story.tui.ts";
 import type { WorkflowProgressEvent } from "../src/workflow/workflow-events.ts";
+
+type MockTuiState = {
+  introInput?: RenderStoryTuiIntroInput;
+  progressEvents: WorkflowProgressEvent[];
+  failedLines: string[];
+  completedSummary?: RunSummary;
+};
 
 test("prints key artifact paths on success", async () => {
   const { tui, state } = createMockTui();
@@ -181,50 +189,23 @@ test("forwards workflow progress events to tui layer", async () => {
 });
 
 test("fails fast when terminal is not interactive", async () => {
-  const out = createBufferWriter();
   const err = createBufferWriter();
 
   const exitCode = await runRenderStoryCommand({
     argv: ["--mock-agent"],
-    stdout: out,
     stderr: err,
     isInteractiveTerminal: () => false,
   });
 
   assert.equal(exitCode, 1);
   assert.match(err.content(), /requires a TTY terminal/);
-  assert.equal(out.content(), "");
 });
 
 const createMockTui = (): {
   tui: RenderStoryTui;
-  state: {
-    introInput?: RenderStoryTuiIntroInput;
-    progressEvents: WorkflowProgressEvent[];
-    failedLines: string[];
-    completedSummary?: {
-      mode: string;
-      videoPath: string;
-      storyScriptPath: string;
-      runLogPath: string;
-      generatedCodePath?: string;
-      errorLogPath?: string;
-    };
-  };
+  state: MockTuiState;
 } => {
-  const state: {
-    introInput?: RenderStoryTuiIntroInput;
-    progressEvents: WorkflowProgressEvent[];
-    failedLines: string[];
-    completedSummary?: {
-      mode: string;
-      videoPath: string;
-      storyScriptPath: string;
-      runLogPath: string;
-      generatedCodePath?: string;
-      errorLogPath?: string;
-    };
-  } = {
+  const state: MockTuiState = {
     progressEvents: [],
     failedLines: [],
   };

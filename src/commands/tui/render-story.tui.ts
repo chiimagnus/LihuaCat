@@ -28,9 +28,9 @@ export type RenderModeSelectionState = {
 
 export type RenderStoryTui = {
   intro: (input: RenderStoryTuiIntroInput) => void;
-  askSourceDir: (initialValue?: string) => Promise<string>;
-  askStylePreset: (initialValue?: string) => Promise<string>;
-  askPrompt: (initialValue?: string) => Promise<string>;
+  askSourceDir: () => Promise<string>;
+  askStylePreset: () => Promise<string>;
+  askPrompt: () => Promise<string>;
   chooseRenderMode: (state: RenderModeSelectionState) => Promise<RenderMode | "exit">;
   onWorkflowProgress: (event: WorkflowProgressEvent) => void;
   complete: (summary: RunSummary) => void;
@@ -75,12 +75,11 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
       log.info(`Codex model: ${input.model} · reasoning: ${input.reasoningEffort}`);
     },
 
-    async askSourceDir(initialValue) {
+    async askSourceDir() {
       const answer = mustContinue(
         await text({
           message: "素材目录路径",
           placeholder: "/ABS/PATH/TO/PHOTOS",
-          initialValue,
           validate(value) {
             if (!value || value.trim().length === 0) {
               return "目录路径不能为空";
@@ -92,7 +91,7 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
       return answer.trim();
     },
 
-    async askStylePreset(initialValue) {
+    async askStylePreset() {
       const options: Array<{
         value: string;
         label: string;
@@ -104,15 +103,10 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
         { value: "minimal", label: "minimal", hint: "克制简洁" },
         { value: "custom", label: "custom", hint: "自定义 preset" },
       ];
-      const initial =
-        initialValue && options.some((option) => option.value === initialValue)
-          ? initialValue
-          : "healing";
-
       const choice = mustContinue(
         await select({
           message: "选择风格 preset",
-          initialValue: initial,
+          initialValue: "healing",
           options,
         }),
       );
@@ -124,10 +118,6 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
       const custom = mustContinue(
         await text({
           message: "输入自定义 preset",
-          initialValue:
-            initialValue && !options.some((option) => option.value === initialValue)
-              ? initialValue
-              : undefined,
           validate(value) {
             if (!value || value.trim().length === 0) {
               return "preset 不能为空";
@@ -139,12 +129,11 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
       return custom.trim();
     },
 
-    async askPrompt(initialValue) {
+    async askPrompt() {
       const answer = mustContinue(
         await text({
           message: "补充描述（可留空）",
           placeholder: "例如：春天，慢节奏，治愈感",
-          initialValue,
         }),
       );
       return answer.trim();

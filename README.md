@@ -43,7 +43,7 @@ pnpm install
 pnpm run dev -- --input /ABS/PATH/TO/PHOTOS
 ```
 
-运行后会按顺序询问：
+未通过参数提供时，CLI 会按顺序询问：
 1. 图片目录路径
 2. 风格 preset（方向键选择，支持 custom）
 3. 可选补充描述
@@ -56,8 +56,8 @@ CLI 仅支持交互式 TTY 终端；在非交互环境（如管道、重定向�
 - `--input <dir>`: 图片目录（必须是单个目录路径）
 - `--style <preset>`: 风格 preset
 - `--prompt <text>`: 补充描述
-- `--mode <template|ai_code>`: 预设首轮渲染模式
-- `--mode-sequence <m1,m2,...>`: 预设多轮模式序列
+- `--mode <template|ai_code>`: 预设首轮渲染模式（跳过该步选择）
+- `--mode-sequence <m1,m2,...>`: 预设多轮模式序列（用于失败重试回合）
 - `--browser-executable <path>`: 指定浏览器可执行文件路径
 - `--mock-agent`: 使用 mock 脚本生成（不调用 Codex）
 - `--model <name>`: 覆盖 Codex 模型名
@@ -116,6 +116,8 @@ bash tests/stability-run.sh tests
 可通过环境变量指定次数和浏览器：
 - `LIHUACAT_STABILITY_RUNS`
 - `LIHUACAT_BROWSER_EXECUTABLE`
+
+说明：稳定性脚本运行时同样需要 TTY 终端。
 
 ## 故障排查
 

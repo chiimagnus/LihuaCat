@@ -24,7 +24,6 @@ type LogWriter = {
 
 export type RunRenderStoryCommandInput = {
   argv: string[];
-  stdout?: LogWriter;
   stderr?: LogWriter;
   workflowImpl?: typeof runStoryWorkflow;
   tui?: RenderStoryTui;
@@ -33,7 +32,6 @@ export type RunRenderStoryCommandInput = {
 
 export const runRenderStoryCommand = async ({
   argv,
-  stdout = process.stdout,
   stderr = process.stderr,
   workflowImpl = runStoryWorkflow,
   tui,
