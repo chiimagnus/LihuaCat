@@ -84,6 +84,7 @@ const buildPromptInput = (request: GenerateStoryScriptRequest) => {
   const promptLines = [
     "You are generating a story-script JSON for LihuaCat.",
     "Return JSON only. Do not wrap with markdown.",
+    "Always include style.prompt as a string field (empty string is allowed).",
     "",
     "Hard constraints:",
     `- durationSec must equal ${request.constraints.durationSec}`,
@@ -199,7 +200,7 @@ const storyScriptOutputSchema = {
     },
     style: {
       type: "object",
-      required: ["preset"],
+      required: ["preset", "prompt"],
       additionalProperties: false,
       properties: {
         preset: { type: "string" },
