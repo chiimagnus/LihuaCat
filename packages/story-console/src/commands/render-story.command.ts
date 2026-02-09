@@ -70,6 +70,9 @@ export const runRenderStoryCommand = async ({
       },
       storyAgentClient,
       browserExecutablePath,
+      onProgress: (event) => {
+        stdout.write(`[progress] ${event.message}\n`);
+      },
       workflowImpl,
     });
 

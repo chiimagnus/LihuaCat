@@ -90,6 +90,40 @@ test("prints input tip when source directory path is invalid", async () => {
   assert.match(err.content(), /Input tip:/);
 });
 
+test("prints workflow progress events", async () => {
+  const out = createBufferWriter();
+  const err = createBufferWriter();
+
+  const exitCode = await runRenderStoryCommand({
+    argv: ["--input", "/tmp/photos", "--mock-agent"],
+    stdout: out,
+    stderr: err,
+    workflowImpl: async ({ onProgress }) => {
+      await onProgress?.({
+        stage: "collect_images_start",
+        message: "Collecting images from input directory...",
+      });
+      await onProgress?.({
+        stage: "generate_script_start",
+        message: "Generating story script with Codex...",
+      });
+      return {
+        runId: "run-2",
+        outputDir: "/tmp/photos/lihuacat-output/run-2",
+        mode: "template",
+        videoPath: "/tmp/photos/lihuacat-output/run-2/video.mp4",
+        storyScriptPath: "/tmp/photos/lihuacat-output/run-2/story-script.json",
+        runLogPath: "/tmp/photos/lihuacat-output/run-2/run.log",
+      };
+    },
+  });
+
+  assert.equal(exitCode, 0);
+  assert.match(out.content(), /\[progress\] Collecting images from input directory/);
+  assert.match(out.content(), /\[progress\] Generating story script with Codex/);
+  assert.equal(err.content(), "");
+});
+
 const createBufferWriter = () => {
   const chunks: string[] = [];
   return {

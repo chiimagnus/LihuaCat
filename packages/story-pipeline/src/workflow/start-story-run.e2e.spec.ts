@@ -132,6 +132,47 @@ test("workflow ends directly when AI code render succeeds", async () => {
   });
 });
 
+test("workflow emits progress events across core stages", async () => {
+  await withTempDir(async (sourceDir) => {
+    await fs.writeFile(path.join(sourceDir, "1.jpg"), "fake-image");
+    const storyScript = buildStoryScript(sourceDir);
+    const events: string[] = [];
+
+    await runStoryWorkflow(
+      {
+        sourceDir,
+        storyAgentClient: {
+          async generateStoryScript() {
+            throw new Error("should not be called in this test");
+          },
+        },
+        style: { preset: "healing" },
+        chooseRenderMode: async () => "template",
+        onProgress: (event) => {
+          events.push(event.stage);
+        },
+      },
+      {
+        generateStoryScriptImpl: async () => ({ script: storyScript, attempts: 1 }),
+        renderByTemplateImpl: async ({ outputDir }) => {
+          const videoPath = path.join(outputDir, "video.mp4");
+          await fs.mkdir(outputDir, { recursive: true });
+          await fs.writeFile(videoPath, "template-video");
+          return { mode: "template", videoPath };
+        },
+      },
+    );
+
+    assert.ok(events.includes("collect_images_start"));
+    assert.ok(events.includes("collect_images_done"));
+    assert.ok(events.includes("generate_script_start"));
+    assert.ok(events.includes("generate_script_done"));
+    assert.ok(events.includes("render_start"));
+    assert.ok(events.includes("render_success"));
+    assert.ok(events.includes("publish_done"));
+  });
+});
+
 const withTempDir = async (run: (sourceDir: string) => Promise<void>) => {
   const sourceDir = await fs.mkdtemp(path.join(os.tmpdir(), "lihuacat-workflow-"));
   try {

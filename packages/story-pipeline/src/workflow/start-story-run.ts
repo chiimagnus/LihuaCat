@@ -31,7 +31,23 @@ export type RunStoryWorkflowInput = {
     lastFailure?: { mode: RenderMode; reason: string };
   }) => Promise<RenderMode | "exit">;
   onRenderFailure?: (input: { mode: RenderMode; reason: string }) => Promise<void> | void;
+  onProgress?: (event: WorkflowProgressEvent) => Promise<void> | void;
   now?: Date;
+};
+
+export type WorkflowProgressEvent = {
+  stage:
+    | "collect_images_start"
+    | "collect_images_done"
+    | "generate_script_start"
+    | "generate_script_done"
+    | "choose_mode"
+    | "render_start"
+    | "render_failed"
+    | "render_success"
+    | "publish_start"
+    | "publish_done";
+  message: string;
 };
 
 export type RunStoryWorkflowDependencies = {
@@ -63,6 +79,7 @@ export const runStoryWorkflow = async (
     style,
     chooseRenderMode,
     onRenderFailure,
+    onProgress,
     now,
   }: RunStoryWorkflowInput,
   dependencies: RunStoryWorkflowDependencies = {},
@@ -77,9 +94,21 @@ export const runStoryWorkflow = async (
   const runLogs: string[] = [`runId=${runId}`, `sourceDir=${sourceDir}`];
   const errorLogs: string[] = [];
 
+  await emitProgress(onProgress, {
+    stage: "collect_images_start",
+    message: "Collecting images from input directory...",
+  });
   const collected = await collectImagesImpl({ sourceDir, maxImages: 20 });
   runLogs.push(`collectedImages=${collected.images.length}`);
+  await emitProgress(onProgress, {
+    stage: "collect_images_done",
+    message: `Collected ${collected.images.length} images.`,
+  });
 
+  await emitProgress(onProgress, {
+    stage: "generate_script_start",
+    message: "Generating story script with Codex...",
+  });
   const scriptResult = await generateStoryScriptImpl({
     sourceDir,
     style,
@@ -97,11 +126,21 @@ export const runStoryWorkflow = async (
   });
 
   runLogs.push(`storyScriptGeneratedInAttempts=${scriptResult.attempts}`);
+  await emitProgress(onProgress, {
+    stage: "generate_script_done",
+    message: `Story script ready (attempts=${scriptResult.attempts}).`,
+  });
   const machine = new RenderChoiceMachine();
   let generatedCodePath: string | undefined;
 
   while (machine.getState().phase !== "completed") {
     const state = machine.getState();
+    await emitProgress(onProgress, {
+      stage: "choose_mode",
+      message: state.phase === "select_mode" && state.lastFailure
+        ? `Select render mode again (last failure: ${state.lastFailure.mode}).`
+        : "Selecting render mode...",
+    });
     const mode = await chooseRenderMode({
       lastFailure:
         state.phase === "select_mode"
@@ -120,6 +159,12 @@ export const runStoryWorkflow = async (
 
     machine.selectMode(mode);
     runLogs.push(`modeSelected=${mode}`);
+    await emitProgress(onProgress, {
+      stage: "render_start",
+      message: mode === "template"
+        ? "Rendering video with template mode..."
+        : "Rendering video with AI code mode...",
+    });
 
     if (mode === "template") {
       try {
@@ -129,10 +174,18 @@ export const runStoryWorkflow = async (
           browserExecutablePath,
         });
         machine.markSuccess(rendered.videoPath);
+        await emitProgress(onProgress, {
+          stage: "render_success",
+          message: "Template render succeeded.",
+        });
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
         errorLogs.push(`[template] ${reason}`);
         machine.markFailure(reason);
+        await emitProgress(onProgress, {
+          stage: "render_failed",
+          message: `Template render failed: ${reason}`,
+        });
         if (onRenderFailure) {
           await onRenderFailure({ mode, reason });
         }
@@ -152,6 +205,10 @@ export const runStoryWorkflow = async (
       generatedCodePath = aiRendered.generatedCodeDir;
       errorLogs.push(`[ai_code] ${reason}`);
       machine.markFailure(reason);
+      await emitProgress(onProgress, {
+        stage: "render_failed",
+        message: `AI code render failed: ${reason}`,
+      });
       if (onRenderFailure) {
         await onRenderFailure({ mode, reason });
       }
@@ -160,6 +217,10 @@ export const runStoryWorkflow = async (
 
     generatedCodePath = aiRendered.generatedCodeDir;
     machine.markSuccess(aiRendered.videoPath);
+    await emitProgress(onProgress, {
+      stage: "render_success",
+      message: "AI code render succeeded.",
+    });
   }
 
   const finalState = machine.getState();
@@ -167,7 +228,11 @@ export const runStoryWorkflow = async (
     throw new Error("Internal workflow error: run finished without completion");
   }
 
-  return publishArtifactsImpl({
+  await emitProgress(onProgress, {
+    stage: "publish_start",
+    message: "Publishing artifacts...",
+  });
+  const summary = await publishArtifactsImpl({
     runId,
     outputDir,
     mode: finalState.mode,
@@ -177,6 +242,11 @@ export const runStoryWorkflow = async (
     errorLogs,
     generatedCodePath,
   });
+  await emitProgress(onProgress, {
+    stage: "publish_done",
+    message: "Artifacts published.",
+  });
+  return summary;
 };
 
 const formatTimestamp = (value: Date): string => {
@@ -187,4 +257,14 @@ const formatTimestamp = (value: Date): string => {
   const minute = String(value.getMinutes()).padStart(2, "0");
   const second = String(value.getSeconds()).padStart(2, "0");
   return `${year}${month}${day}-${hour}${minute}${second}`;
+};
+
+const emitProgress = async (
+  onProgress: RunStoryWorkflowInput["onProgress"],
+  event: WorkflowProgressEvent,
+) => {
+  if (!onProgress) {
+    return;
+  }
+  await onProgress(event);
 };
