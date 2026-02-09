@@ -69,6 +69,7 @@ export const renderRemotionVideo = async ({
       inputProps,
       browserExecutable: browserExecutablePath,
       onBrowserDownload,
+      chromeMode: "chrome-for-testing",
       logLevel: "error",
     });
   } catch (error) {
@@ -90,6 +91,7 @@ export const renderRemotionVideo = async ({
       outputLocation: outputFilePath,
       browserExecutable: browserExecutablePath,
       onBrowserDownload,
+      chromeMode: "chrome-for-testing",
       logLevel: "error",
       overwrite: true,
     });
