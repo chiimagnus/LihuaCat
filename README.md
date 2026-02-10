@@ -29,6 +29,61 @@ LihuaCat 在本机完成以下流程：
 pnpm install
 ```
 
+## 全局安装（终端直接运行）
+
+现在已支持把它作为一个全局命令安装（`lihuacat`）。
+
+### 方式 A：本地源码安装（适合你自己机器）
+
+```bash
+pnpm install
+pnpm run build
+pnpm link --global
+```
+
+然后就可以直接运行：
+
+```bash
+lihuacat --input /ABS/PATH/TO/PHOTOS
+```
+
+### 方式 B：打包成 tgz 再安装（便于分发给同事）
+
+```bash
+pnpm pack
+pnpm add -g ./lihuacat-*.tgz
+```
+
+### 方式 C：发布到 npm 后安装（适合公开分发）
+
+发布到 npm 后，用户可执行：
+
+```bash
+npm i -g @chiimagnus/lihuacat
+# 或
+pnpm add -g @chiimagnus/lihuacat
+```
+
+### 发布到 npm（维护者）
+
+首次发布：
+
+```bash
+pnpm install
+pnpm run build
+pnpm login
+pnpm publish
+```
+
+后续发版本：
+
+```bash
+pnpm version patch
+pnpm publish
+```
+
+如果你机器上 `npm` 报过 cache 权限问题（`EPERM ... ~/.npm/_cacache`），优先用 `pnpm publish`；或者按 npm 报错提示修复本机 `~/.npm` 权限。
+
 ## 常用命令
 
 - 全量测试：`pnpm test`
