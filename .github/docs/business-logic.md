@@ -1,100 +1,106 @@
-# LihuaCat 业务全局地图（单包重构后）
+# LihuaCat 业务全局地图
 
 ## 1) 产品概述
 
-LihuaCat 是本地优先的「图片 -> 故事短视频」生成工具。核心链路：
+LihuaCat 是一个本地优先的交互式 CLI：把“一个图片文件夹”生成一段“故事短视频”。
 
-1. 收集输入目录图片（仅第一层，`jpg/jpeg/png`，最多 20 张）
-2. 调用用户本地 Codex 登录态生成结构化 `story-script`
-3. 用户在 `template` 与 `ai_code` 两种渲染模式中选择
-4. 本地 Remotion 渲染视频并发布产物
+- 给谁用：希望把一组照片快速转成可分享短视频的用户
+- 核心体验：选择图片目录与风格偏好，生成故事脚本并在本机渲染出视频
+- 输入：一个目录下的若干张图片（仅扫描第一层）
+- 输出：本地落盘的一次性产物（视频文件 + 过程日志 + 结构化故事脚本）
 
-设计目标：
-- 可读：编排、领域、模板职责分离
-- 可维护：阶段化（stages）与清晰门面
-- 可扩展：新增渲染策略通过端口注入，不改主编排骨架
+## 2) 核心业务能力清单（Capabilities）
 
-## 2) 模块结构（`src/`）
+### 能力 A：素材收集与校验
+- 用户价值：把“可用素材集”稳定收敛成一个确定的输入集合，避免后续生成与渲染在中途失败
+- 触发方式：用户选择/提供图片目录后立即发生
+- 输入：目录第一层的图片文件
+- 输出：被接受的图片列表，或明确的错误提示
+- 关键边界与失败方式（用户视角）：
+  - 只扫描第一层（不递归子目录）
+  - 仅支持 `jpg/jpeg/png`
+  - 最多 20 张
+  - 目录中一旦出现不支持的格式（如 `webp/heic/heif/gif/bmp/tiff/avif`）会直接报错
 
-### CLI 与交互
-- 入口：`src/index.ts`
-- 命令层：`src/commands/render-story.command.ts`
-- 错误映射：`src/commands/render-story.error-mapper.ts`
-- TUI 适配：`src/commands/tui/render-story.tui.ts`（`@clack/prompts`）
-- 交互流程：`src/flows/create-story-video/create-story-video.flow.ts`
+### 能力 B：交互式偏好收集（风格与补充描述）
+- 用户价值：把用户的“风格偏好/额外描述”结构化为后续生成脚本与渲染的输入
+- 触发方式：素材校验通过后，进入交互问答
+- 输入：风格 preset（可选自定义）与可选补充描述（prompt）
+- 输出：一次运行的“创作意图配置”
+- 失败方式：用户随时可选择退出
 
-### Pipeline 编排核心
-- 对外门面：`src/pipeline.ts`
-- 编排入口：`src/workflow/start-story-run.ts`
-- 阶段实现：
-  - `src/workflow/stages/collect-images.stage.ts`
-  - `src/workflow/stages/generate-script.stage.ts`
-  - `src/workflow/stages/render.stage.ts`
-  - `src/workflow/stages/publish.stage.ts`
-- 端口与运行时：
-  - `src/workflow/workflow-ports.ts`
-  - `src/workflow/workflow-runtime.ts`
-  - `src/workflow/workflow-events.ts`
+### 能力 C：故事脚本生成（story-script）
+- 用户价值：把图片集合与偏好转成可渲染的结构化脚本，减少用户手工编排成本
+- 触发方式：用户确认偏好后开始生成
+- 输入：图片列表 + 风格 preset + 可选 prompt
+- 输出：结构化 `story-script.json`
+- 失败方式：生成失败时会给出错误提示，并在产物目录中留下可用于排查的日志文件
 
-### Template 渲染
-- 目录：`src/story-template/`
-- 模板渲染域服务：`src/domains/template-render/render-by-template.ts`
+### 能力 D：渲染策略选择与失败重试
+- 用户价值：在不同渲染路径之间切换，提升“最终能出片”的概率
+- 触发方式：进入渲染阶段前由用户选择，或渲染失败后再次选择
+- 输入：渲染模式（`template` 或 `ai_code`）
+- 输出：一次或多次渲染尝试的结果
+- 失败方式：渲染失败时，用户可再次选择模式重试或退出
 
-## 3) 关键流程
+### 能力 E：本地渲染与产物落盘
+- 用户价值：在用户机器本地完成渲染，产物可直接拿走分享
+- 触发方式：用户选择渲染模式后执行
+- 输入：故事脚本 + 图片素材 + 渲染模式
+- 输出：`video.mp4` 与本次运行的日志/中间产物
+- 关键边界与失败方式（用户视角）：
+  - 依赖可用的 Chromium 内核浏览器环境；若自动探测失败，用户需要显式指定浏览器可执行文件位置
 
-### 流程 A：标准闭环
-1. `runRenderStoryCommand` 解析 CLI 参数并创建 agent client
-2. `createStoryVideoFlow` 收集 prompts 并调用 `runStoryWorkflow`
-3. `runStoryWorkflow` 依次执行 4 个 stage：
-   - collect images
-   - generate script
-   - render loop
-   - publish
-4. 返回 `RunSummary` 并打印核心产物路径
+## 3) 核心用户流程（User Journeys）
 
-### 流程 B：渲染失败恢复
-1. `render.stage` 失败写入 `error.log` 与 `render-attempts.jsonl`
-2. 状态机返回 `select_mode`
-3. CLI 继续让用户选择 `template/ai_code/exit`
+### 流程 1：标准出片闭环
+1. 用户选择一个图片目录
+2. 系统校验目录素材并给出明确可用/不可用结论
+3. 用户选择风格 preset，并可补充一段描述
+4. 系统生成结构化故事脚本
+5. 用户选择渲染模式并在本机渲染
+6. 产物落盘，用户获得可分享的视频文件
 
-## 4) 依赖边界
+### 流程 2：渲染失败后的切换重试
+1. 渲染阶段出现失败提示
+2. 系统保留失败日志与本次运行的上下文产物
+3. 用户再次选择渲染模式（切换或保持）
+4. 系统再次尝试渲染，直到成功或用户退出
 
-允许依赖方向：
-- `commands/flows` -> `pipeline.ts`（门面）
-- `workflow` -> `domains`
-- `domains/template-render` -> `story-template`
+### 流程 3：浏览器探测失败时的手动指定
+1. 系统提示浏览器启动失败/未找到可用浏览器
+2. 用户提供浏览器可执行文件位置
+3. 系统使用该浏览器继续完成渲染
 
-禁止方向：
-- `workflow/domains` 反向依赖 CLI
-- 命令层绕过门面直接深层耦合编排内部细节
+## 4) 业务规则与约束（Rules & Constraints）
 
-## 5) 测试结构
+- 输入目录仅扫描第一层文件，不递归
+- 仅支持 `jpg/jpeg/png`，最多 20 张
+- 目录内出现任意不支持格式会直接报错（防止“部分可用”导致结果不可预期）
+- 渲染模式含义：
+  - `template`：使用内置模板路径完成渲染
+  - `ai_code`：使用生成式方式产生渲染实现并完成渲染
+- 失败策略：在渲染失败时，通过“切换模式重试”来提升成功率
 
-所有测试与测试脚本统一放在 `tests/`，无子目录：
-- 单测与集成：`tests/*.spec.ts`
-- 测试运行器：`tests/run-tests.mjs`
-- 示例图片夹具：`tests/fixture-photo-*.jpeg`
+## 5) 产物与可见结果（Outputs）
 
-## 6) 清理结果（完全重构）
+默认产物目录：`<inputDir>/lihuacat-output/<runId>/`
 
-- 已移除 `packages/` 与 workspace 结构
-- 已移除根 `scripts/`，脚本与夹具并入 `tests/`
-- 已统一入口脚本到根 `package.json`
-- 已统一测试运行到 `tests/run-tests.mjs`
+常见产物：
+- `video.mp4`：最终视频
+- `story-script.json`：结构化故事脚本
+- `run.log`：本次运行过程日志
+- `error.log`：失败时的错误日志
 
-## 7) 10 分钟读码路径
+## 6) 术语表（Glossary）
 
-1. `src/index.ts`
-2. `src/commands/render-story.command.ts`
-3. `src/flows/create-story-video/create-story-video.flow.ts`
-4. `src/pipeline.ts`
-5. `src/workflow/start-story-run.ts`
-6. `src/workflow/stages/render.stage.ts`
-7. `src/story-template/StoryComposition.tsx`
+- story-script：描述“镜头/字幕/节奏/素材使用方式”等的结构化脚本文件
+- render mode：渲染模式，决定使用哪条渲染路径（`template`/`ai_code`）
+- runId：一次运行的唯一标识，用于隔离产物目录
 
-## 8) 构建与验证
+## 7) 入口索引（可选）
 
-- 安装：`pnpm install`
-- 全量测试：`pnpm test`
-- 全量构建：`pnpm run build`
-- 启动：`pnpm run start`
+- `src/index.ts`：CLI 入口与交互起点
+- `src/flows/create-story-video/create-story-video.flow.ts`：端到端用户流程编排入口
+- `src/pipeline.ts`：对外门面（主流程入口）
+- `src/story-template/`：内置模板相关实现
