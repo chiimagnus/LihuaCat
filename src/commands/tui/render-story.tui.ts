@@ -58,7 +58,7 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
 
   const mustContinue = <T>(value: T | symbol): T => {
     if (isCancel(value)) {
-      cancel("已取消操作");
+      cancel("Operation cancelled.");
       throw new TuiCancelledError();
     }
     return value;
@@ -66,18 +66,18 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
 
   return {
     intro(input) {
-      intro("LihuaCat ▸ 创建故事视频");
+      intro("LihuaCat ▸ Create story video");
       log.info(`Codex model: ${input.model} · reasoning: ${input.reasoningEffort}`);
     },
 
     async askSourceDir() {
       const answer = mustContinue(
         await text({
-          message: "素材目录路径",
+          message: "Source directory",
           placeholder: "/ABS/PATH/TO/PHOTOS",
           validate(value) {
             if (!value || value.trim().length === 0) {
-              return "目录路径不能为空";
+              return "Directory path cannot be empty.";
             }
             return undefined;
           },
@@ -92,15 +92,15 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
         label: string;
         hint: string;
       }> = [
-        { value: "healing", label: "healing", hint: "温和治愈" },
-        { value: "warm", label: "warm", hint: "暖色生活感" },
-        { value: "cinematic", label: "cinematic", hint: "电影感叙事" },
-        { value: "minimal", label: "minimal", hint: "克制简洁" },
-        { value: "custom", label: "custom", hint: "自定义 preset" },
+        { value: "healing", label: "healing", hint: "Soft, healing" },
+        { value: "warm", label: "warm", hint: "Warm lifestyle" },
+        { value: "cinematic", label: "cinematic", hint: "Cinematic narration" },
+        { value: "minimal", label: "minimal", hint: "Minimal and restrained" },
+        { value: "custom", label: "custom", hint: "Custom preset" },
       ];
       const choice = mustContinue(
         await select({
-          message: "选择风格 preset",
+          message: "Select style preset",
           initialValue: "healing",
           options,
         }),
@@ -112,10 +112,10 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
 
       const custom = mustContinue(
         await text({
-          message: "输入自定义 preset",
+          message: "Enter custom preset",
           validate(value) {
             if (!value || value.trim().length === 0) {
-              return "preset 不能为空";
+              return "Preset cannot be empty.";
             }
             return undefined;
           },
@@ -127,8 +127,8 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
     async askPrompt() {
       const answer = mustContinue(
         await text({
-          message: "补充描述（可留空）",
-          placeholder: "例如：春天，慢节奏，治愈感",
+          message: "Extra description (optional)",
+          placeholder: "e.g. spring, slow pace, healing vibe",
         }),
       );
       return answer.trim();
@@ -136,14 +136,17 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
 
     async chooseRenderMode({ lastFailure }) {
       if (lastFailure) {
-        note(`mode: ${lastFailure.mode}\nreason: ${lastFailure.reason}`, "上一轮失败");
+        note(
+          `mode: ${lastFailure.mode}\nreason: ${lastFailure.reason}`,
+          "Last attempt failed",
+        );
       }
       const mode = await select({
-        message: "选择渲染模式",
+        message: "Select render mode",
         options: [
-          { value: "template", label: "template", hint: "稳定、快速" },
-          { value: "ai_code", label: "ai_code", hint: "可定制、可重试" },
-          { value: "exit", label: "exit", hint: "退出本次流程" },
+          { value: "template", label: "template", hint: "Stable, fast" },
+          { value: "ai_code", label: "ai_code", hint: "Customizable, retryable" },
+          { value: "exit", label: "exit", hint: "Exit this run" },
         ],
       });
       if (isCancel(mode)) {
@@ -190,7 +193,7 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
 
     complete(summary) {
       stopSpinnerIfNeeded();
-      outro("✓ 视频生成成功");
+      outro("✓ Video created");
       note(
         [
           `mode: ${summary.mode}`,
@@ -202,7 +205,7 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
         ]
           .filter((line) => line.length > 0)
           .join("\n"),
-        "产物路径",
+        "Artifact paths",
       );
     },
 
