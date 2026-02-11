@@ -20,15 +20,27 @@ test("semantic validation fails when fixed video spec does not match", () => {
   script.video.fps = 60;
   const result = validateRenderScriptSemantics(script, {
     fixedVideo: { width: 1080, height: 1920, fps: 30 },
+    expectedTotalDurationSec: 30,
   });
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((error) => error.includes("video.fps must be 30")));
+});
+
+test("semantic validation fails when total duration does not match expected", () => {
+  const script = buildValidRenderScript();
+  script.scenes[0]!.durationSec = 10;
+  const result = validateRenderScriptSemantics(script, {
+    expectedTotalDurationSec: 30,
+  });
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((error) => error.includes("total duration")));
 });
 
 test("semantic validation fails when not all expected photos are used", () => {
   const script = buildValidRenderScript();
   script.scenes = [script.scenes[0]!];
   const result = validateRenderScriptSemantics(script, {
+    expectedTotalDurationSec: 30,
     expectedPhotoRefs: ["1.jpg", "2.jpg"],
     requireAllPhotosUsed: true,
   });
@@ -40,6 +52,7 @@ test("semantic validation fails when slide direction is not allowed", () => {
   const script = buildValidRenderScript();
   script.scenes[0]!.transition = { type: "slide", durationMs: 300, direction: "up" };
   const result = validateRenderScriptSemantics(script, {
+    expectedTotalDurationSec: 30,
     allowedSlideDirections: ["left", "right"],
   });
   assert.equal(result.valid, false);
@@ -52,6 +65,7 @@ test("valid render-script passes both structure and semantic checks", () => {
   assert.equal(structure.valid, true);
   const semantic = validateRenderScriptSemantics(script, {
     fixedVideo: { width: 1080, height: 1920, fps: 30 },
+    expectedTotalDurationSec: 30,
     expectedPhotoRefs: ["1.jpg", "2.jpg"],
     requireAllPhotosUsed: true,
     allowedSlideDirections: ["left", "right"],
@@ -68,7 +82,7 @@ const buildValidRenderScript = (): RenderScript => ({
       photoRef: "1.jpg",
       subtitle: "first",
       subtitlePosition: "bottom",
-      durationSec: 3,
+      durationSec: 15,
       transition: { type: "fade", durationMs: 300 },
       kenBurns: { startScale: 1, endScale: 1.1, panDirection: "left" },
     },
@@ -77,9 +91,8 @@ const buildValidRenderScript = (): RenderScript => ({
       photoRef: "2.jpg",
       subtitle: "second",
       subtitlePosition: "bottom",
-      durationSec: 3,
+      durationSec: 15,
       transition: { type: "cut", durationMs: 0 },
     },
   ],
 });
-

@@ -8,8 +8,10 @@ import {
   emitProgressAndPersist,
   pushErrorLog,
   pushRunLog,
+  writeStoryScriptArtifact,
   type WorkflowRuntimeArtifacts,
 } from "../workflow-runtime.ts";
+import type { RenderScript } from "../../contracts/render-script.types.ts";
 
 export type RenderStageResult = {
   mode: RenderMode;
@@ -119,6 +121,154 @@ export const runRenderStage = async ({
     mode: completedState.mode,
     videoPath: completedState.videoPath,
     generatedCodePath,
+  };
+};
+
+export type RenderStageV2Result = {
+  mode: "template";
+  videoPath: string;
+  storyScript: StoryScript;
+};
+
+export const runRenderStageV2 = async ({
+  runtime,
+  sourceDir,
+  collected,
+  renderScript,
+  browserExecutablePath,
+  onProgress,
+  renderByTemplateImpl,
+}: {
+  runtime: WorkflowRuntimeArtifacts;
+  sourceDir: string;
+  collected: { images: Array<{ fileName: string; absolutePath: string }> };
+  renderScript: RenderScript;
+  browserExecutablePath?: string;
+  onProgress?: WorkflowProgressReporter;
+  renderByTemplateImpl: typeof renderByTemplate;
+}): Promise<RenderStageV2Result> => {
+  await pushRunLog(runtime, "modeSelected=template");
+  await appendRenderAttempt(runtime, {
+    time: new Date().toISOString(),
+    mode: "template",
+    status: "started",
+  });
+  await emitProgressAndPersist(runtime, onProgress, {
+    stage: "render_start",
+    message: "Rendering video with template mode...",
+  });
+
+  const storyScript = buildStoryScriptForTemplate({
+    sourceDir,
+    collected,
+    renderScript,
+  });
+  await writeStoryScriptArtifact(runtime, storyScript);
+
+  try {
+    const rendered = await renderByTemplateImpl({
+      storyScript,
+      outputDir: runtime.outputDir,
+      browserExecutablePath,
+    });
+    await appendRenderAttempt(runtime, {
+      time: new Date().toISOString(),
+      mode: "template",
+      status: "success",
+      videoPath: rendered.videoPath,
+    });
+    await emitProgressAndPersist(runtime, onProgress, {
+      stage: "render_success",
+      message: "Template render succeeded.",
+    });
+    return {
+      mode: "template",
+      videoPath: rendered.videoPath,
+      storyScript,
+    };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    await pushErrorLog(runtime, `[template] ${reason}`);
+    await appendRenderAttempt(runtime, {
+      time: new Date().toISOString(),
+      mode: "template",
+      status: "failed",
+      reason,
+    });
+    await emitProgressAndPersist(runtime, onProgress, {
+      stage: "render_failed",
+      message: `Template render failed: ${reason}`,
+    });
+    throw error;
+  }
+};
+
+const buildStoryScriptForTemplate = ({
+  sourceDir,
+  collected,
+  renderScript,
+}: {
+  sourceDir: string;
+  collected: { images: Array<{ fileName: string; absolutePath: string }> };
+  renderScript: RenderScript;
+}): StoryScript => {
+  const assets = collected.images.map((image, index) => ({
+    id: `img_${String(index + 1).padStart(3, "0")}`,
+    path: image.absolutePath,
+  }));
+
+  const assetIdByPhotoRef = new Map<string, string>();
+  for (let i = 0; i < collected.images.length; i += 1) {
+    const image = collected.images[i]!;
+    assetIdByPhotoRef.set(image.fileName, assets[i]!.id);
+  }
+
+  let cursorSec = 0;
+  const timeline: StoryScript["timeline"] = [];
+  const subtitles: StoryScript["subtitles"] = [];
+
+  for (let i = 0; i < renderScript.scenes.length; i += 1) {
+    const scene = renderScript.scenes[i]!;
+    const assetId = assetIdByPhotoRef.get(scene.photoRef);
+    if (!assetId) {
+      throw new Error(`render-script references unknown photoRef: ${scene.photoRef}`);
+    }
+    const subtitleId = `sub_${String(i + 1).padStart(3, "0")}`;
+    const startSec = cursorSec;
+    const endSec = cursorSec + scene.durationSec;
+    cursorSec = endSec;
+    timeline.push({
+      assetId,
+      startSec,
+      endSec,
+      subtitleId,
+    });
+    subtitles.push({
+      id: subtitleId,
+      text: scene.subtitle,
+      startSec,
+      endSec,
+    });
+  }
+
+  return {
+    version: "1.0",
+    input: {
+      sourceDir,
+      imageCount: assets.length,
+      assets,
+    },
+    video: {
+      width: renderScript.video.width,
+      height: renderScript.video.height,
+      fps: renderScript.video.fps,
+      durationSec: 30,
+    },
+    style: {
+      preset: "tabby",
+    },
+    timeline,
+    subtitles,
   };
 };
 

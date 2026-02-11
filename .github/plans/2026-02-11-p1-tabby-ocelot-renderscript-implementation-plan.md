@@ -173,7 +173,7 @@
 
 ### P1：Workflow/CLI 编排（破坏性替换 B/C/D + 新产物落盘）
 
-### Task 8: 新增 workflow stages：tabby、ocelot、render（单路径）
+### ✅Task 8: 新增 workflow stages：tabby、ocelot、render（单路径）
 
 **Files:**
 - Create: `src/workflow/stages/tabby.stage.ts`

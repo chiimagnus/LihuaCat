@@ -24,6 +24,8 @@ const SLIDE_DIRECTIONS = new Set(["left", "right", "up", "down"]);
 
 export type RenderScriptSemanticRules = {
   fixedVideo?: { width: number; height: number; fps: number };
+  expectedTotalDurationSec?: number;
+  durationToleranceSec?: number;
   expectedPhotoRefs?: string[];
   requireAllPhotosUsed?: boolean;
   allowedSlideDirections?: SlideDirection[];
@@ -121,6 +123,16 @@ export const validateRenderScriptSemantics = (
   rules: RenderScriptSemanticRules = {},
 ): RenderScriptValidationResult => {
   const errors: string[] = [];
+
+  if (rules.expectedTotalDurationSec !== undefined) {
+    const total = script.scenes.reduce((sum, scene) => sum + scene.durationSec, 0);
+    const tolerance = rules.durationToleranceSec ?? 1e-6;
+    if (Math.abs(total - rules.expectedTotalDurationSec) > tolerance) {
+      errors.push(
+        `scenes total duration must be ${rules.expectedTotalDurationSec}, got ${total}`,
+      );
+    }
+  }
 
   if (rules.fixedVideo) {
     const { width, height, fps } = rules.fixedVideo;

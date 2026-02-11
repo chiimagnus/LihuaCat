@@ -13,6 +13,7 @@ export const buildRenderScriptPromptInput = (request: GenerateRenderScriptReques
     `- video.fps must be ${request.video.fps}`,
     "- scenes must be non-empty",
     "- each scene.durationSec must be > 0",
+    "- sum(scenes[].durationSec) must be 30",
     "- every provided photoRef must be used at least once in scenes",
     "- transition.type must be one of: cut|fade|dissolve|slide",
     "- if transition.type is slide, direction must be left or right (P1 constraint)",
@@ -97,4 +98,3 @@ export const renderScriptOutputSchema = {
     },
   },
 } as const;
-

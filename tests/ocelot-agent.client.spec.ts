@@ -175,7 +175,7 @@ const buildValidRenderScript = () => ({
       photoRef: "1.jpg",
       subtitle: "first",
       subtitlePosition: "bottom",
-      durationSec: 3,
+      durationSec: 15,
       transition: { type: "fade", durationMs: 300 },
     },
     {
@@ -183,9 +183,8 @@ const buildValidRenderScript = () => ({
       photoRef: "2.jpg",
       subtitle: "second",
       subtitlePosition: "bottom",
-      durationSec: 3,
+      durationSec: 15,
       transition: { type: "cut", durationMs: 0 },
     },
   ],
 });
-

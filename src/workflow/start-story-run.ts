@@ -2,15 +2,26 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 import type { StoryAgentClient } from "../domains/story-script/story-agent.client.ts";
+import type { TabbyAgentClient } from "../domains/tabby/tabby-agent.client.ts";
+import type { TabbySessionTui } from "../domains/tabby/tabby-session.ts";
+import type { StoryBriefAgentClient } from "../domains/story-brief/story-brief-agent.client.ts";
+import type { OcelotAgentClient } from "../domains/render-script/ocelot-agent.client.ts";
 import type { RenderMode } from "../domains/render-choice/render-choice-machine.ts";
 import type { RunSummary } from "../domains/artifact-publish/build-run-summary.ts";
 import type { WorkflowProgressReporter } from "./workflow-events.ts";
-import { resolveWorkflowPorts, type WorkflowPorts } from "./workflow-ports.ts";
+import {
+  resolveWorkflowPorts,
+  resolveWorkflowPortsV2,
+  type WorkflowPorts,
+  type WorkflowPortsV2,
+} from "./workflow-ports.ts";
 import { initializeWorkflowRuntime } from "./workflow-runtime.ts";
 import { runCollectImagesStage } from "./stages/collect-images.stage.ts";
 import { runGenerateScriptStage } from "./stages/generate-script.stage.ts";
-import { runRenderStage } from "./stages/render.stage.ts";
+import { runRenderStage, runRenderStageV2 } from "./stages/render.stage.ts";
 import { runPublishStage } from "./stages/publish.stage.ts";
+import { runTabbyStage } from "./stages/tabby.stage.ts";
+import { runOcelotStage } from "./stages/ocelot.stage.ts";
 
 export type { WorkflowProgressEvent } from "./workflow-events.ts";
 
@@ -113,6 +124,90 @@ export const runStoryWorkflow = async (
     videoPath: renderResult.videoPath,
     generatedCodePath: renderResult.generatedCodePath,
     storyScript: scriptResult.script,
+    onProgress,
+    publishArtifactsImpl: ports.publishArtifactsImpl,
+  });
+};
+
+export type RunStoryWorkflowV2Input = {
+  sourceDir: string;
+  tabbyAgentClient: TabbyAgentClient;
+  tabbyTui: TabbySessionTui;
+  storyBriefAgentClient: StoryBriefAgentClient;
+  ocelotAgentClient: OcelotAgentClient;
+  browserExecutablePath?: string;
+  onProgress?: WorkflowProgressReporter;
+  now?: Date;
+};
+
+export type RunStoryWorkflowV2Dependencies = Partial<WorkflowPortsV2>;
+
+export const runStoryWorkflowV2 = async (
+  {
+    sourceDir,
+    tabbyAgentClient,
+    tabbyTui,
+    storyBriefAgentClient,
+    ocelotAgentClient,
+    browserExecutablePath,
+    onProgress,
+    now,
+  }: RunStoryWorkflowV2Input,
+  dependencies: RunStoryWorkflowV2Dependencies = {},
+): Promise<RunSummary> => {
+  const ports = resolveWorkflowPortsV2(dependencies);
+  const { runId, outputDir } = startStoryRun({
+    sourceDir,
+    now,
+  });
+  const runtime = await initializeWorkflowRuntime({
+    runId,
+    sourceDir,
+    outputDir,
+  });
+
+  const collected = await runCollectImagesStage({
+    sourceDir,
+    runtime,
+    onProgress,
+    collectImagesImpl: ports.collectImagesImpl,
+  });
+
+  const tabby = await runTabbyStage({
+    collected,
+    runtime,
+    tabbyAgentClient,
+    tabbyTui,
+    storyBriefAgentClient,
+    onProgress,
+    runTabbySessionImpl: ports.runTabbySessionImpl,
+    generateStoryBriefImpl: ports.generateStoryBriefImpl,
+  });
+
+  const ocelot = await runOcelotStage({
+    collected,
+    runtime,
+    storyBriefRef: path.join(outputDir, "stages", "story-brief.json"),
+    storyBrief: tabby.storyBrief,
+    ocelotAgentClient,
+    onProgress,
+  });
+
+  const rendered = await runRenderStageV2({
+    runtime,
+    sourceDir,
+    collected,
+    renderScript: ocelot.renderScript as never,
+    browserExecutablePath,
+    onProgress,
+    renderByTemplateImpl: ports.renderByTemplateImpl,
+  });
+
+  return runPublishStage({
+    runtime,
+    mode: rendered.mode,
+    videoPath: rendered.videoPath,
+    storyScript: rendered.storyScript,
     onProgress,
     publishArtifactsImpl: ports.publishArtifactsImpl,
   });

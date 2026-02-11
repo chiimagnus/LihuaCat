@@ -3,6 +3,8 @@ import { generateStoryScript } from "../domains/story-script/generate-story-scri
 import { renderByTemplate } from "../domains/template-render/render-by-template.ts";
 import { renderByAiCode } from "../domains/ai-code-render/render-by-ai-code.ts";
 import { publishArtifacts } from "../domains/artifact-publish/publish-artifacts.ts";
+import { runTabbySession } from "../domains/tabby/tabby-session.ts";
+import { generateStoryBrief } from "../domains/story-brief/generate-story-brief.ts";
 
 export type WorkflowPorts = {
   collectImagesImpl: typeof collectImages;
@@ -21,6 +23,26 @@ export const resolveWorkflowPorts = (
       overrides.generateStoryScriptImpl ?? generateStoryScript,
     renderByTemplateImpl: overrides.renderByTemplateImpl ?? renderByTemplate,
     renderByAiCodeImpl: overrides.renderByAiCodeImpl ?? renderByAiCode,
+    publishArtifactsImpl: overrides.publishArtifactsImpl ?? publishArtifacts,
+  };
+};
+
+export type WorkflowPortsV2 = {
+  collectImagesImpl: typeof collectImages;
+  runTabbySessionImpl: typeof runTabbySession;
+  generateStoryBriefImpl: typeof generateStoryBrief;
+  renderByTemplateImpl: typeof renderByTemplate;
+  publishArtifactsImpl: typeof publishArtifacts;
+};
+
+export const resolveWorkflowPortsV2 = (
+  overrides: Partial<WorkflowPortsV2> = {},
+): WorkflowPortsV2 => {
+  return {
+    collectImagesImpl: overrides.collectImagesImpl ?? collectImages,
+    runTabbySessionImpl: overrides.runTabbySessionImpl ?? runTabbySession,
+    generateStoryBriefImpl: overrides.generateStoryBriefImpl ?? generateStoryBrief,
+    renderByTemplateImpl: overrides.renderByTemplateImpl ?? renderByTemplate,
     publishArtifactsImpl: overrides.publishArtifactsImpl ?? publishArtifacts,
   };
 };

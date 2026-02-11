@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { runStoryWorkflow } from "../src/workflow/start-story-run.ts";
+import { runStoryWorkflow, runStoryWorkflowV2 } from "../src/workflow/start-story-run.ts";
 import type { StoryScript } from "../src/contracts/story-script.types.ts";
 
 test("workflow contract: emits ordered core stage events on first-pass template success", async () => {
@@ -57,6 +57,141 @@ test("workflow contract: emits ordered core stage events on first-pass template 
     ]);
     assert.equal(summary.mode, "template");
     assert.match(summary.videoPath, /video\.mp4$/);
+  });
+});
+
+test("workflow v2 contract: emits ordered core stage events on first-pass template success", async () => {
+  await withTempDir(async (sourceDir) => {
+    await fs.writeFile(path.join(sourceDir, "1.jpg"), "fake-image");
+    const stages: string[] = [];
+
+    const summary = await runStoryWorkflowV2(
+      {
+        sourceDir,
+        tabbyAgentClient: {
+          async generateTurn() {
+            throw new Error("not used");
+          },
+        },
+        tabbyTui: {
+          async chooseOption() {
+            throw new Error("not used");
+          },
+          async askFreeInput() {
+            throw new Error("not used");
+          },
+        },
+        storyBriefAgentClient: {
+          async generateStoryBrief() {
+            throw new Error("not used");
+          },
+        },
+        ocelotAgentClient: {
+          async generateRenderScript() {
+            return {
+              storyBriefRef: "/tmp/run/story-brief.json",
+              video: { width: 1080, height: 1920, fps: 30 },
+              scenes: [
+                {
+                  sceneId: "scene_001",
+                  photoRef: "1.jpg",
+                  subtitle: "hello",
+                  subtitlePosition: "bottom",
+                  durationSec: 30,
+                  transition: { type: "cut", durationMs: 0 },
+                },
+              ],
+            };
+          },
+        },
+        onProgress: (event) => {
+          stages.push(event.stage);
+        },
+      },
+      {
+        collectImagesImpl: async () => ({
+          sourceDir,
+          images: [
+            {
+              index: 1,
+              fileName: "1.jpg",
+              absolutePath: path.join(sourceDir, "1.jpg"),
+              extension: ".jpg",
+            },
+          ],
+        }),
+        runTabbySessionImpl: async () => ({
+          conversation: [{ type: "user", time: "t", input: { kind: "option", id: "x", label: "x" } }],
+          confirmedSummary: "summary",
+        }),
+        generateStoryBriefImpl: async () => ({
+          brief: {
+            intent: {
+              coreEmotion: "释然",
+              tone: "克制",
+              narrativeArc: "起承转合",
+              audienceNote: null,
+              avoidance: [],
+              rawUserWords: "很轻",
+            },
+            photos: [
+              {
+                photoRef: "1.jpg",
+                userSaid: "",
+                emotionalWeight: 0.5,
+                suggestedRole: "开场",
+                backstory: "",
+                analysis: "",
+              },
+            ],
+            narrative: {
+              arc: "起承转合",
+              beats: [
+                {
+                  photoRefs: ["1.jpg"],
+                  moment: "moment",
+                  emotion: "emotion",
+                  duration: "short",
+                  transition: "cut",
+                },
+              ],
+            },
+          },
+          attempts: 1,
+        }),
+        renderByTemplateImpl: async ({ outputDir }) => {
+          const videoPath = path.join(outputDir, "video.mp4");
+          await fs.mkdir(outputDir, { recursive: true });
+          await fs.writeFile(videoPath, "video");
+          return {
+            mode: "template",
+            videoPath,
+          };
+        },
+        publishArtifactsImpl: async () => ({
+          runId: "run-v2",
+          outputDir: path.join(sourceDir, "lihuacat-output", "run-v2"),
+          mode: "template",
+          videoPath: path.join(sourceDir, "lihuacat-output", "run-v2", "video.mp4"),
+          storyScriptPath: path.join(sourceDir, "lihuacat-output", "run-v2", "story-script.json"),
+          runLogPath: path.join(sourceDir, "lihuacat-output", "run-v2", "run.log"),
+        }),
+      },
+    );
+
+    assert.deepEqual(stages, [
+      "collect_images_start",
+      "collect_images_done",
+      "tabby_start",
+      "tabby_done",
+      "ocelot_start",
+      "ocelot_done",
+      "render_start",
+      "render_success",
+      "publish_start",
+      "publish_done",
+    ]);
+    assert.equal(summary.mode, "template");
   });
 });
 
