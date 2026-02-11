@@ -270,6 +270,9 @@ flowchart LR
 - 现有 template / ai_code 双渲染模式废弃，保留现有 Remotion 模板组件（图片铺满、字幕渐变底），在模板内新增实现转场动画与 Ken Burns，数据源从 `story-script.json` 切换到 `render-script.json`
 - ai_code 彻底删除，不保留为自动兜底。渲染失败即报错退出，因为新架构下渲染器是确定性映射（render-script → video），失败说明渲染器有 bug 或 render-script 数据有问题，切换路径不解决根因
 - 能力 D（渲染策略选择）废弃（不再有模式选择），能力 E（本地渲染与产物落盘）保留但重构输入源
+- `RenderScript.video` 参数由系统固定（1080×1920, 30fps），不由 Ocelot 决定
+- `RenderScript` 要求“每张图片至少使用一次”，并写入校验与 Ocelot prompt 的硬约束
+- `slide` 转场方向可配置，但 P1 的 Ocelot 只生成 `left`/`right`
 
 ---
 
@@ -296,7 +299,10 @@ flowchart LR
 - `options[]` 用于渲染 TUI 的 select（方向键选择），长度必须为 2–4，且必须包含 `id === "free_input"` 的选项（例如「我想自己说…」）
 - 选择 `free_input` 时，进入自由输入框（text），用户输入的文本作为该轮回答
 - `done === true` 表示进入「确认页」：`say` 为人话总结；`options` 固定为 `confirm` / `revise` 二选一
-- 用户选择 `revise`：回到对话继续聊（Tabby 再追问 1–3 轮后再次 `done === true`）；不做字段级表单编辑
+- `done === true` 时，`options` 固定为：
+  - `{ id: "confirm", label: "就是这个感觉" }`
+  - `{ id: "revise", label: "需要修改" }`
+- 用户选择 `revise`：回到对话继续聊（最多 3 轮），Tabby 再次 `done === true` 后回到确认页；不做字段级表单编辑
 - `internalNotes` 会被落盘到对话日志中用于调试，但**不展示**给用户
 - Tabby 的“受众（发给谁看）”为可选项：会问，但允许跳过
 
@@ -313,7 +319,6 @@ flowchart LR
 | 文件 | 内容 | 调试用途 |
 | --- | --- | --- |
 | `tabby-conversation.jsonl` | 完整对话历史（用户消息 + Tabby JSON 输出 + internalNotes + 时间戳） | 审阅对话质量：Tabby 追问是否自然、收束时机是否合理；回放现场用于调试 |
-| `tabby-photo-analysis.json` | Tabby 对每张图的视觉分析（戴着有色眼镜的） | 审阅看图质量：分析是否准确、是否受用户情感偏向影响 |
 | `story-brief.json` | Tabby 产出的叙事资产（CreativeIntent + PhotoNote[] + NarrativeStructure） | 审阅叙事质量：CreativeIntent 是否忠实、beats 是否合理 |
 | `render-script.json` | Ocelot 产出的渲染指令（RenderScene[]），呈现层直接消费 | 审阅渲染指令：字幕文案、镜头运动、过场方式是否匹配叙事意图 |
 | `ocelot-input.json` | Tabby 发给 Ocelot 的输入（完整 story-brief.json） | 定位问题：如果渲染指令质量差，先看叙事输入是否充分 |
