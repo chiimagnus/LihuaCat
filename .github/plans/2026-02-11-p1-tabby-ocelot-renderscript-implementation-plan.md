@@ -274,7 +274,7 @@
 - Run: `pnpm test -- tests/StoryComposition.spec.ts`
 - Expected: PASS（至少保证逻辑层生成的 frames 不出错）
 
-### Task 13: 新增 Ken Burns（scale + panDirection）
+### ✅Task 13: 新增 Ken Burns（scale + panDirection）
 
 **Files:**
 - Modify: `src/story-template/StoryComposition.tsx`

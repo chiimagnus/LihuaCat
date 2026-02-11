@@ -266,3 +266,31 @@ const computeSlideOffsets = (
 };
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
+
+export const computeKenBurnsTransform = (
+  kenBurns: NonNullable<SceneWindow["kenBurns"]>,
+  progress: number,
+  video: { width: number; height: number } = { width: 1080, height: 1920 },
+): { scale: number; translateX: number; translateY: number } => {
+  const t = clamp01(progress);
+  const scale = lerp(kenBurns.startScale, kenBurns.endScale, t);
+  const maxX = Math.max(0, (scale - 1) * video.width * 0.5);
+  const maxY = Math.max(0, (scale - 1) * video.height * 0.5);
+
+  const panX =
+    kenBurns.panDirection === "left"
+      ? -maxX * t
+      : kenBurns.panDirection === "right"
+        ? maxX * t
+        : 0;
+  const panY =
+    kenBurns.panDirection === "up"
+      ? -maxY * t
+      : kenBurns.panDirection === "down"
+        ? maxY * t
+        : 0;
+
+  return { scale, translateX: panX, translateY: panY };
+};
+
+const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;

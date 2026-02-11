@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { createDefaultStoryTemplateProps } from "../src/story-template/StoryComposition.schema.ts";
 import {
   buildSceneWindows,
+  computeKenBurnsTransform,
   computeSceneLayers,
   secondsToFrames,
 } from "../src/story-template/StoryComposition.logic.ts";
@@ -93,4 +94,15 @@ test("computeSceneLayers returns two layers during dissolve transition", () => {
   assert.equal(layers.length, 2);
   assert.ok(layers[0]!.opacity < 1);
   assert.ok(layers[1]!.opacity > 0);
+});
+
+test("computeKenBurnsTransform pans left while scaling up", () => {
+  const result = computeKenBurnsTransform(
+    { startScale: 1, endScale: 1.2, panDirection: "left" },
+    1,
+    { width: 1080, height: 1920 },
+  );
+  assert.equal(result.scale, 1.2);
+  assert.ok(result.translateX < 0);
+  assert.equal(result.translateY, 0);
 });

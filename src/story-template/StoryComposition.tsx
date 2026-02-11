@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 
 import type { StoryTemplateProps } from "./StoryComposition.schema.ts";
-import { buildSceneWindows, computeSceneLayers } from "./StoryComposition.logic.ts";
+import { buildSceneWindows, computeKenBurnsTransform, computeSceneLayers } from "./StoryComposition.logic.ts";
 
 export const StoryComposition: React.FC<StoryTemplateProps> = (props) => {
   const { fps } = useVideoConfig();
@@ -30,10 +30,22 @@ const SceneLayerView: React.FC<{
     opacity: number;
     translateX: number;
     translateY: number;
+    progressInScene: number;
+    kenBurns?: {
+      startScale: number;
+      endScale: number;
+      panDirection: "left" | "right" | "up" | "down" | "center";
+    };
   };
 }> = ({ layer }) => {
+  const { width, height } = useVideoConfig();
   const subtitleContainerStyle = subtitlePositionToContainerStyle(layer.subtitlePosition);
   const subtitleBackgroundStyle = subtitlePositionToBackgroundStyle(layer.subtitlePosition);
+
+  const kenBurns = layer.kenBurns
+    ? computeKenBurnsTransform(layer.kenBurns, layer.progressInScene, { width, height })
+    : null;
+
   return (
     <AbsoluteFill
       style={{
@@ -47,6 +59,9 @@ const SceneLayerView: React.FC<{
           width: "100%",
           height: "100%",
           objectFit: "cover",
+          transform: kenBurns
+            ? `translate(${kenBurns.translateX}px, ${kenBurns.translateY}px) scale(${kenBurns.scale})`
+            : undefined,
         }}
       />
       <AbsoluteFill
