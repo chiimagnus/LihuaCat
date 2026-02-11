@@ -2,13 +2,14 @@ import path from "node:path";
 
 import { createStoryVideoFlow } from "../flows/create-story-video/create-story-video.flow.ts";
 import {
-  createCodexStoryAgentClient,
+  createCodexOcelotAgentClient,
+  createCodexStoryBriefAgentClient,
+  createCodexTabbyAgentClient,
   DEFAULT_CODEX_MODEL,
   DEFAULT_CODEX_REASONING_EFFORT,
-  runStoryWorkflow,
+  runStoryWorkflowV2,
   SourceDirectoryNotFoundError,
-  StoryScriptGenerationFailedError,
-  type RenderMode,
+  StoryBriefGenerationFailedError,
 } from "../pipeline.ts";
 import { buildRenderFailureOutput } from "./render-story.error-mapper.ts";
 import {
@@ -24,7 +25,7 @@ type LogWriter = {
 export type RunRenderStoryCommandInput = {
   argv: string[];
   stderr?: LogWriter;
-  workflowImpl?: typeof runStoryWorkflow;
+  workflowImpl?: typeof runStoryWorkflowV2;
   tui?: RenderStoryTui;
   isInteractiveTerminal?: () => boolean;
 };
@@ -32,12 +33,11 @@ export type RunRenderStoryCommandInput = {
 export const runRenderStoryCommand = async ({
   argv,
   stderr = process.stderr,
-  workflowImpl = runStoryWorkflow,
+  workflowImpl = runStoryWorkflowV2,
   tui,
   isInteractiveTerminal = () => Boolean(process.stdin.isTTY && process.stdout.isTTY),
 }: RunRenderStoryCommandInput): Promise<number> => {
   const args = parseArgs(argv);
-  const modeSequence = parseModeSequence(args.get("mode-sequence") ?? args.get("mode") ?? "");
   const model = args.get("model") ?? DEFAULT_CODEX_MODEL;
   const modelReasoningEffort = parseModelReasoningEffort(
     args.get("model-reasoning-effort"),
@@ -47,8 +47,6 @@ export const runRenderStoryCommand = async ({
     ? path.resolve(args.get("browser-executable")!)
     : undefined;
   const sourceDirInitial = args.get("input");
-  const styleInitial = args.get("style");
-  const promptInitial = args.get("prompt");
 
   if (!tui && !isInteractiveTerminal()) {
     stderr.write(
@@ -58,7 +56,17 @@ export const runRenderStoryCommand = async ({
   }
 
   const ui = tui ?? createClackRenderStoryTui();
-  const storyAgentClient = createCodexStoryAgentClient({
+  const tabbyAgentClient = createCodexTabbyAgentClient({
+    model,
+    modelReasoningEffort: resolvedReasoningEffort,
+    workingDirectory: process.cwd(),
+  });
+  const storyBriefAgentClient = createCodexStoryBriefAgentClient({
+    model,
+    modelReasoningEffort: resolvedReasoningEffort,
+    workingDirectory: process.cwd(),
+  });
+  const ocelotAgentClient = createCodexOcelotAgentClient({
     model,
     modelReasoningEffort: resolvedReasoningEffort,
     workingDirectory: process.cwd(),
@@ -74,27 +82,14 @@ export const runRenderStoryCommand = async ({
       prompts: {
         askSourceDir: async () =>
           resolveInputPath(sourceDirInitial ?? (await ui.askSourceDir())),
-        askStylePreset: async () => {
-          if (styleInitial && styleInitial.trim().length > 0) {
-            return styleInitial.trim();
-          }
-          return ui.askStylePreset();
-        },
-        askPrompt: async () => {
-          if (promptInitial !== undefined) {
-            return promptInitial;
-          }
-          return ui.askPrompt();
-        },
-        chooseRenderMode: async (state) => {
-          const next = modeSequence.shift();
-          if (next) {
-            return next;
-          }
-          return ui.chooseRenderMode(state);
-        },
       },
-      storyAgentClient,
+      tabbyAgentClient,
+      tabbyTui: {
+        chooseOption: ui.tabbyChooseOption,
+        askFreeInput: ui.tabbyAskFreeInput,
+      },
+      storyBriefAgentClient,
+      ocelotAgentClient,
       browserExecutablePath,
       onProgress: (event) => ui.onWorkflowProgress(event),
       workflowImpl,
@@ -110,7 +105,7 @@ export const runRenderStoryCommand = async ({
     const output = buildRenderFailureOutput({
       error,
       SourceDirectoryNotFoundErrorClass: SourceDirectoryNotFoundError,
-      StoryScriptGenerationFailedErrorClass: StoryScriptGenerationFailedError,
+      StoryBriefGenerationFailedErrorClass: StoryBriefGenerationFailedError,
     });
     ui.fail(output.lines);
     return 1;
@@ -136,13 +131,6 @@ const parseArgs = (argv: string[]): Map<string, string> => {
     i += 1;
   }
   return args;
-};
-
-const parseModeSequence = (raw: string): RenderMode[] => {
-  return raw
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item): item is RenderMode => item === "template" || item === "ai_code");
 };
 
 const parseModelReasoningEffort = (

@@ -190,7 +190,7 @@
 - Run: `pnpm test -- tests/workflow-contract.spec.ts`
 - Expected: PASS（断言 stage events 顺序更新）
 
-### Task 9: 重写/替换 CLI flow：去掉 askStyle/askPrompt/模式选择
+### ✅Task 9: 重写/替换 CLI flow：去掉 askStyle/askPrompt/模式选择
 
 **Files:**
 - Modify: `src/flows/create-story-video/create-story-video.flow.ts`

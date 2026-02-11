@@ -1,50 +1,49 @@
 import type {
   RunSummary,
-  StoryAgentClient,
-  RenderMode,
+  TabbyAgentClient,
+  StoryBriefAgentClient,
+  OcelotAgentClient,
   WorkflowProgressEvent,
 } from "../../pipeline.ts";
 import {
-  runStoryWorkflow,
+  runStoryWorkflowV2,
 } from "../../pipeline.ts";
+import type { TabbySessionTui } from "../../domains/tabby/tabby-session.ts";
 
 export type CreateStoryVideoPromptAdapter = {
   askSourceDir: () => Promise<string>;
-  askStylePreset: () => Promise<string>;
-  askPrompt: () => Promise<string>;
-  chooseRenderMode: (state: {
-    lastFailure?: { mode: RenderMode; reason: string };
-  }) => Promise<RenderMode | "exit">;
 };
 
 export type CreateStoryVideoFlowInput = {
   prompts: CreateStoryVideoPromptAdapter;
-  storyAgentClient: StoryAgentClient;
+  tabbyAgentClient: TabbyAgentClient;
+  tabbyTui: TabbySessionTui;
+  storyBriefAgentClient: StoryBriefAgentClient;
+  ocelotAgentClient: OcelotAgentClient;
   browserExecutablePath?: string;
   onProgress?: (event: WorkflowProgressEvent) => Promise<void> | void;
-  workflowImpl?: typeof runStoryWorkflow;
+  workflowImpl?: typeof runStoryWorkflowV2;
 };
 
 export const createStoryVideoFlow = async ({
   prompts,
-  storyAgentClient,
+  tabbyAgentClient,
+  tabbyTui,
+  storyBriefAgentClient,
+  ocelotAgentClient,
   browserExecutablePath,
   onProgress,
-  workflowImpl = runStoryWorkflow,
+  workflowImpl = runStoryWorkflowV2,
 }: CreateStoryVideoFlowInput): Promise<RunSummary> => {
   const sourceDir = await prompts.askSourceDir();
-  const preset = await prompts.askStylePreset();
-  const prompt = await prompts.askPrompt();
 
   const summary = await workflowImpl({
     sourceDir,
-    style: {
-      preset,
-      prompt: prompt.trim().length > 0 ? prompt : undefined,
-    },
-    storyAgentClient,
+    tabbyAgentClient,
+    tabbyTui,
+    storyBriefAgentClient,
+    ocelotAgentClient,
     browserExecutablePath,
-    chooseRenderMode: prompts.chooseRenderMode,
     onProgress,
   });
 

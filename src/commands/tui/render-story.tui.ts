@@ -11,26 +11,26 @@ import {
 } from "@clack/prompts";
 
 import type {
-  RenderMode,
   RunSummary,
   WorkflowProgressEvent,
 } from "../../pipeline.ts";
+import type { TabbyOption } from "../../contracts/tabby-turn.types.ts";
 
 export type RenderStoryTuiIntroInput = {
   model: string;
   reasoningEffort: "minimal" | "low" | "medium" | "high" | "xhigh";
 };
 
-export type RenderModeSelectionState = {
-  lastFailure?: { mode: RenderMode; reason: string };
-};
-
 export type RenderStoryTui = {
   intro: (input: RenderStoryTuiIntroInput) => void;
   askSourceDir: () => Promise<string>;
-  askStylePreset: () => Promise<string>;
-  askPrompt: () => Promise<string>;
-  chooseRenderMode: (state: RenderModeSelectionState) => Promise<RenderMode | "exit">;
+  tabbyChooseOption: (input: {
+    say: string;
+    options: TabbyOption[];
+    done: boolean;
+    reviseDisabled: boolean;
+  }) => Promise<TabbyOption>;
+  tabbyAskFreeInput: (input: { message: string }) => Promise<string>;
   onWorkflowProgress: (event: WorkflowProgressEvent) => void;
   complete: (summary: RunSummary) => void;
   fail: (lines: string[]) => void;
@@ -86,88 +86,60 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
       return answer.trim();
     },
 
-    async askStylePreset() {
-      const options: Array<{
-        value: string;
-        label: string;
-        hint: string;
-      }> = [
-        { value: "healing", label: "healing", hint: "Soft, healing" },
-        { value: "warm", label: "warm", hint: "Warm lifestyle" },
-        { value: "cinematic", label: "cinematic", hint: "Cinematic narration" },
-        { value: "minimal", label: "minimal", hint: "Minimal and restrained" },
-        { value: "custom", label: "custom", hint: "Custom preset" },
-      ];
+    async tabbyChooseOption({ say, options, done, reviseDisabled }) {
+      stopSpinnerIfNeeded();
+      note(say, "🐱 Tabby");
+      if (done && reviseDisabled) {
+        log.message("  (已达到最大修改次数，不能再“需要修改”)");
+      }
+
       const choice = mustContinue(
         await select({
-          message: "Select style preset",
-          initialValue: "healing",
-          options,
+          message: done ? "确认一下这个感觉？" : "你更接近哪一句？",
+          options: options.map((option) => ({
+            value: option.id,
+            label: option.label,
+          })),
         }),
       );
 
-      if (choice !== "custom") {
-        return choice;
+      const selected = options.find((option) => option.id === choice);
+      if (!selected) {
+        throw new Error("Unexpected selection: option not found");
       }
+      return selected;
+    },
 
-      const custom = mustContinue(
+    async tabbyAskFreeInput({ message }) {
+      stopSpinnerIfNeeded();
+      const answer = mustContinue(
         await text({
-          message: "Enter custom preset",
+          message,
+          placeholder: "一句话也可以",
           validate(value) {
             if (!value || value.trim().length === 0) {
-              return "Preset cannot be empty.";
+              return "Text cannot be empty.";
             }
             return undefined;
           },
         }),
       );
-      return custom.trim();
-    },
-
-    async askPrompt() {
-      const answer = mustContinue(
-        await text({
-          message: "Extra description (optional)",
-          placeholder: "e.g. spring, slow pace, healing vibe",
-        }),
-      );
       return answer.trim();
     },
 
-    async chooseRenderMode({ lastFailure }) {
-      if (lastFailure) {
-        note(
-          `mode: ${lastFailure.mode}\nreason: ${lastFailure.reason}`,
-          "Last attempt failed",
-        );
-      }
-      const mode = await select({
-        message: "Select render mode",
-        options: [
-          { value: "template", label: "template", hint: "Stable, fast" },
-          { value: "ai_code", label: "ai_code", hint: "Customizable, retryable" },
-          { value: "exit", label: "exit", hint: "Exit this run" },
-        ],
-      });
-      if (isCancel(mode)) {
-        return "exit";
-      }
-      return mode;
-    },
-
     onWorkflowProgress(event) {
+      if (event.stage === "tabby_start") {
+        stopSpinnerIfNeeded();
+        log.step(`▸ ${event.message}`);
+        return;
+      }
+
       if (event.stage.endsWith("_start")) {
         if (hasActiveSpinner) {
           status.stop();
         }
         status.start(`● ${event.message}`);
         hasActiveSpinner = true;
-        return;
-      }
-
-      if (event.stage === "choose_mode") {
-        stopSpinnerIfNeeded();
-        log.step(`▸ ${event.message}`);
         return;
       }
 
