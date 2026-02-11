@@ -57,17 +57,23 @@ export const validateTabbyTurnOutput = (
       const expected = [
         { id: "confirm", label: "就是这个感觉" },
         { id: "revise", label: "需要修改" },
-      ];
+      ] as const;
+      const [expectedConfirm, expectedRevise] = expected;
 
       if (normalized.length !== 2) {
         errors.push("options must be exactly 2 items when done=true");
-      } else if (
-        normalized[0]?.id !== expected[0].id ||
-        normalized[0]?.label !== expected[0].label ||
-        normalized[1]?.id !== expected[1].id ||
-        normalized[1]?.label !== expected[1].label
-      ) {
-        errors.push("options must be confirm/revise fixed pair when done=true");
+      } else {
+        const [first, second] = normalized;
+        if (!first || !second) {
+          errors.push("options must be exactly 2 items when done=true");
+        } else if (
+          first.id !== expectedConfirm.id ||
+          first.label !== expectedConfirm.label ||
+          second.id !== expectedRevise.id ||
+          second.label !== expectedRevise.label
+        ) {
+          errors.push("options must be confirm/revise fixed pair when done=true");
+        }
       }
 
       const hasFreeInput = normalized.some((option) => option.id === "free_input");
@@ -87,4 +93,3 @@ export const validateTabbyTurnOutput = (
 
   return { valid: true, errors: [], output: input as TabbyTurnOutput };
 };
-
