@@ -105,7 +105,7 @@ test("workflow contract: emits ordered core stage events on first-pass template 
           },
           attempts: 1,
         }),
-        renderByTemplateImpl: async ({ outputDir }) => {
+        renderByTemplateV2Impl: async ({ outputDir }) => {
           const videoPath = path.join(outputDir, "video.mp4");
           await fs.mkdir(outputDir, { recursive: true });
           await fs.writeFile(videoPath, "video");
@@ -155,4 +155,3 @@ const withTempDir = async (run: (sourceDir: string) => Promise<void>) => {
     await fs.rm(sourceDir, { recursive: true, force: true });
   }
 };
-

@@ -287,7 +287,7 @@
 - Run: `pnpm test -- tests/StoryComposition.spec.ts`
 - Expected: PASS
 
-### Task 14: 渲染 domain 改造：`render-by-template` 读取 RenderScript
+### ✅Task 14: 渲染 domain 改造：`render-by-template` 读取 RenderScript
 
 **Files:**
 - Modify: `src/domains/template-render/render-by-template.ts`

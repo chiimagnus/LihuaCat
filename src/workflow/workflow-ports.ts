@@ -1,5 +1,6 @@
 import { collectImages } from "../domains/material-intake/collect-images.ts";
 import { renderByTemplate } from "../domains/template-render/render-by-template.ts";
+import { renderByTemplateV2 } from "../domains/template-render/render-by-template.ts";
 import { publishArtifacts } from "../domains/artifact-publish/publish-artifacts.ts";
 import { runTabbySession } from "../domains/tabby/tabby-session.ts";
 import { generateStoryBrief } from "../domains/story-brief/generate-story-brief.ts";
@@ -9,6 +10,7 @@ export type WorkflowPorts = {
   runTabbySessionImpl: typeof runTabbySession;
   generateStoryBriefImpl: typeof generateStoryBrief;
   renderByTemplateImpl: typeof renderByTemplate;
+  renderByTemplateV2Impl: typeof renderByTemplateV2;
   publishArtifactsImpl: typeof publishArtifacts;
 };
 
@@ -20,6 +22,7 @@ export const resolveWorkflowPorts = (
     runTabbySessionImpl: overrides.runTabbySessionImpl ?? runTabbySession,
     generateStoryBriefImpl: overrides.generateStoryBriefImpl ?? generateStoryBrief,
     renderByTemplateImpl: overrides.renderByTemplateImpl ?? renderByTemplate,
+    renderByTemplateV2Impl: overrides.renderByTemplateV2Impl ?? renderByTemplateV2,
     publishArtifactsImpl: overrides.publishArtifactsImpl ?? publishArtifacts,
   };
 };

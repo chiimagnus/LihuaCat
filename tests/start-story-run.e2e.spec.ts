@@ -109,7 +109,7 @@ test("workflow ends directly when template succeeds in first attempt", async () 
           },
           attempts: 1,
         }),
-        renderByTemplateImpl: async ({ outputDir }) => {
+        renderByTemplateV2Impl: async ({ outputDir }) => {
           const videoPath = path.join(outputDir, "video.mp4");
           await fs.mkdir(outputDir, { recursive: true });
           await fs.writeFile(videoPath, "template-video");
@@ -235,7 +235,7 @@ test("workflow emits progress events across core stages", async () => {
           },
           attempts: 1,
         }),
-        renderByTemplateImpl: async ({ outputDir }) => {
+        renderByTemplateV2Impl: async ({ outputDir }) => {
           const videoPath = path.join(outputDir, "video.mp4");
           await fs.mkdir(outputDir, { recursive: true });
           await fs.writeFile(videoPath, "template-video");
@@ -358,7 +358,7 @@ test("persists stage artifacts even when run exits after render failure", async 
             },
             attempts: 1,
           }),
-          renderByTemplateImpl: async () => {
+          renderByTemplateV2Impl: async () => {
             throw new Error("template crash");
           },
         },

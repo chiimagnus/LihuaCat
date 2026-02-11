@@ -1,6 +1,6 @@
 import type { StoryScript } from "../../contracts/story-script.types.ts";
 import { RenderChoiceMachine, type RenderMode } from "../../domains/render-choice/render-choice-machine.ts";
-import type { renderByTemplate } from "../../domains/template-render/render-by-template.ts";
+import type { renderByTemplate, renderByTemplateV2 } from "../../domains/template-render/render-by-template.ts";
 import type { renderByAiCode } from "../../domains/ai-code-render/render-by-ai-code.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
@@ -130,20 +130,18 @@ export type RenderStageV2Result = {
 
 export const runRenderStageV2 = async ({
   runtime,
-  sourceDir,
   collected,
   renderScript,
   browserExecutablePath,
   onProgress,
-  renderByTemplateImpl,
+  renderByTemplateV2Impl,
 }: {
   runtime: WorkflowRuntimeArtifacts;
-  sourceDir: string;
   collected: { images: Array<{ fileName: string; absolutePath: string }> };
   renderScript: RenderScript;
   browserExecutablePath?: string;
   onProgress?: WorkflowProgressReporter;
-  renderByTemplateImpl: typeof renderByTemplate;
+  renderByTemplateV2Impl: typeof renderByTemplateV2;
 }): Promise<RenderStageV2Result> => {
   await pushRunLog(runtime, "modeSelected=template");
   await appendRenderAttempt(runtime, {
@@ -156,15 +154,13 @@ export const runRenderStageV2 = async ({
     message: "Rendering video with template mode...",
   });
 
-  const storyScript = buildStoryScriptForTemplate({
-    sourceDir,
-    collected,
-    renderScript,
-  });
-
   try {
-    const rendered = await renderByTemplateImpl({
-      storyScript,
+    const rendered = await renderByTemplateV2Impl({
+      renderScript,
+      assets: collected.images.map((image) => ({
+        photoRef: image.fileName,
+        path: image.absolutePath,
+      })),
       outputDir: runtime.outputDir,
       browserExecutablePath,
     });
@@ -197,75 +193,6 @@ export const runRenderStageV2 = async ({
     });
     throw error;
   }
-};
-
-const buildStoryScriptForTemplate = ({
-  sourceDir,
-  collected,
-  renderScript,
-}: {
-  sourceDir: string;
-  collected: { images: Array<{ fileName: string; absolutePath: string }> };
-  renderScript: RenderScript;
-}): StoryScript => {
-  const assets = collected.images.map((image, index) => ({
-    id: `img_${String(index + 1).padStart(3, "0")}`,
-    path: image.absolutePath,
-  }));
-
-  const assetIdByPhotoRef = new Map<string, string>();
-  for (let i = 0; i < collected.images.length; i += 1) {
-    const image = collected.images[i]!;
-    assetIdByPhotoRef.set(image.fileName, assets[i]!.id);
-  }
-
-  let cursorSec = 0;
-  const timeline: StoryScript["timeline"] = [];
-  const subtitles: StoryScript["subtitles"] = [];
-
-  for (let i = 0; i < renderScript.scenes.length; i += 1) {
-    const scene = renderScript.scenes[i]!;
-    const assetId = assetIdByPhotoRef.get(scene.photoRef);
-    if (!assetId) {
-      throw new Error(`render-script references unknown photoRef: ${scene.photoRef}`);
-    }
-    const subtitleId = `sub_${String(i + 1).padStart(3, "0")}`;
-    const startSec = cursorSec;
-    const endSec = cursorSec + scene.durationSec;
-    cursorSec = endSec;
-    timeline.push({
-      assetId,
-      startSec,
-      endSec,
-      subtitleId,
-    });
-    subtitles.push({
-      id: subtitleId,
-      text: scene.subtitle,
-      startSec,
-      endSec,
-    });
-  }
-
-  return {
-    version: "1.0",
-    input: {
-      sourceDir,
-      imageCount: assets.length,
-      assets,
-    },
-    video: {
-      width: renderScript.video.width,
-      height: renderScript.video.height,
-      fps: renderScript.video.fps,
-      durationSec: 30,
-    },
-    style: {
-      preset: "tabby",
-    },
-    timeline,
-    subtitles,
-  };
 };
 
 const runTemplateAttempt = async ({

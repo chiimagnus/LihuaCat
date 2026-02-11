@@ -41,6 +41,20 @@ test("stages file URL assets into remotion public directory", async () => {
   });
 });
 
+test("stages photoRef assets into remotion public directory", async () => {
+  await withTempDir(async (dir) => {
+    const sourceFile = path.join(dir, "a.jpeg");
+    await fs.writeFile(sourceFile, "img-data");
+
+    const result = await stageRemotionAssets({
+      outputDir: dir,
+      assets: [{ photoRef: "1.jpeg", path: sourceFile }],
+    });
+
+    assert.equal(result.assets[0]?.path, "lihuacat-assets/001-1_jpeg.jpeg");
+  });
+});
+
 test("keeps remote asset URL unchanged", async () => {
   await withTempDir(async (dir) => {
     const remoteUrl = "https://example.com/a.jpg";

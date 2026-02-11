@@ -108,12 +108,11 @@ export const runStoryWorkflowV2 = async (
 
   const rendered = await runRenderStageV2({
     runtime,
-    sourceDir,
     collected,
     renderScript: ocelot.renderScript as never,
     browserExecutablePath,
     onProgress,
-    renderByTemplateImpl: ports.renderByTemplateImpl,
+    renderByTemplateV2Impl: ports.renderByTemplateV2Impl,
   });
 
   return runPublishStage({
