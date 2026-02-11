@@ -39,53 +39,24 @@ export const buildSceneWindows = (
   props: StoryTemplateProps,
   fps: number,
 ): SceneWindow[] => {
-  if ("storyBriefRef" in props) {
-    const assetPathByPhotoRef = new Map(
-      props.assets.map((asset) => [asset.photoRef, asset.path]),
-    );
-    let cursorFrame = 0;
-    return props.scenes.map((scene) => {
-      const startFrame = cursorFrame;
-      const durationInFrames = secondsToFrames(scene.durationSec, fps);
-      const endFrame = startFrame + durationInFrames;
-      cursorFrame = endFrame;
-      return {
-        sceneId: scene.sceneId,
-        startFrame,
-        endFrame,
-        assetPath: assetPathByPhotoRef.get(scene.photoRef) ?? "",
-        subtitle: scene.subtitle,
-        subtitlePosition: scene.subtitlePosition,
-        transition: scene.transition,
-        kenBurns: scene.kenBurns,
-      };
-    });
-  }
-
-  const assetPathById = new Map(
-    props.input.assets.map((asset) => [asset.id, asset.path]),
+  const assetPathByPhotoRef = new Map(
+    props.assets.map((asset) => [asset.photoRef, asset.path]),
   );
-  const subtitleById = new Map(
-    props.subtitles.map((subtitle) => [subtitle.id, subtitle.text]),
-  );
-
-  return props.timeline.map((item, index): SceneWindow => {
-    const assetPath = assetPathById.get(item.assetId) ?? "";
-    const subtitle = subtitleById.get(item.subtitleId) ?? "";
-    const startFrame = Math.max(0, Math.round(item.startSec * fps));
-    const durationInFrames = secondsToFrames(item.endSec - item.startSec, fps);
+  let cursorFrame = 0;
+  return props.scenes.map((scene) => {
+    const startFrame = cursorFrame;
+    const durationInFrames = secondsToFrames(scene.durationSec, fps);
     const endFrame = startFrame + durationInFrames;
+    cursorFrame = endFrame;
     return {
-      sceneId: `${item.assetId}_${index}`,
+      sceneId: scene.sceneId,
       startFrame,
       endFrame,
-      assetPath,
-      subtitle,
-      subtitlePosition: "bottom",
-      transition: {
-        type: "cut",
-        durationMs: 0,
-      },
+      assetPath: assetPathByPhotoRef.get(scene.photoRef) ?? "",
+      subtitle: scene.subtitle,
+      subtitlePosition: scene.subtitlePosition,
+      transition: scene.transition,
+      kenBurns: scene.kenBurns,
     };
   });
 };

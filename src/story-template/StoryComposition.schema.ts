@@ -1,51 +1,5 @@
 import { z } from "zod";
 
-const StoryScriptTemplatePropsSchema = z.object({
-  version: z.string().min(1),
-  input: z.object({
-    sourceDir: z.string().min(1),
-    imageCount: z.number().int().positive(),
-    assets: z
-      .array(
-        z.object({
-          id: z.string().min(1),
-          path: z.string().min(1),
-        }),
-      )
-      .min(1),
-  }),
-  video: z.object({
-    width: z.number().int().positive(),
-    height: z.number().int().positive(),
-    fps: z.number().int().positive(),
-    durationSec: z.number().positive(),
-  }),
-  style: z.object({
-    preset: z.string().min(1),
-    prompt: z.string().optional(),
-  }),
-  timeline: z
-    .array(
-      z.object({
-        assetId: z.string().min(1),
-        startSec: z.number().min(0),
-        endSec: z.number().positive(),
-        subtitleId: z.string().min(1),
-      }),
-    )
-    .min(1),
-  subtitles: z
-    .array(
-      z.object({
-        id: z.string().min(1),
-        text: z.string().min(1),
-        startSec: z.number().min(0),
-        endSec: z.number().positive(),
-      }),
-    )
-    .min(1),
-});
-
 const RenderTransitionSchema = z.object({
   type: z.enum(["cut", "fade", "dissolve", "slide"]),
   durationMs: z.number().min(0),
@@ -88,10 +42,7 @@ const RenderScriptTemplatePropsSchema = z.object({
     .min(1),
 });
 
-export const StoryTemplatePropsSchema = z.union([
-  StoryScriptTemplatePropsSchema,
-  RenderScriptTemplatePropsSchema,
-]);
+export const StoryTemplatePropsSchema = RenderScriptTemplatePropsSchema;
 
 export type StoryTemplateProps = z.infer<typeof StoryTemplatePropsSchema>;
 

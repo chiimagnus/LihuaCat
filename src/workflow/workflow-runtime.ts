@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { StoryScript } from "../contracts/story-script.types.ts";
 import type { StoryBrief } from "../contracts/story-brief.types.ts";
 import type { RenderScript } from "../contracts/render-script.types.ts";
 import type {
@@ -16,7 +15,6 @@ export type WorkflowRuntimeArtifacts = {
   stageDir: string;
   runLogPath: string;
   errorLogPath: string;
-  storyScriptPath: string;
   storyBriefPath: string;
   renderScriptPath: string;
   tabbyConversationPath: string;
@@ -46,7 +44,6 @@ export const initializeWorkflowRuntime = async ({
     stageDir,
     runLogPath: path.join(outputDir, "run.log"),
     errorLogPath: path.join(outputDir, "error.log"),
-    storyScriptPath: path.join(outputDir, "story-script.json"),
     storyBriefPath: path.join(outputDir, "story-brief.json"),
     renderScriptPath: path.join(outputDir, "render-script.json"),
     tabbyConversationPath: path.join(outputDir, "tabby-conversation.jsonl"),
@@ -101,17 +98,6 @@ export const pushErrorLog = async (
 ) => {
   runtime.errorLogs.push(line);
   await fs.appendFile(runtime.errorLogPath, `${line}\n`, "utf8");
-};
-
-export const writeStoryScriptArtifact = async (
-  runtime: WorkflowRuntimeArtifacts,
-  storyScript: StoryScript,
-) => {
-  await fs.writeFile(
-    runtime.storyScriptPath,
-    JSON.stringify(storyScript, null, 2),
-    "utf8",
-  );
 };
 
 export const writeStoryBriefArtifact = async (

@@ -307,7 +307,7 @@
 
 ### P1：删除旧代码（破坏性重构落地）
 
-### Task 15: 删除 story-script 相关 contracts/domains/prompts/tests
+### ✅Task 15: 删除 story-script 相关 contracts/domains/prompts/tests
 
 **Files:**
 - Delete: `src/contracts/story-script.types.ts`
