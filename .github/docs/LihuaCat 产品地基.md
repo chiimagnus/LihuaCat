@@ -206,6 +206,11 @@ RenderScript 是 🐆 Ocelot 读取 StoryBrief 后产出的**具体渲染指令*
 // render-script.json —— 渲染指令，呈现层直接消费
 interface RenderScript {
   storyBriefRef: string     // 关联的 story-brief.json 路径
+  video: {
+    width: number           // P1 系统固定：1080
+    height: number          // P1 系统固定：1920
+    fps: number             // P1 系统固定：30
+  }
   scenes: RenderScene[]
 }
 
@@ -214,7 +219,7 @@ interface RenderScene {
   photoRef: string          // 对应的图片
   subtitle: string          // 字幕文案
   subtitlePosition: string  // "bottom" | "top" | "center"
-  duration: number          // 秒
+  durationSec: number       // 秒
   transition: RenderTransition
   kenBurns?: KenBurnsEffect // 镜头运动（可选）
 }
