@@ -257,7 +257,7 @@
 - Run: `pnpm test -- tests/StoryComposition.spec.ts`
 - Expected: PASS
 
-### Task 12: 新增转场动画（fade/cut/dissolve/slide）
+### ✅Task 12: 新增转场动画（fade/cut/dissolve/slide）
 
 **Files:**
 - Modify: `src/story-template/StoryComposition.tsx`
