@@ -255,7 +255,16 @@ flowchart LR
 
 ## 分阶段落地
 
-**策略：渐进式重构**——保持现有 CLI 闭环可用，逐步把 Agent 能力插进去。Ocelot 产出的 `render-script.json` 直接替代现有 `story-script.json`，不做转换层。每个阶段都是可独立验证的 MVP。
+**策略：破坏性重构**——不做旧结构兼容，直接用新架构替换整个中间层。每个阶段都是可独立验证的 MVP。
+
+**关键决策：**
+
+- 目录选择与素材校验（能力 A）保留不动
+- 能力 B（交互式偏好收集）+ 能力 C（故事脚本生成）整体替换为 Tabby 对话 + StoryBrief + Ocelot 编剧
+- 现有 `story-script.json` 结构废弃，改用场景化的 `render-script.json`（`scenes[]` + `transition` + `kenBurns`）
+- 现有 template / ai_code 双渲染模式废弃，保留现有 Remotion 模板组件（图片铺满、字幕渐变底），在模板内新增实现转场动画与 Ken Burns，数据源从 `story-script.json` 切换到 `render-script.json`
+- ai_code 彻底删除，不保留为自动托底。渲染失败即报错退出，因为新架构下渲染器是确定性映射（render-script → video），失败说明渲染器有 bug 或 render-script 数据有问题，切换路径不解决根因
+- 能力 D（渲染策略选择）废弃（不再有模式选择），能力 E（本地渲染与产物落盘）保留但重构输入源
 
 ---
 
@@ -265,7 +274,7 @@ flowchart LR
 
 **做什么：**
 
-1. **类型定义**：在代码中定义 `StoryBrief`（CreativeIntent + PhotoNote[] + NarrativeStructure）和 `RenderScript`（RenderScene[]）两套类型
+1. **类型定义**：在代码中定义 `StoryBrief`（CreativeIntent + PhotoNote[] + NarrativeStructure）和 `RenderScript`（RenderScene[]）两套类型，删除现有 `story-script` 相关类型
 2. **🐱 Tabby 多模态对话**：替换现有的「能力 B：交互式偏好收集」
     - 看图：分析照片内容（场景、人物、光线、氛围），「戴着用户给的有色眼镜」去看
     - 聊天：多轮对话追问感受、挖背后故事，结合视觉信息提问（"这张海边的合影是在哪拍的？"）
@@ -273,12 +282,16 @@ flowchart LR
 3. **🐆 Ocelot 独立 agent**：Tabby 通过 tool call 调用
     - 输入：完整的 `story-brief.json`
     - 输出：`render-script.json`（具体渲染指令：每个 scene 的字幕文案、镜头运动、过场方式、时长等）
-4. **渲染管线对接**：读取 Ocelot 产出的 `render-script.json`，替代现有的 `story-script.json`
+4. **Remotion 渲染器改造**：保留现有模板组件（图片铺满、字幕渐变底），在模板内新增实现转场动画（fade/cut/dissolve/slide）与 Ken Burns 效果。数据源从 `story-script.json` 切换到 `render-script.json` 的 `scenes[]`。废弃 template / ai_code 双模式选择逻辑，只保留单一渲染路径，失败即报错退出
+5. **删除旧代码**：删除 `story-script.json` 相关生成逻辑、askStyle/askPrompt 交互、渲染模式选择逻辑（能力 D）
 
 **不做：**
 
 - 不做 🐈‍⬛ Lynx 审稿（留给 P2）
 - 不做多轮修改循环（Tabby 调一次 Ocelot 就定稿）
+- 不保留 story-script 数据结构、template/ai_code 模式选择逻辑、能力 B/C/D 的交互代码（破坏性重构，不做向后兼容）
+- Remotion 模板的现有组件（图片铺满、字幕渐变底）保留并改造，转场动画与 Ken Burns 为新增实现
+- 将同步更新 [README.md](http://README.md)、`.github/docs/[business-logic.md](http://business-logic.md)` 及现有测试基线（目前全部围绕 story-script、template|ai_code、mode-sequence），确保「每阶段可独立验证」不失真
 
 **产出文件（用于调试/审核）：**
 
@@ -298,7 +311,7 @@ flowchart LR
 - ✅ Tabby 能在对话中提及照片的具体内容（"这张是两个人在海边的合影对吗？"）
 - ✅ `story-brief.json` 的 CreativeIntent 字段全部填充，PhotoNote[] 长度等于输入图片数且含视觉分析和情感权重，NarrativeStructure 包含完整 beats
 - ✅ `render-script.json` 的 scenes 数量合理，每个 scene 包含字幕文案、过场方式、时长
-- ✅ 端到端跑通：看图对话 → `story-brief.json` → Ocelot 产出 `render-script.json` → 渲染 → [`video.mp](http://video.mp)4` 落盘
+- ✅ 端到端跑通：看图对话 → `story-brief.json` → Ocelot 产出 `render-script.json` → 渲染 → `video.mp4` 落盘
 - ✅ 所有中间文件可以人工审阅，方便定位「哪一步的质量不行」
 
 ---
