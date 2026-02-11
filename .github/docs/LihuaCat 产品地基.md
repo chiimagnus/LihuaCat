@@ -76,7 +76,9 @@ Tabby 是**唯一和用户直接对话的 agent**，也是整个系统的大脑�
 
 - **看图**——分析照片里有什么（场景、人物、光线、氛围），但永远「戴着用户给的有色眼镜」去看
 - **聊天**——多轮对话，追问感受、挖背后故事（"这张是在哪拍的？" "当时什么心情？" "你想发给谁看？"）
+    - **交互模式**：每轮给用户 2–4 个建议选项（select），且**必须**带一个「我想自己说…」入口进入自由输入。不做纯开放式提问，降低用户表达门槛
 - **判断**——知道什么时候该继续追问，什么时候信息已经够了，可以收束
+- **确认页**——收束后、调用 Ocelot 之前，向用户展示人话总结（"我理解你想表达的是：…"）。用户可以「确认」或「需要修改」。点「需要修改」回到对话继续聊 1–3 轮，**不做字段级表单**
 - **调度**——决定什么时候调用 Ocelot 写脚本、什么时候调用 Lynx 审稿、审稿不通过怎么处理
 
 **核心产出：** `CreativeIntent`（用户到底想表达什么）+ `PhotoNote[]`（每张照片的情感标注）。这两样东西组成 StoryBrief 的核心原料。
@@ -110,15 +112,18 @@ flowchart LR
     subgraph Core ["LihuaCat"]
         direction TB
         Tabby["🐱 Tabby<br>总导演"]
+        Confirm{"📋 确认页<br>确认 / 需要修改"}
         Ocelot["🐆 Ocelot<br>编剧"]
         Lynx["🐈‍⬛ Lynx<br>审稿"]
         Brief[/"📄 story-brief.json"/]
         RS[/"🎬 render-script.json"/]
     end
 
-    User <-->|"多轮对话"| Tabby
+    User <-->|"多轮对话<br>select 2-4 选项 + 自由输入"| Tabby
     Tabby --> Brief
-    Brief --> Ocelot
+    Brief --> Confirm
+    Confirm -->|"✅ 确认"| Ocelot
+    Confirm -.->|"需要修改<br>回到对话 1-3 轮"| Tabby
     Ocelot --> RS
     RS -->|"审稿"| Lynx
     Lynx -->|"审稿意见"| Tabby
@@ -159,7 +164,7 @@ interface CreativeIntent {
   coreEmotion: string       // "异地重逢的珍贵感"
   tone: string              // "克制的温柔，不煽情"
   narrativeArc: string      // "从期待 → 见面的小确幸 → 离别前的沉默"
-  audienceNote: string      // "发给她看的，她会懂"
+  audienceNote: string | null // "发给她看的，她会懂"（可选，用户可跳过；null 时 Ocelot 默认"给自己看"的语气）
   avoidance: string[]       // ["不要用'岁月静好'这种词"]
   rawUserWords: string      // 保留用户原话，供后续 agent 参考语气
 }
@@ -263,7 +268,7 @@ flowchart LR
 - 能力 B（交互式偏好收集）+ 能力 C（故事脚本生成）整体替换为 Tabby 对话 + StoryBrief + Ocelot 编剧
 - 现有 `story-script.json` 结构废弃，改用场景化的 `render-script.json`（`scenes[]` + `transition` + `kenBurns`）
 - 现有 template / ai_code 双渲染模式废弃，保留现有 Remotion 模板组件（图片铺满、字幕渐变底），在模板内新增实现转场动画与 Ken Burns，数据源从 `story-script.json` 切换到 `render-script.json`
-- ai_code 彻底删除，不保留为自动托底。渲染失败即报错退出，因为新架构下渲染器是确定性映射（render-script → video），失败说明渲染器有 bug 或 render-script 数据有问题，切换路径不解决根因
+- ai_code 彻底删除，不保留为自动兜底。渲染失败即报错退出，因为新架构下渲染器是确定性映射（render-script → video），失败说明渲染器有 bug 或 render-script 数据有问题，切换路径不解决根因
 - 能力 D（渲染策略选择）废弃（不再有模式选择），能力 E（本地渲染与产物落盘）保留但重构输入源
 
 ---
@@ -285,19 +290,29 @@ flowchart LR
 4. **Remotion 渲染器改造**：保留现有模板组件（图片铺满、字幕渐变底），在模板内新增实现转场动画（fade/cut/dissolve/slide）与 Ken Burns 效果。数据源从 `story-script.json` 切换到 `render-script.json` 的 `scenes[]`。废弃 template / ai_code 双模式选择逻辑，只保留单一渲染路径，失败即报错退出
 5. **删除旧代码**：删除 `story-script.json` 相关生成逻辑、askStyle/askPrompt 交互、渲染模式选择逻辑（能力 D）
 
+**Tabby 对话合同（P1）**
+
+- Tabby 每一轮必须返回**结构化 JSON**（使用 outputSchema 强约束），字段：`say`、`options[]`、`done`、`internalNotes?`
+- `options[]` 用于渲染 TUI 的 select（方向键选择），长度必须为 2–4，且必须包含 `id === "free_input"` 的选项（例如「我想自己说…」）
+- 选择 `free_input` 时，进入自由输入框（text），用户输入的文本作为该轮回答
+- `done === true` 表示进入「确认页」：`say` 为人话总结；`options` 固定为 `confirm` / `revise` 二选一
+- 用户选择 `revise`：回到对话继续聊（Tabby 再追问 1–3 轮后再次 `done === true`）；不做字段级表单编辑
+- `internalNotes` 会被落盘到对话日志中用于调试，但**不展示**给用户
+- Tabby 的“受众（发给谁看）”为可选项：会问，但允许跳过
+
 **不做：**
 
 - 不做 🐈‍⬛ Lynx 审稿（留给 P2）
 - 不做多轮修改循环（Tabby 调一次 Ocelot 就定稿）
 - 不保留 story-script 数据结构、template/ai_code 模式选择逻辑、能力 B/C/D 的交互代码（破坏性重构，不做向后兼容）
 - Remotion 模板的现有组件（图片铺满、字幕渐变底）保留并改造，转场动画与 Ken Burns 为新增实现
-- 将同步更新 [README.md](http://README.md)、`.github/docs/[business-logic.md](http://business-logic.md)` 及现有测试基线（目前全部围绕 story-script、template|ai_code、mode-sequence），确保「每阶段可独立验证」不失真
+- 将同步更新 `README.md`、`.github/docs/business-logic.md` 及现有测试基线（目前全部围绕 story-script、template|ai_code、mode-sequence），确保「每阶段可独立验证」不失真
 
 **产出文件（用于调试/审核）：**
 
 | 文件 | 内容 | 调试用途 |
 | --- | --- | --- |
-| `tabby-conversation.json` | 完整对话历史（用户消息 + Tabby 回复 + 时间戳） | 审阅对话质量：Tabby 追问是否自然、收束时机是否合理 |
+| `tabby-conversation.jsonl` | 完整对话历史（用户消息 + Tabby JSON 输出 + internalNotes + 时间戳） | 审阅对话质量：Tabby 追问是否自然、收束时机是否合理；回放现场用于调试 |
 | `tabby-photo-analysis.json` | Tabby 对每张图的视觉分析（戴着有色眼镜的） | 审阅看图质量：分析是否准确、是否受用户情感偏向影响 |
 | `story-brief.json` | Tabby 产出的叙事资产（CreativeIntent + PhotoNote[] + NarrativeStructure） | 审阅叙事质量：CreativeIntent 是否忠实、beats 是否合理 |
 | `render-script.json` | Ocelot 产出的渲染指令（RenderScene[]），呈现层直接消费 | 审阅渲染指令：字幕文案、镜头运动、过场方式是否匹配叙事意图 |
