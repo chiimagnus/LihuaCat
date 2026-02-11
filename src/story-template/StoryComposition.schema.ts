@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const StoryTemplatePropsSchema = z.object({
+const StoryScriptTemplatePropsSchema = z.object({
   version: z.string().min(1),
   input: z.object({
     sourceDir: z.string().min(1),
@@ -46,43 +46,79 @@ export const StoryTemplatePropsSchema = z.object({
     .min(1),
 });
 
+const RenderTransitionSchema = z.object({
+  type: z.enum(["cut", "fade", "dissolve", "slide"]),
+  durationMs: z.number().min(0),
+  direction: z.enum(["left", "right", "up", "down"]).optional(),
+});
+
+const KenBurnsEffectSchema = z.object({
+  startScale: z.number().positive(),
+  endScale: z.number().positive(),
+  panDirection: z.enum(["left", "right", "up", "down", "center"]),
+});
+
+const RenderScriptTemplatePropsSchema = z.object({
+  storyBriefRef: z.string().min(1),
+  video: z.object({
+    width: z.number().int().positive(),
+    height: z.number().int().positive(),
+    fps: z.number().int().positive(),
+  }),
+  assets: z
+    .array(
+      z.object({
+        photoRef: z.string().min(1),
+        path: z.string().min(1),
+      }),
+    )
+    .min(1),
+  scenes: z
+    .array(
+      z.object({
+        sceneId: z.string().min(1),
+        photoRef: z.string().min(1),
+        subtitle: z.string().min(1),
+        subtitlePosition: z.enum(["bottom", "top", "center"]),
+        durationSec: z.number().positive(),
+        transition: RenderTransitionSchema,
+        kenBurns: KenBurnsEffectSchema.optional(),
+      }),
+    )
+    .min(1),
+});
+
+export const StoryTemplatePropsSchema = z.union([
+  StoryScriptTemplatePropsSchema,
+  RenderScriptTemplatePropsSchema,
+]);
+
 export type StoryTemplateProps = z.infer<typeof StoryTemplatePropsSchema>;
 
 export const createDefaultStoryTemplateProps = (): StoryTemplateProps => ({
-  version: "1.0",
-  input: {
-    sourceDir: "/tmp/photos",
-    imageCount: 1,
-    assets: [
-      {
-        id: "img_001",
-        path: "https://picsum.photos/1080/1920",
-      },
-    ],
-  },
+  storyBriefRef: "/tmp/photos/lihuacat-output/run-001/story-brief.json",
   video: {
     width: 1080,
     height: 1920,
     fps: 30,
-    durationSec: 30,
   },
-  style: {
-    preset: "healing",
-  },
-  timeline: [
+  assets: [
     {
-      assetId: "img_001",
-      startSec: 0,
-      endSec: 30,
-      subtitleId: "sub_001",
+      photoRef: "1.jpg",
+      path: "https://picsum.photos/1080/1920",
     },
   ],
-  subtitles: [
+  scenes: [
     {
-      id: "sub_001",
-      text: "LihuaCat story template",
-      startSec: 0,
-      endSec: 30,
+      sceneId: "scene_001",
+      photoRef: "1.jpg",
+      subtitle: "LihuaCat story template",
+      subtitlePosition: "bottom",
+      durationSec: 30,
+      transition: {
+        type: "cut",
+        durationMs: 0,
+      },
     },
   ],
 });

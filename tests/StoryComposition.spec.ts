@@ -14,17 +14,28 @@ test("secondsToFrames keeps at least 1 frame", () => {
 
 test("buildTemplateSequences maps timeline to frame ranges", () => {
   const props = createDefaultStoryTemplateProps();
-  props.input.assets = [
-    { id: "img_001", path: "/tmp/1.jpg" },
-    { id: "img_002", path: "/tmp/2.jpg" },
+  assert.ok("scenes" in props);
+  props.assets = [
+    { photoRef: "1.jpg", path: "/tmp/1.jpg" },
+    { photoRef: "2.jpg", path: "/tmp/2.jpg" },
   ];
-  props.timeline = [
-    { assetId: "img_001", startSec: 0, endSec: 10, subtitleId: "sub_001" },
-    { assetId: "img_002", startSec: 10, endSec: 30, subtitleId: "sub_002" },
-  ];
-  props.subtitles = [
-    { id: "sub_001", text: "first", startSec: 0, endSec: 10 },
-    { id: "sub_002", text: "second", startSec: 10, endSec: 30 },
+  props.scenes = [
+    {
+      sceneId: "scene_001",
+      photoRef: "1.jpg",
+      subtitle: "first",
+      subtitlePosition: "bottom",
+      durationSec: 10,
+      transition: { type: "cut", durationMs: 0 },
+    },
+    {
+      sceneId: "scene_002",
+      photoRef: "2.jpg",
+      subtitle: "second",
+      subtitlePosition: "top",
+      durationSec: 20,
+      transition: { type: "cut", durationMs: 0 },
+    },
   ];
 
   const sequences = buildTemplateSequences(props, 30);
@@ -40,5 +51,9 @@ test("buildTemplateSequences maps timeline to frame ranges", () => {
   assert.deepEqual(
     sequences.map((item) => item.subtitle),
     ["first", "second"],
+  );
+  assert.deepEqual(
+    sequences.map((item) => item.subtitlePosition),
+    ["bottom", "top"],
   );
 });

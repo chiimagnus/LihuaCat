@@ -11,6 +11,8 @@ export const StoryComposition: React.FC<StoryTemplateProps> = (props) => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#0f172a" }}>
       {sequences.map((sequence) => {
+        const subtitleContainerStyle = subtitlePositionToContainerStyle(sequence.subtitlePosition);
+        const subtitleBackgroundStyle = subtitlePositionToBackgroundStyle(sequence.subtitlePosition);
         return (
           <Sequence
             key={sequence.key}
@@ -19,20 +21,19 @@ export const StoryComposition: React.FC<StoryTemplateProps> = (props) => {
             premountFor={fps}
           >
             <AbsoluteFill>
-              <Img
-                src={toRenderableAssetSrc(sequence.assetPath)}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
+                <Img
+                  src={toRenderableAssetSrc(sequence.assetPath)}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
               <AbsoluteFill
                 style={{
-                  justifyContent: "flex-end",
+                  ...subtitleContainerStyle,
                   padding: "0 60px 120px",
-                  background:
-                    "linear-gradient(180deg, rgba(15,23,42,0) 50%, rgba(15,23,42,0.82) 100%)",
+                  ...subtitleBackgroundStyle,
                 }}
               >
                 <div
@@ -60,4 +61,36 @@ const toRenderableAssetSrc = (value: string): string => {
     return value;
   }
   return staticFile(value.replace(/^\/+/, ""));
+};
+
+const subtitlePositionToContainerStyle = (
+  position: "bottom" | "top" | "center",
+): React.CSSProperties => {
+  if (position === "top") {
+    return { justifyContent: "flex-start", paddingTop: 120 };
+  }
+  if (position === "center") {
+    return { justifyContent: "center" };
+  }
+  return { justifyContent: "flex-end" };
+};
+
+const subtitlePositionToBackgroundStyle = (
+  position: "bottom" | "top" | "center",
+): React.CSSProperties => {
+  if (position === "top") {
+    return {
+      background:
+        "linear-gradient(0deg, rgba(15,23,42,0) 50%, rgba(15,23,42,0.82) 100%)",
+    };
+  }
+  if (position === "center") {
+    return {
+      background: "rgba(15,23,42,0.35)",
+    };
+  }
+  return {
+    background:
+      "linear-gradient(180deg, rgba(15,23,42,0) 50%, rgba(15,23,42,0.82) 100%)",
+  };
 };

@@ -6,6 +6,7 @@ export type StorySequence = {
   durationInFrames: number;
   assetPath: string;
   subtitle: string;
+  subtitlePosition: "bottom" | "top" | "center";
 };
 
 export const secondsToFrames = (seconds: number, fps: number): number => {
@@ -16,6 +17,26 @@ export const buildTemplateSequences = (
   props: StoryTemplateProps,
   fps: number,
 ): StorySequence[] => {
+  if ("storyBriefRef" in props) {
+    const assetPathByPhotoRef = new Map(
+      props.assets.map((asset) => [asset.photoRef, asset.path]),
+    );
+    let cursor = 0;
+    return props.scenes.map((scene) => {
+      const from = cursor;
+      const durationInFrames = secondsToFrames(scene.durationSec, fps);
+      cursor += durationInFrames;
+      return {
+        key: scene.sceneId,
+        from,
+        durationInFrames,
+        assetPath: assetPathByPhotoRef.get(scene.photoRef) ?? "",
+        subtitle: scene.subtitle,
+        subtitlePosition: scene.subtitlePosition,
+      };
+    });
+  }
+
   const assetPathById = new Map(
     props.input.assets.map((asset) => [asset.id, asset.path]),
   );
@@ -34,6 +55,7 @@ export const buildTemplateSequences = (
       durationInFrames,
       assetPath,
       subtitle,
+      subtitlePosition: "bottom",
     };
   });
 };

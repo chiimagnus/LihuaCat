@@ -241,7 +241,7 @@
 
 ### P1：Remotion 模板改造（消费 RenderScript scenes）
 
-### Task 11: 模板 props 从 StoryScript 切换到 RenderScript
+### ✅Task 11: 模板 props 从 StoryScript 切换到 RenderScript
 
 **Files:**
 - Modify: `src/story-template/StoryComposition.schema.ts`
