@@ -30,7 +30,7 @@
 
 ### P1：合同与校验（先定地基）
 
-### Task 1: 新增 `StoryBrief` 合同与 schema 校验
+### ✅Task 1: 新增 `StoryBrief` 合同与 schema 校验
 
 **Files:**
 - Create: `src/contracts/story-brief.types.ts`
@@ -46,7 +46,7 @@
 - Run: `pnpm test -- tests/validate-story-brief.spec.ts`
 - Expected: PASS
 
-### Task 2: 新增场景化 `RenderScript` 合同与语义校验
+### ✅Task 2: 新增场景化 `RenderScript` 合同与语义校验
 
 **Files:**
 - Create: `src/contracts/render-script.types.ts`
@@ -71,7 +71,7 @@
 
 ### P1：Tabby（对话）→ StoryBrief（叙事资产）
 
-### Task 3: 定义 Tabby 回合输出合同（outputSchema + 本地校验）
+### ✅Task 3: 定义 Tabby 回合输出合同（outputSchema + 本地校验）
 
 **Files:**
 - Create: `src/contracts/tabby-turn.types.ts`
