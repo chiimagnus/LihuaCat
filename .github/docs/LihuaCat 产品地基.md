@@ -1,10 +1,13 @@
-# LihuaCat 产品地基
+# LihuaCat 未来
 
 ## 一句话定义
 
-> **LihuaCat = Glasses Agent（理解你）+ StoryBrief（叙事内核）+ 可插拔的呈现层**
+> **LihuaCat = 🐱 Tabby（理解你）+ StoryBrief（叙事内核）+ 可插拔的呈现层**
+> 
 
 LihuaCat 不是视频工具，不是漫画工具。它是一个把「用户的真实照片 + 用户的真实感受」转化成「某种可分享的叙事体验」的系统。
+
+---
 
 ## 产品愿景
 
@@ -34,7 +37,7 @@ LihuaCat 不是视频工具，不是漫画工具。它是一个把「用户的�
 
 暂不锁定具体画像。先从自己出发——Chii 就是第一个用户。
 
-一个直觉：LihuaCat 可能不是一个"随便玩玩"的日常工具，而是一个**在特殊时刻才会打开的东西**——低频但高价值。愿意花时间跟 Glasses Agent 深聊感受的人，往往是因为那组照片对他们真的很重要。
+一个直觉：LihuaCat 可能不是一个"随便玩玩"的日常工具，而是一个**在特殊时刻才会打开的东西**——低频但高价值。愿意花时间跟 🐱 Tabby 深聊感受的人，往往是因为那组照片对他们真的很重要。
 
 这个假设需要验证，后续持续更新。
 
@@ -50,41 +53,102 @@ LihuaCat 不是视频工具，不是漫画工具。它是一个把「用户的�
 - **用户自带 AI**：AI 能力由用户自己的 Codex/ChatGPT 账号承担
 - **开发者零运维**：不跑服务器，不存数据
 
+---
+
 ## 地基性的信念
 
 1. **用户真实的图片 + 用户真实的感受 = 有灵魂的叙事体验**
 2. **输出形态是可替换的，理解用户的能力是不可替换的**
-3. **Glasses Agent 是产品的灵魂，它的质量决定产品的上限**
+3. **🐱 Tabby 是产品的灵魂，它的质量决定产品的上限**
 4. **本地优先、用户自带 AI、开发者零运维**——这个不变
 
-## 三层核心架构
+---
 
-### 第一层：理解（Glasses Agent）
+## 三个 Agent：各自干什么、怎么配合
 
-- **角色**：总导演，拥有全部上下文和调度权
-- **能力**：多轮多模态对话（看图 + 聊天）、分析素材、拟大纲、调度子 agent、最终拍板
-- **三种对话模式**：全局聊 / 聚焦单张图片 / 收束确认，自然切换
-- **核心产出**：`CreativeIntent`（用户到底想表达什么）+ `PhotoNote[]`（每张照片的情感标注）
-- **关键设计**：用户说的那句话（风格 preset + 补充描述）就是「有色眼镜」的起点，Glasses Agent 负责把它撑开、深挖、丰富
+### 🐱 Tabby（狸花）—— 总导演
 
-### 第二层：创作（Narrator + Critic，受 Glasses 调度）
+Tabby 是**唯一和用户直接对话的 agent**，也是整个系统的大脑。狸花猫本猫，LihuaCat 的灵魂。
 
-- **Narrator（编剧）**：接收 StoryBrief → 输出完整叙事脚本。被调用，无自主权
-- **Critic（审稿）**：接收 CreativeIntent + 图片 + 脚本 → 输出审稿意见。被调用，无自主权
-- **调度权在 Glasses**：什么时候调用谁、调用几次、审稿不通过怎么处理（改 brief / 让 Narrator 改 / 回去问用户），都由 Glasses 决定
+**它在干什么：** 用户丢过来一堆照片，心里有一团模糊的感觉但说不清楚。Tabby 的工作就是帮用户把这团感觉变成清晰的创作意图。
 
-### 第三层：呈现（Renderer，可插拔）
+**具体能力：**
 
-- 不同的 Renderer 把同一个 StoryBrief 翻译成不同输出
-- **当前**：Remotion 视频渲染（已有）
-- **未来可能**：漫画书、Apple Vision Pro 沉浸式场景、甚至更多形态
-- 输出形态是可插拔的，前两层的核心能力不变
+- **看图**——分析照片里有什么（场景、人物、光线、氛围），但永远「戴着用户给的有色眼镜」去看
+- **聊天**——多轮对话，追问感受、挖背后故事（"这张是在哪拍的？" "当时什么心情？" "你想发给谁看？"）
+- **判断**——知道什么时候该继续追问，什么时候信息已经够了，可以收束
+- **调度**——决定什么时候调用 Ocelot 写脚本、什么时候调用 Lynx 审稿、审稿不通过怎么处理
 
-## StoryBrief：核心资产
+**核心产出：** `CreativeIntent`（用户到底想表达什么）+ `PhotoNote[]`（每张照片的情感标注）。这两样东西组成 StoryBrief 的核心原料。
 
-StoryBrief 是输出无关的叙事内核，描述「讲什么、怎么讲、什么节奏」，不涉及呈现方式。
+**一句话：** 没有 Tabby，LihuaCat 和剪映模板没区别。它是产品的灵魂，它的质量决定产品的上限。
+
+### 🐆 Ocelot（虎猫）—— 编剧（工具人）
+
+Ocelot **不和用户对话**，它只服务于 Tabby。美洲虎猫，丛林里最优雅的猎手，擅长在暗处安静地编织。
+
+**它在干什么：** Tabby 聊完之后，把 StoryBrief 交给 Ocelot。Ocelot 读取叙事资产，产出具体的 RenderScript（渲染指令）——哪张图先出、配什么文字、镜头怎么动、节奏怎么走。
+
+**权限：** 被调用、无自主权。Tabby 让它写它就写，让它改它就改。
+
+### 🐈‍⬛ Lynx（猞猁）—— 审稿人（工具人）
+
+Lynx 也**不和用户对话**，同样只服务于 Tabby。古希腊人认为猞猁能看穿墙壁——锐利的双眼，什么都逃不过。
+
+**它在干什么：** 拿着用户的原始意图（CreativeIntent）+ 照片 + Ocelot 写出来的脚本，做质检。它回答一个核心问题：**「这个脚本忠实地表达了用户的感受吗？」**
+
+比如用户说「克制的温柔，不煽情」，但 Ocelot 写出来的文案用了「岁月静好」——Lynx 就会指出来：这和用户的 avoidance 冲突了。
+
+**权限：** 被调用、无自主权。审完把意见交回 Tabby，由 Tabby 决定怎么处理。
+
+### 三者的协作流程
+
+```mermaid
+flowchart LR
+    User["👤 用户<br>照片 + 模糊的感受"]
+
+    subgraph Core ["LihuaCat"]
+        direction TB
+        Tabby["🐱 Tabby<br>总导演"]
+        Ocelot["🐆 Ocelot<br>编剧"]
+        Lynx["🐈‍⬛ Lynx<br>审稿"]
+        Brief[/"📄 story-brief.json"/]
+        RS[/"🎬 render-script.json"/]
+    end
+
+    User <-->|"多轮对话"| Tabby
+    Tabby --> Brief
+    Brief --> Ocelot
+    Ocelot --> RS
+    RS -->|"审稿"| Lynx
+    Lynx -->|"审稿意见"| Tabby
+    Lynx -.->|"不通过"| Ocelot
+
+    subgraph Render ["🎬 呈现层"]
+        direction LR
+        R1["Remotion 视频"]
+        R2["漫画 / AVP / ..."]
+    end
+
+    RS -->|"✅ 通过"| Render
+```
+
+---
+
+## 两份核心数据：StoryBrief 与 RenderScript
+
+### StoryBrief：叙事资产（核心资产）
+
+StoryBrief 是整个系统的**核心资产**，描述「用户想表达什么、照片承载什么情感、故事怎么走」。它**只关心叙事**，不包含任何渲染细节。
+
+**产出者：** 🐱 Tabby
+
+**消费者：** 🐆 Ocelot（读取 StoryBrief 来写渲染脚本）、🐈‍⬛ Lynx（读取 StoryBrief 来审稿）
+
+**关键特性：** 即使换掉整个呈现层（从视频换成漫画、AVP），StoryBrief 不需要改动。它是「理解用户」的结晶，和输出形态无关。
 
 ```tsx
+// story-brief.json —— 叙事资产，不含任何渲染细节
 interface StoryBrief {
   intent: CreativeIntent
   photos: PhotoNote[]
@@ -119,23 +183,158 @@ interface StoryBeat {
   moment: string
   emotion: string
   duration: "short" | "medium" | "long"
-  transition: string
+  transition: string        // 叙事层的过渡意图（如 "渐入" "突然切换"）
 }
 ```
 
-## Agent 权力结构
+### RenderScript：渲染指令（呈现层合同）
 
-| Agent | 定位 | 权限 |
+RenderScript 是 🐆 Ocelot 读取 StoryBrief 后产出的**具体渲染指令**，直接替代现有的 `story-script.json`。它告诉呈现层「每一帧具体怎么做」。
+
+**产出者：** 🐆 Ocelot
+
+**消费者：** 呈现层（Remotion 视频 / 漫画 / AVP 等）
+
+**关键特性：** 不同的呈现层可以有不同的 RenderScript 格式。换呈现层时，改的是 Ocelot 的输出格式和 Renderer 的消费逻辑，StoryBrief 不动。
+
+```tsx
+// render-script.json —— 渲染指令，呈现层直接消费
+interface RenderScript {
+  storyBriefRef: string     // 关联的 story-brief.json 路径
+  scenes: RenderScene[]
+}
+
+interface RenderScene {
+  sceneId: string
+  photoRef: string          // 对应的图片
+  subtitle: string          // 字幕文案
+  subtitlePosition: string  // "bottom" | "top" | "center"
+  duration: number          // 秒
+  transition: RenderTransition
+  kenBurns?: KenBurnsEffect // 镜头运动（可选）
+}
+
+interface RenderTransition {
+  type: string              // "fade" | "cut" | "dissolve" | "slide"
+  durationMs: number
+}
+
+interface KenBurnsEffect {
+  startScale: number        // 起始缩放 eg. 1.0
+  endScale: number          // 结束缩放 eg. 1.2
+  panDirection: string      // "left" | "right" | "up" | "down" | "center"
+}
+```
+
+### 两者的关系
+
+```mermaid
+flowchart LR
+    Tabby["🐱 Tabby"] -->|"产出"| SB["📄 story-brief.json<br>叙事资产"]
+    SB -->|"输入"| Ocelot["🐆 Ocelot"]
+    Ocelot -->|"产出"| RS["🎬 render-script.json<br>渲染指令"]
+    RS -->|"输入"| Render["🎬 呈现层"]
+    SB -.->|"审稿依据"| Lynx["🐈‍⬛ Lynx"]
+    RS -.->|"审稿对象"| Lynx
+```
+
+> **换呈现层时：** StoryBrief 不动，只改 Ocelot 的 RenderScript 输出格式 + Renderer 的消费逻辑。
+> 
+
+---
+
+## Agent 速查表
+
+| Agent | 一句话定位 | 和用户对话？ |
 | --- | --- | --- |
-| **Glasses** | 总导演 | 看图、聊天、分析、拟大纲、调度子 agent、最终拍板 |
-| **Narrator** | 编剧工具人 | 接收 StoryBrief，输出 story-script，被调用、无自主权 |
-| **Critic** | 审稿工具人 | 接收意图+图片+脚本，输出审稿意见，被调用、无自主权 |
+| **🐱 Tabby（狸花）** | 总导演 + 唯一对话者 | **是** |
+| **🐆 Ocelot（虎猫）** | 编剧工具人 | 否 |
+| **🐈‍⬛ Lynx（猞猁）** | 审稿工具人 | 否 |
+
+---
 
 ## 分阶段落地
 
-| 阶段 | 做什么 |
-| --- | --- |
-| **P1** | Glasses Agent 的对话能力：多轮文本 + 单张图片聚焦 + 输出 StoryBrief |
-| **P2** | 接入 Narrator + Critic 作为 Glasses 的 tool call，跑通调度闭环 |
-| **P3** | Critic 不通过时的自主决策循环 |
-| **P4** | 更多 Renderer（漫画、AVP 沉浸式等）+ 音乐/风格自动匹配 |
+**策略：渐进式重构**——保持现有 CLI 闭环可用，逐步把 Agent 能力插进去。Ocelot 产出的 `render-script.json` 直接替代现有 `story-script.json`，不做转换层。每个阶段都是可独立验证的 MVP。
+
+---
+
+### P1：🐱 Tabby 看图对话 + 🐆 Ocelot 编剧 + StoryBrief 数据合同
+
+**目标：** 端到端跑通完整的「看图对话 → StoryBrief → Ocelot 写脚本 → 渲染出片」闭环。Tabby 从第一步就具备多模态看图能力，Ocelot 作为独立 agent 负责编剧。
+
+**做什么：**
+
+1. **类型定义**：在代码中定义 `StoryBrief`（CreativeIntent + PhotoNote[] + NarrativeStructure）和 `RenderScript`（RenderScene[]）两套类型
+2. **🐱 Tabby 多模态对话**：替换现有的「能力 B：交互式偏好收集」
+    - 看图：分析照片内容（场景、人物、光线、氛围），「戴着用户给的有色眼镜」去看
+    - 聊天：多轮对话追问感受、挖背后故事，结合视觉信息提问（"这张海边的合影是在哪拍的？"）
+    - 收束：判断信息够了就停，产出 `CreativeIntent` + 完整的 `PhotoNote[]`（含视觉分析 + 情感权重）
+3. **🐆 Ocelot 独立 agent**：Tabby 通过 tool call 调用
+    - 输入：完整的 `story-brief.json`
+    - 输出：`render-script.json`（具体渲染指令：每个 scene 的字幕文案、镜头运动、过场方式、时长等）
+4. **渲染管线对接**：读取 Ocelot 产出的 `render-script.json`，替代现有的 `story-script.json`
+
+**不做：**
+
+- 不做 🐈‍⬛ Lynx 审稿（留给 P2）
+- 不做多轮修改循环（Tabby 调一次 Ocelot 就定稿）
+
+**产出文件（用于调试/审核）：**
+
+| 文件 | 内容 | 调试用途 |
+| --- | --- | --- |
+| `tabby-conversation.json` | 完整对话历史（用户消息 + Tabby 回复 + 时间戳） | 审阅对话质量：Tabby 追问是否自然、收束时机是否合理 |
+| `tabby-photo-analysis.json` | Tabby 对每张图的视觉分析（戴着有色眼镜的） | 审阅看图质量：分析是否准确、是否受用户情感偏向影响 |
+| `story-brief.json` | Tabby 产出的叙事资产（CreativeIntent + PhotoNote[] + NarrativeStructure） | 审阅叙事质量：CreativeIntent 是否忠实、beats 是否合理 |
+| `render-script.json` | Ocelot 产出的渲染指令（RenderScene[]），呈现层直接消费 | 审阅渲染指令：字幕文案、镜头运动、过场方式是否匹配叙事意图 |
+| `ocelot-input.json` | Tabby 发给 Ocelot 的输入（完整 story-brief.json） | 定位问题：如果渲染指令质量差，先看叙事输入是否充分 |
+| `ocelot-output.json` | 和 render-script.json 相同（冗余备份，含 Ocelot 的原始响应） | 对比 Ocelot 原始输出 vs 最终 render-script |
+| `ocelot-prompt.log` | 发给 Ocelot 的实际 prompt | 调 prompt 用 |
+| `run.log` | 管线执行日志（每步耗时、token 消耗、错误信息） | 性能分析 + 排错 |
+
+**验收标准：**
+
+- ✅ Tabby 能在对话中提及照片的具体内容（"这张是两个人在海边的合影对吗？"）
+- ✅ `story-brief.json` 的 CreativeIntent 字段全部填充，PhotoNote[] 长度等于输入图片数且含视觉分析和情感权重，NarrativeStructure 包含完整 beats
+- ✅ `render-script.json` 的 scenes 数量合理，每个 scene 包含字幕文案、过场方式、时长
+- ✅ 端到端跑通：看图对话 → `story-brief.json` → Ocelot 产出 `render-script.json` → 渲染 → [`video.mp](http://video.mp)4` 落盘
+- ✅ 所有中间文件可以人工审阅，方便定位「哪一步的质量不行」
+
+---
+
+### P2：🐈‍⬛ Lynx 审稿 + 修改循环
+
+**目标：** 加入质检环节，Tabby 调度 Ocelot 写 → Lynx 审 → 不通过则 Tabby 指导 Ocelot 重写，直到通过。
+
+**做什么：**
+
+- Lynx 作为独立 agent，Tabby 通过 tool call 调用
+- Lynx 拿着 `story-brief.json`（叙事资产）+ `render-script.json`（渲染指令），检查「渲染指令是否忠实于叙事意图」
+- 不通过时：Lynx 产出具体修改意见 → Tabby 转发给 Ocelot → Ocelot 修改 → 再审
+- 设置最大修改轮次（如 3 轮），超过则 Tabby 取最后一版定稿
+
+**不做：**
+
+- 不做用户参与的修改循环（用户只在 Tabby 对话阶段参与）
+
+**产出文件（新增）：**
+
+| 文件 | 内容 | 调试用途 |
+| --- | --- | --- |
+| `lynx-review-{N}.json` | Lynx 第 N 轮审稿意见（通过/不通过 + 具体问题） | 审阅审稿质量：是否抓到了真正的问题 |
+| `ocelot-revision-{N}.json` | Ocelot 第 N 轮修改后的脚本 | 追踪每轮修改的变化 |
+| `lynx-prompt.log` | 发给 Lynx 的实际 prompt | 调 prompt 用 |
+
+**验收标准：**
+
+- ✅ Lynx 能识别出脚本与用户 avoidance 的冲突（如用户说「不要岁月静好」但脚本用了）
+- ✅ 修改循环能收敛（在最大轮次内通过或定稿）
+- ✅ 经过 Lynx 审稿的最终脚本质量明显优于未审稿版本
+- ✅ 所有审稿轮次的中间文件可追溯
+
+---
+
+### 后续阶段（待规划）
+
+- **P3**：更多 Renderer（漫画、AVP 沉浸式等）+ 音乐/风格自动匹配
