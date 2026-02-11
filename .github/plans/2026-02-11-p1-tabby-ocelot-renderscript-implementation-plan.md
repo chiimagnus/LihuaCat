@@ -103,6 +103,7 @@
 - 复用 `@openai/codex-sdk` 的 thread 模式，类似现有 `story-agent.client.ts`
 - 每轮调用返回 `TabbyTurnOutput`（outputSchema 强约束），失败直接抛 `TabbyAgentResponseParseError`
 - Prompt 输入包含：已收集的对话历史（结构化）、图片列表（local_image）、已知约束（options 规则、done 规则）
+- Prompt 人格与行为参考 `.github/docs/LihuaCat 产品地基.md` 的「🐱 Tabby（狸花）—— 总导演」章节（避免写成通用对话 agent）
 
 **Step 2: 验证**
 - Run: `pnpm test -- tests/tabby-agent.client.spec.ts`
@@ -135,6 +136,8 @@
 - Test: `tests/generate-story-brief.spec.ts`
 
 **Step 1: 实现**
+> **架构说明**：这是一次独立于对话轮次的 AI 调用（使用 `story-brief.prompt.ts`），目的是把多轮对话中分散的信息合成为结构化的 StoryBrief。对话轮次的 prompt（`tabby-turn.prompt.ts`）优化“追问能力”，这里的 prompt 优化“结构化提取能力”，两者分离便于独立调优。
+
 - `generateStoryBrief({ images, conversation }) -> StoryBrief` 使用 outputSchema 强约束
 - 强制把用户在确认页“确认通过”的摘要与原始对话一起作为输入（避免只依赖最后一轮输出）
 
