@@ -141,6 +141,18 @@ export const validateRenderScriptSemantics = (
     if (script.video.fps !== fps) errors.push(`video.fps must be ${fps}, got ${script.video.fps}`);
   }
 
+  if (rules.fixedVideo && rules.expectedTotalDurationSec !== undefined) {
+    const fps = rules.fixedVideo.fps;
+    const expectedFrames = Math.round(rules.expectedTotalDurationSec * fps);
+    const totalFrames = script.scenes.reduce(
+      (sum, scene) => sum + Math.max(1, Math.round(scene.durationSec * fps)),
+      0,
+    );
+    if (totalFrames !== expectedFrames) {
+      errors.push(`scenes total frames must be ${expectedFrames}, got ${totalFrames}`);
+    }
+  }
+
   if (rules.requireAllPhotosUsed && rules.expectedPhotoRefs) {
     const expected = new Set(rules.expectedPhotoRefs);
     const used = new Set(script.scenes.map((scene) => scene.photoRef));

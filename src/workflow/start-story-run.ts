@@ -11,7 +11,7 @@ import {
   resolveWorkflowPorts,
   type WorkflowPorts,
 } from "./workflow-ports.ts";
-import { initializeWorkflowRuntime } from "./workflow-runtime.ts";
+import { initializeWorkflowRuntime, pushErrorLog } from "./workflow-runtime.ts";
 import { runCollectImagesStage } from "./stages/collect-images.stage.ts";
 import { runRenderStage } from "./stages/render.stage.ts";
 import { runPublishStage } from "./stages/publish.stage.ts";
@@ -79,48 +79,59 @@ export const runStoryWorkflowV2 = async (
     outputDir,
   });
 
-  const collected = await runCollectImagesStage({
-    sourceDir,
-    runtime,
-    onProgress,
-    collectImagesImpl: ports.collectImagesImpl,
-  });
+  try {
+    const collected = await runCollectImagesStage({
+      sourceDir,
+      runtime,
+      onProgress,
+      collectImagesImpl: ports.collectImagesImpl,
+    });
 
-  const tabby = await runTabbyStage({
-    collected,
-    runtime,
-    tabbyAgentClient,
-    tabbyTui,
-    storyBriefAgentClient,
-    onProgress,
-    runTabbySessionImpl: ports.runTabbySessionImpl,
-    generateStoryBriefImpl: ports.generateStoryBriefImpl,
-  });
+    const tabby = await runTabbyStage({
+      collected,
+      runtime,
+      tabbyAgentClient,
+      tabbyTui,
+      storyBriefAgentClient,
+      onProgress,
+      runTabbySessionImpl: ports.runTabbySessionImpl,
+      generateStoryBriefImpl: ports.generateStoryBriefImpl,
+    });
 
-  const ocelot = await runOcelotStage({
-    collected,
-    runtime,
-    storyBriefRef: runtime.storyBriefPath,
-    storyBrief: tabby.storyBrief,
-    ocelotAgentClient,
-    onProgress,
-  });
+    const ocelot = await runOcelotStage({
+      collected,
+      runtime,
+      storyBriefRef: runtime.storyBriefPath,
+      storyBrief: tabby.storyBrief,
+      ocelotAgentClient,
+      onProgress,
+    });
 
-  const rendered = await runRenderStage({
-    runtime,
-    collected,
-    renderScript: ocelot.renderScript as never,
-    browserExecutablePath,
-    onProgress,
-    renderByTemplateV2Impl: ports.renderByTemplateV2Impl,
-  });
+    const rendered = await runRenderStage({
+      runtime,
+      collected,
+      renderScript: ocelot.renderScript as never,
+      browserExecutablePath,
+      onProgress,
+      renderByTemplateV2Impl: ports.renderByTemplateV2Impl,
+    });
 
-  return runPublishStage({
-    runtime,
-    videoPath: rendered.videoPath,
-    onProgress,
-    publishArtifactsImpl: ports.publishArtifactsImpl,
-  });
+    return runPublishStage({
+      runtime,
+      videoPath: rendered.videoPath,
+      onProgress,
+      publishArtifactsImpl: ports.publishArtifactsImpl,
+    });
+  } catch (error) {
+    if (runtime.errorLogs.length === 0) {
+      const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+      await pushErrorLog(runtime, reason);
+      if (error instanceof Error && typeof error.stack === "string") {
+        await pushErrorLog(runtime, error.stack);
+      }
+    }
+    throw error;
+  }
 };
 
 const formatTimestamp = (value: Date): string => {

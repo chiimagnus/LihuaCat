@@ -36,6 +36,38 @@ test("semantic validation fails when total duration does not match expected", ()
   assert.ok(result.errors.some((error) => error.includes("total duration")));
 });
 
+test("semantic validation fails when per-scene rounding yields wrong total frames", () => {
+  const script: RenderScript = {
+    storyBriefRef: "/tmp/run/story-brief.json",
+    video: { width: 1080, height: 1920, fps: 30 },
+    scenes: [
+      {
+        sceneId: "scene_001",
+        photoRef: "1.jpg",
+        subtitle: "a",
+        subtitlePosition: "bottom",
+        durationSec: 1 / 60,
+        transition: { type: "cut", durationMs: 0 },
+      },
+      {
+        sceneId: "scene_002",
+        photoRef: "2.jpg",
+        subtitle: "b",
+        subtitlePosition: "bottom",
+        durationSec: 30 - 1 / 60,
+        transition: { type: "cut", durationMs: 0 },
+      },
+    ],
+  };
+
+  const result = validateRenderScriptSemantics(script, {
+    fixedVideo: { width: 1080, height: 1920, fps: 30 },
+    expectedTotalDurationSec: 30,
+  });
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((error) => error.includes("total frames")));
+});
+
 test("semantic validation fails when not all expected photos are used", () => {
   const script = buildValidRenderScript();
   script.scenes = [script.scenes[0]!];

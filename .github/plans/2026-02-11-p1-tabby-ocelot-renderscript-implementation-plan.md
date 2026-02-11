@@ -79,7 +79,7 @@
 - Test: `tests/validate-tabby-turn.spec.ts`
 
 **Step 1: 实现**
-- 定义 `TabbyTurnOutput = { say: string; options: {id,label}[]; done: boolean; internalNotes?: string }`
+- 定义 `TabbyTurnOutput = { say: string; options: {id,label}[]; done: boolean; internalNotes: string }`
 - 校验规则：
   - `options.length` ∈ [2,4]
   - `done=false` 时必须包含 `free_input`

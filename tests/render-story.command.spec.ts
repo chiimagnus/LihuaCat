@@ -132,7 +132,7 @@ test("prints readable failure reason", async () => {
   assert.match(state.failedLines.join("\n"), /template render failed/);
 });
 
-test("prints generation failure details when story script retries are exhausted", async () => {
+test("prints generation failure details when story brief retries are exhausted", async () => {
   const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({

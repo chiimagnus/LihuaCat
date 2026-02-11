@@ -227,6 +227,7 @@ interface RenderScene {
 interface RenderTransition {
   type: string              // "fade" | "cut" | "dissolve" | "slide"
   durationMs: number
+  direction?: string        // "left" | "right" | "up" | "down"（仅 slide 需要；其他类型可省略）
 }
 
 interface KenBurnsEffect {
@@ -300,7 +301,7 @@ flowchart LR
 
 **Tabby 对话合同（P1）**
 
-- Tabby 每一轮必须返回**结构化 JSON**（使用 outputSchema 强约束），字段：`say`、`options[]`、`done`、`internalNotes?`
+- Tabby 每一轮必须返回**结构化 JSON**（使用 outputSchema 强约束），字段：`say`、`options[]`、`done`、`internalNotes`
 - `options[]` 用于渲染 TUI 的 select（方向键选择），长度必须为 2–4，且必须包含 `id === "free_input"` 的选项（例如「我想自己说…」）
 - 选择 `free_input` 时，进入自由输入框（text），用户输入的文本作为该轮回答
 - `done === true` 表示进入「确认页」：`say` 为人话总结；`options` 固定为 `confirm` / `revise` 二选一

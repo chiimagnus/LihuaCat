@@ -16,9 +16,8 @@ export const buildRenderScriptPromptInput = (request: GenerateRenderScriptReques
     "- sum(scenes[].durationSec) must be 30",
     "- every provided photoRef must be used at least once in scenes",
     "- transition.type must be one of: cut|fade|dissolve|slide",
-    "- transition.direction must always be present (if not slide, set to 'left')",
     "- if transition.type is slide, direction must be left or right (P1 constraint)",
-    "- kenBurns must always be present (use subtle, safe values if unsure)",
+    "- kenBurns is optional; when present, use subtle, safe values if unsure",
     "",
     "StoryBrief (JSON):",
     JSON.stringify(request.storyBrief, null, 2),
@@ -67,7 +66,6 @@ export const renderScriptOutputSchema = {
           "subtitlePosition",
           "durationSec",
           "transition",
-          "kenBurns",
         ],
         additionalProperties: false,
         properties: {
@@ -77,14 +75,45 @@ export const renderScriptOutputSchema = {
           subtitlePosition: { type: "string", enum: ["bottom", "top", "center"] },
           durationSec: { type: "number", exclusiveMinimum: 0 },
           transition: {
-            type: "object",
-            required: ["type", "durationMs", "direction"],
-            additionalProperties: true,
-            properties: {
-              type: { type: "string", enum: ["cut", "fade", "dissolve", "slide"] },
-              durationMs: { type: "number", minimum: 0 },
-              direction: { type: "string", enum: ["left", "right", "up", "down"] },
-            },
+            oneOf: [
+              {
+                type: "object",
+                required: ["type", "durationMs"],
+                additionalProperties: false,
+                properties: {
+                  type: { const: "cut" },
+                  durationMs: { type: "number", minimum: 0 },
+                },
+              },
+              {
+                type: "object",
+                required: ["type", "durationMs"],
+                additionalProperties: false,
+                properties: {
+                  type: { const: "fade" },
+                  durationMs: { type: "number", minimum: 0 },
+                },
+              },
+              {
+                type: "object",
+                required: ["type", "durationMs"],
+                additionalProperties: false,
+                properties: {
+                  type: { const: "dissolve" },
+                  durationMs: { type: "number", minimum: 0 },
+                },
+              },
+              {
+                type: "object",
+                required: ["type", "durationMs", "direction"],
+                additionalProperties: false,
+                properties: {
+                  type: { const: "slide" },
+                  durationMs: { type: "number", minimum: 0 },
+                  direction: { type: "string", enum: ["left", "right"] },
+                },
+              },
+            ],
           },
           kenBurns: {
             type: "object",

@@ -386,6 +386,63 @@ test("persists stage artifacts even when run exits after render failure", async 
   });
 });
 
+test("writes error.log when workflow fails before render stage", async () => {
+  await withTempDir(async (sourceDir) => {
+    await fs.writeFile(path.join(sourceDir, "1.jpg"), "fake-image");
+
+    await assert.rejects(
+      runStoryWorkflowV2(
+        {
+          sourceDir,
+          tabbyAgentClient: { async generateTurn() { throw new Error("not used"); } },
+          tabbyTui: { async chooseOption() { throw new Error("not used"); }, async askFreeInput() { throw new Error("not used"); } },
+          storyBriefAgentClient: { async generateStoryBrief() { throw new Error("not used"); } },
+          ocelotAgentClient: { async generateRenderScript() { throw new Error("not used"); } },
+        },
+        {
+          collectImagesImpl: async () => ({
+            sourceDir,
+            images: [
+              {
+                index: 1,
+                fileName: "1.jpg",
+                absolutePath: path.join(sourceDir, "1.jpg"),
+                extension: ".jpg",
+              },
+            ],
+          }),
+          runTabbySessionImpl: async ({ conversationLogPath }) => {
+            if (conversationLogPath) {
+              await fs.appendFile(conversationLogPath, `{\"type\":\"user\"}\n`, "utf8");
+            }
+            return {
+              conversation: [{ type: "user", time: "t", input: { kind: "option", id: "x", label: "x" } }],
+              confirmedSummary: "summary",
+            };
+          },
+          generateStoryBriefImpl: async () => {
+            throw new Error("story brief crash");
+          },
+        },
+      ),
+      /story brief crash/,
+    );
+
+    const outputRoot = path.join(sourceDir, "lihuacat-output");
+    const runDirs = (await fs.readdir(outputRoot, { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
+    assert.equal(runDirs.length, 1);
+
+    const runDir = path.join(outputRoot, runDirs[0]!);
+    await assert.doesNotReject(fs.access(path.join(runDir, "run.log")));
+    await assert.doesNotReject(fs.access(path.join(runDir, "error.log")));
+
+    const errorLog = await fs.readFile(path.join(runDir, "error.log"), "utf8");
+    assert.match(errorLog, /story brief crash/);
+  });
+});
+
 const withTempDir = async (run: (sourceDir: string) => Promise<void>) => {
   const sourceDir = await fs.mkdtemp(path.join(os.tmpdir(), "lihuacat-workflow-"));
   try {
