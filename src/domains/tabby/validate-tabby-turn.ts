@@ -83,8 +83,8 @@ export const validateTabbyTurnOutput = (
     }
   }
 
-  if (input.internalNotes !== undefined && !isNonEmptyString(input.internalNotes)) {
-    errors.push("internalNotes must be a non-empty string when present");
+  if (!isNonEmptyString(input.internalNotes)) {
+    errors.push("internalNotes is required");
   }
 
   if (errors.length > 0) {

@@ -9,6 +9,7 @@ test("tabby-turn validation fails when required fields are missing", () => {
   assert.ok(result.errors.some((error) => error.includes("say")));
   assert.ok(result.errors.some((error) => error.includes("done")));
   assert.ok(result.errors.some((error) => error.includes("options")));
+  assert.ok(result.errors.some((error) => error.includes("internalNotes")));
 });
 
 test("done=false requires free_input option", () => {
@@ -19,6 +20,7 @@ test("done=false requires free_input option", () => {
       { id: "a", label: "开心" },
       { id: "b", label: "释然" },
     ],
+    internalNotes: "probe feelings",
   });
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((error) => error.includes("free_input")));
@@ -32,6 +34,7 @@ test("done=true requires fixed confirm/revise pair", () => {
       { id: "confirm", label: "确认" },
       { id: "revise", label: "需要修改" },
     ],
+    internalNotes: "confirm summary",
   });
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((error) => error.includes("fixed pair")));
@@ -59,7 +62,7 @@ test("valid done=true confirm page passes validation", () => {
       { id: "confirm", label: "就是这个感觉" },
       { id: "revise", label: "需要修改" },
     ],
+    internalNotes: "ready to confirm",
   });
   assert.equal(result.valid, true);
 });
-

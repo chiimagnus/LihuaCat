@@ -35,6 +35,7 @@ test("tabby session logs conversation and ends on confirm", async () => {
           { id: "confirm", label: "就是这个感觉" },
           { id: "revise", label: "需要修改" },
         ],
+        internalNotes: "Confirm summary and proceed.",
       },
     ];
 
@@ -82,6 +83,7 @@ test("tabby session revises and re-enters chat phase", async () => {
               { id: "a", label: "开心" },
               { id: "free_input", label: "我想自己说…" },
             ],
+            internalNotes: "Probe for feeling.",
           };
         }
         if (phase === "chat") {
@@ -92,6 +94,7 @@ test("tabby session revises and re-enters chat phase", async () => {
               { id: "confirm", label: "就是这个感觉" },
               { id: "revise", label: "需要修改" },
             ],
+            internalNotes: "Ready to confirm.",
           };
         }
         return {
@@ -101,6 +104,7 @@ test("tabby session revises and re-enters chat phase", async () => {
             { id: "b", label: "释然" },
             { id: "free_input", label: "我想自己说…" },
           ],
+          internalNotes: "Disambiguate emotion.",
         };
       },
     },
@@ -148,4 +152,3 @@ const withTempDir = async (run: (dir: string) => Promise<void>) => {
     await fs.rm(dir, { recursive: true, force: true });
   }
 };
-

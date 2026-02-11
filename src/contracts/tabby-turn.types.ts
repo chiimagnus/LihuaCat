@@ -7,11 +7,10 @@ export type TabbyTurnOutput = {
   say: string;
   options: TabbyOption[];
   done: boolean;
-  internalNotes?: string;
+  internalNotes: string;
 };
 
 export type TabbyTurnValidationResult = {
   valid: boolean;
   errors: string[];
 };
-

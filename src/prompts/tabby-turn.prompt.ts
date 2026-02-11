@@ -8,7 +8,7 @@ export const buildTabbyTurnPromptInput = (request: GenerateTabbyTurnRequest) => 
     "",
     "Output format (STRICT): Return JSON only. Do not wrap with markdown.",
     "Schema constraints:",
-    "- required fields: say (string), options (array), done (boolean). internalNotes is optional string.",
+    "- required fields: say (string), options (array), done (boolean), internalNotes (string).",
     "- options length must be between 2 and 4",
     "- when done=false: options MUST include {id:'free_input', label:'...'}",
     "- when done=true: options MUST be exactly:",
@@ -43,7 +43,7 @@ export const buildTabbyTurnPromptInput = (request: GenerateTabbyTurnRequest) => 
 
 export const tabbyTurnOutputSchema = {
   type: "object",
-  required: ["say", "options", "done"],
+  required: ["say", "options", "done", "internalNotes"],
   additionalProperties: false,
   properties: {
     say: { type: "string", minLength: 1 },
@@ -65,4 +65,3 @@ export const tabbyTurnOutputSchema = {
     internalNotes: { type: "string", minLength: 1 },
   },
 } as const;
-

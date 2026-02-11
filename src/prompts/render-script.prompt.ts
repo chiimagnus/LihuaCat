@@ -16,7 +16,9 @@ export const buildRenderScriptPromptInput = (request: GenerateRenderScriptReques
     "- sum(scenes[].durationSec) must be 30",
     "- every provided photoRef must be used at least once in scenes",
     "- transition.type must be one of: cut|fade|dissolve|slide",
+    "- transition.direction must always be present (if not slide, set to 'left')",
     "- if transition.type is slide, direction must be left or right (P1 constraint)",
+    "- kenBurns must always be present (use subtle, safe values if unsure)",
     "",
     "StoryBrief (JSON):",
     JSON.stringify(request.storyBrief, null, 2),
@@ -65,6 +67,7 @@ export const renderScriptOutputSchema = {
           "subtitlePosition",
           "durationSec",
           "transition",
+          "kenBurns",
         ],
         additionalProperties: false,
         properties: {
@@ -75,7 +78,7 @@ export const renderScriptOutputSchema = {
           durationSec: { type: "number", exclusiveMinimum: 0 },
           transition: {
             type: "object",
-            required: ["type", "durationMs"],
+            required: ["type", "durationMs", "direction"],
             additionalProperties: true,
             properties: {
               type: { type: "string", enum: ["cut", "fade", "dissolve", "slide"] },
