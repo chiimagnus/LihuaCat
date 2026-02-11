@@ -9,12 +9,17 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
 
+const isString = (value: unknown): value is string => typeof value === "string";
+
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
 export type StoryBriefValidationRules = {
   expectedPhotoCount?: number;
 };
+
+const SUGGESTED_ROLES = new Set(["开场", "高潮", "转折", "收尾", "过渡"]);
+const BEAT_DURATIONS = new Set(["short", "medium", "long"]);
 
 export const validateStoryBriefStructure = (
   input: unknown,
@@ -62,16 +67,15 @@ export const validateStoryBriefStructure = (
         return;
       }
       if (!isNonEmptyString(photo.photoRef)) errors.push(`photos[${index}].photoRef is required`);
-      if (photo.userSaid !== undefined && !isNonEmptyString(photo.userSaid)) {
-        errors.push(`photos[${index}].userSaid must be a non-empty string`);
-      }
+      if (!isString(photo.userSaid)) errors.push(`photos[${index}].userSaid is required`);
       if (!isFiniteNumber(photo.emotionalWeight) || photo.emotionalWeight < 0 || photo.emotionalWeight > 1) {
         errors.push(`photos[${index}].emotionalWeight must be between 0 and 1`);
       }
       if (!isNonEmptyString(photo.suggestedRole)) errors.push(`photos[${index}].suggestedRole is required`);
-      if (photo.backstory !== undefined && !isNonEmptyString(photo.backstory)) {
-        errors.push(`photos[${index}].backstory must be a non-empty string`);
+      if (isNonEmptyString(photo.suggestedRole) && !SUGGESTED_ROLES.has(photo.suggestedRole)) {
+        errors.push(`photos[${index}].suggestedRole must be a known role`);
       }
+      if (!isString(photo.backstory)) errors.push(`photos[${index}].backstory is required`);
       if (!isNonEmptyString(photo.analysis)) errors.push(`photos[${index}].analysis is required`);
     });
   }
@@ -101,6 +105,9 @@ export const validateStoryBriefStructure = (
         if (!isNonEmptyString(beat.moment)) errors.push(`narrative.beats[${index}].moment is required`);
         if (!isNonEmptyString(beat.emotion)) errors.push(`narrative.beats[${index}].emotion is required`);
         if (!isNonEmptyString(beat.duration)) errors.push(`narrative.beats[${index}].duration is required`);
+        if (isNonEmptyString(beat.duration) && !BEAT_DURATIONS.has(beat.duration)) {
+          errors.push(`narrative.beats[${index}].duration must be one of short|medium|long`);
+        }
         if (!isNonEmptyString(beat.transition)) errors.push(`narrative.beats[${index}].transition is required`);
       });
     }
@@ -112,4 +119,3 @@ export const validateStoryBriefStructure = (
 
   return { valid: true, errors: [], brief: input as StoryBrief };
 };
-

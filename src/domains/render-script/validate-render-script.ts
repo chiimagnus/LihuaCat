@@ -17,6 +17,11 @@ const isFiniteNumber = (value: unknown): value is number =>
 const isPositiveInteger = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value) && value > 0;
 
+const SUBTITLE_POSITIONS = new Set(["bottom", "top", "center"]);
+const TRANSITION_TYPES = new Set(["cut", "fade", "dissolve", "slide"]);
+const PAN_DIRECTIONS = new Set(["left", "right", "up", "down", "center"]);
+const SLIDE_DIRECTIONS = new Set(["left", "right", "up", "down"]);
+
 export type RenderScriptSemanticRules = {
   fixedVideo?: { width: number; height: number; fps: number };
   expectedPhotoRefs?: string[];
@@ -59,6 +64,8 @@ export const validateRenderScriptStructure = (
       if (!isNonEmptyString(scene.subtitle)) errors.push(`scenes[${index}].subtitle is required`);
       if (!isNonEmptyString(scene.subtitlePosition)) {
         errors.push(`scenes[${index}].subtitlePosition is required`);
+      } else if (!SUBTITLE_POSITIONS.has(scene.subtitlePosition)) {
+        errors.push(`scenes[${index}].subtitlePosition must be bottom|top|center`);
       }
       if (!isFiniteNumber(scene.durationSec) || scene.durationSec <= 0) {
         errors.push(`scenes[${index}].durationSec must be > 0`);
@@ -66,12 +73,17 @@ export const validateRenderScriptStructure = (
       if (!isRecord(scene.transition) || !isNonEmptyString(scene.transition.type)) {
         errors.push(`scenes[${index}].transition is required`);
       } else {
+        if (!TRANSITION_TYPES.has(scene.transition.type)) {
+          errors.push(`scenes[${index}].transition.type must be cut|fade|dissolve|slide`);
+        }
         if (!isFiniteNumber(scene.transition.durationMs) || scene.transition.durationMs < 0) {
           errors.push(`scenes[${index}].transition.durationMs must be >= 0`);
         }
         if (scene.transition.type === "slide") {
           if (!isNonEmptyString(scene.transition.direction)) {
             errors.push(`scenes[${index}].transition.direction is required for slide`);
+          } else if (!SLIDE_DIRECTIONS.has(scene.transition.direction)) {
+            errors.push(`scenes[${index}].transition.direction must be left|right|up|down`);
           }
         }
       }
@@ -89,6 +101,8 @@ export const validateRenderScriptStructure = (
           }
           if (!isNonEmptyString(kb.panDirection)) {
             errors.push(`scenes[${index}].kenBurns.panDirection is required`);
+          } else if (!PAN_DIRECTIONS.has(kb.panDirection)) {
+            errors.push(`scenes[${index}].kenBurns.panDirection must be left|right|up|down|center`);
           }
         }
       }
@@ -141,4 +155,3 @@ export const validateRenderScriptSemantics = (
 
   return { valid: errors.length === 0, errors };
 };
-
