@@ -13,7 +13,7 @@ import {
 } from "./workflow-ports.ts";
 import { initializeWorkflowRuntime } from "./workflow-runtime.ts";
 import { runCollectImagesStage } from "./stages/collect-images.stage.ts";
-import { runRenderStageV2 } from "./stages/render.stage.ts";
+import { runRenderStage } from "./stages/render.stage.ts";
 import { runPublishStage } from "./stages/publish.stage.ts";
 import { runTabbyStage } from "./stages/tabby.stage.ts";
 import { runOcelotStage } from "./stages/ocelot.stage.ts";
@@ -106,7 +106,7 @@ export const runStoryWorkflowV2 = async (
     onProgress,
   });
 
-  const rendered = await runRenderStageV2({
+  const rendered = await runRenderStage({
     runtime,
     collected,
     renderScript: ocelot.renderScript as never,

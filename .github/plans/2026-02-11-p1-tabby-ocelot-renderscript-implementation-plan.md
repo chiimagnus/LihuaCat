@@ -324,7 +324,7 @@
 - Run: `pnpm run build`
 - Expected: build success
 
-### Task 16: 删除 ai_code 渲染与渲染模式选择链路
+### ✅Task 16: 删除 ai_code 渲染与渲染模式选择链路
 
 **Files:**
 - Delete: `src/domains/ai-code-render/*`

@@ -25,8 +25,6 @@ export {
 export { StoryScriptGenerationFailedError } from "./domains/story-script/generate-story-script.ts";
 export { SourceDirectoryNotFoundError } from "./domains/material-intake/material-intake.errors.ts";
 
-export type { RenderMode } from "./domains/render-choice/render-choice-machine.ts";
-
 export type {
   TabbyAgentClient,
   GenerateTabbyTurnRequest,
