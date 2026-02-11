@@ -343,7 +343,7 @@
 
 ### P1：对外文档与基线同步
 
-### Task 17: 更新 README 与 business-logic
+### ✅Task 17: 更新 README 与 business-logic
 
 **Files:**
 - Modify: `README.md`
