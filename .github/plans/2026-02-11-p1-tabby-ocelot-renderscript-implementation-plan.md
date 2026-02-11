@@ -91,7 +91,7 @@
 - Run: `pnpm test -- tests/validate-tabby-turn.spec.ts`
 - Expected: PASS
 
-### Task 4: 实现 Tabby agent client（多轮回合输出，强制 JSON）
+### ✅Task 4: 实现 Tabby agent client（多轮回合输出，强制 JSON）
 
 **Files:**
 - Create: `src/domains/tabby/tabby-agent.client.ts`
@@ -109,7 +109,7 @@
 - Run: `pnpm test -- tests/tabby-agent.client.spec.ts`
 - Expected: PASS（用 mock codexFactory 断言 outputSchema 与解析行为）
 
-### Task 5: 实现 Tabby session（TUI：select + free_input + confirm/revise）
+### ✅Task 5: 实现 Tabby session（TUI：select + free_input + confirm/revise）
 
 **Files:**
 - Create: `src/domains/tabby/tabby-session.ts`
@@ -127,7 +127,7 @@
 - Run: `pnpm test -- tests/tabby-session.spec.ts`
 - Expected: PASS（用 mock TabbyAgentClient 断言 select 分支与日志写入）
 
-### Task 6: Tabby 最终产出 StoryBrief（确认后落盘）
+### ✅Task 6: Tabby 最终产出 StoryBrief（确认后落盘）
 
 **Files:**
 - Create: `src/domains/story-brief/generate-story-brief.ts`
@@ -149,7 +149,7 @@
 
 ### P1：Ocelot（编剧）→ RenderScript（渲染指令）
 
-### Task 7: 实现 Ocelot agent client（StoryBrief → RenderScript）
+### ✅Task 7: 实现 Ocelot agent client（StoryBrief → RenderScript）
 
 **Files:**
 - Create: `src/domains/render-script/ocelot-agent.client.ts`
