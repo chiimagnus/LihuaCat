@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import type { collectImages } from "../../domains/material-intake/collect-images.ts";
 import type { TabbyAgentClient } from "../../domains/tabby/tabby-agent.client.ts";
 import type { TabbySessionTui } from "../../domains/tabby/tabby-session.ts";
@@ -11,6 +9,7 @@ import {
   emitProgressAndPersist,
   pushRunLog,
   writeStageArtifact,
+  writeStoryBriefArtifact,
   type WorkflowRuntimeArtifacts,
 } from "../workflow-runtime.ts";
 
@@ -50,7 +49,7 @@ export const runTabbyStage = async ({
     path: image.absolutePath,
   }));
 
-  const conversationLogPath = path.join(runtime.stageDir, "tabby-conversation.jsonl");
+  const conversationLogPath = runtime.tabbyConversationPath;
   const session = await runTabbySessionImpl({
     photos,
     client: tabbyAgentClient,
@@ -68,7 +67,7 @@ export const runTabbyStage = async ({
   });
 
   await pushRunLog(runtime, `storyBriefGeneratedInAttempts=${briefResult.attempts}`);
-  await writeStageArtifact(runtime, "story-brief.json", briefResult.brief);
+  await writeStoryBriefArtifact(runtime, briefResult.brief);
   await writeStageArtifact(runtime, "tabby-stage.json", {
     attempts: briefResult.attempts,
     confirmedSummary: session.confirmedSummary,
@@ -88,4 +87,3 @@ export const runTabbyStage = async ({
     attempts: briefResult.attempts,
   };
 };
-

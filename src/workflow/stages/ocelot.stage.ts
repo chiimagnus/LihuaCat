@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import type { collectImages } from "../../domains/material-intake/collect-images.ts";
 import type { OcelotAgentClient } from "../../domains/render-script/ocelot-agent.client.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
@@ -7,6 +5,7 @@ import {
   emitProgressAndPersist,
   pushRunLog,
   writeStageArtifact,
+  writeRenderScriptArtifact,
   type WorkflowRuntimeArtifacts,
 } from "../workflow-runtime.ts";
 
@@ -47,13 +46,14 @@ export const runOcelotStage = async ({
     attempt: 1,
     previousErrors: [],
     debug: {
-      inputPath: path.join(runtime.outputDir, "ocelot-input.json"),
-      outputPath: path.join(runtime.outputDir, "ocelot-output.json"),
-      promptLogPath: path.join(runtime.outputDir, "ocelot-prompt.log"),
+      inputPath: runtime.ocelotInputPath,
+      outputPath: runtime.ocelotOutputPath,
+      promptLogPath: runtime.ocelotPromptLogPath,
     },
   });
 
   await pushRunLog(runtime, "renderScriptGeneratedInAttempts=1");
+  await writeRenderScriptArtifact(runtime, renderScript);
   await writeStageArtifact(runtime, "render-script.json", renderScript);
 
   await emitProgressAndPersist(runtime, onProgress, {
@@ -63,4 +63,3 @@ export const runOcelotStage = async ({
 
   return { renderScript };
 };
-

@@ -43,8 +43,13 @@ test("flow asks input then runs workflow", async () => {
         outputDir: "/tmp/photos/lihuacat-output/run-1",
         mode: "template",
         videoPath: "/tmp/photos/lihuacat-output/run-1/video.mp4",
-        storyScriptPath: "/tmp/photos/lihuacat-output/run-1/story-script.json",
+        storyBriefPath: "/tmp/photos/lihuacat-output/run-1/story-brief.json",
+        renderScriptPath: "/tmp/photos/lihuacat-output/run-1/render-script.json",
+        tabbyConversationPath: "/tmp/photos/lihuacat-output/run-1/tabby-conversation.jsonl",
         runLogPath: "/tmp/photos/lihuacat-output/run-1/run.log",
+        ocelotInputPath: "/tmp/photos/lihuacat-output/run-1/ocelot-input.json",
+        ocelotOutputPath: "/tmp/photos/lihuacat-output/run-1/ocelot-output.json",
+        ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-1/ocelot-prompt.log",
       };
     },
   });

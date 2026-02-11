@@ -213,7 +213,7 @@
 - Run: `pnpm test -- tests/render-story.command.spec.ts`
 - Expected: PASS（删除 `--mode`/`--mode-sequence` 相关断言并更新行为）
 
-### Task 10: 重构 workflow runtime 产物：新增 StoryBrief/RenderScript 路径与 jsonl 追加写
+### ✅Task 10: 重构 workflow runtime 产物：新增 StoryBrief/RenderScript 路径与 jsonl 追加写
 
 **Files:**
 - Modify: `src/workflow/workflow-runtime.ts`

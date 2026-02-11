@@ -31,17 +31,21 @@ test("prints key artifact paths on success", async () => {
       outputDir: "/tmp/photos/lihuacat-output/run-1",
       mode: "template",
       videoPath: "/tmp/photos/lihuacat-output/run-1/video.mp4",
-      storyScriptPath: "/tmp/photos/lihuacat-output/run-1/story-script.json",
+      storyBriefPath: "/tmp/photos/lihuacat-output/run-1/story-brief.json",
+      renderScriptPath: "/tmp/photos/lihuacat-output/run-1/render-script.json",
+      tabbyConversationPath: "/tmp/photos/lihuacat-output/run-1/tabby-conversation.jsonl",
       runLogPath: "/tmp/photos/lihuacat-output/run-1/run.log",
-      generatedCodePath: "/tmp/photos/lihuacat-output/run-1/generated-remotion",
+      ocelotInputPath: "/tmp/photos/lihuacat-output/run-1/ocelot-input.json",
+      ocelotOutputPath: "/tmp/photos/lihuacat-output/run-1/ocelot-output.json",
+      ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-1/ocelot-prompt.log",
     }),
   });
 
   assert.equal(exitCode, 0);
   assert.equal(state.completedSummary?.videoPath, "/tmp/photos/lihuacat-output/run-1/video.mp4");
   assert.equal(
-    state.completedSummary?.storyScriptPath,
-    "/tmp/photos/lihuacat-output/run-1/story-script.json",
+    state.completedSummary?.storyBriefPath,
+    "/tmp/photos/lihuacat-output/run-1/story-brief.json",
   );
   assert.equal(state.completedSummary?.runLogPath, "/tmp/photos/lihuacat-output/run-1/run.log");
   assert.equal(state.failedLines.length, 0);
@@ -65,8 +69,13 @@ test("prints selected Codex model info", async () => {
       outputDir: "/tmp/photos/lihuacat-output/run-model-info",
       mode: "template",
       videoPath: "/tmp/photos/lihuacat-output/run-model-info/video.mp4",
-      storyScriptPath: "/tmp/photos/lihuacat-output/run-model-info/story-script.json",
+      storyBriefPath: "/tmp/photos/lihuacat-output/run-model-info/story-brief.json",
+      renderScriptPath: "/tmp/photos/lihuacat-output/run-model-info/render-script.json",
+      tabbyConversationPath: "/tmp/photos/lihuacat-output/run-model-info/tabby-conversation.jsonl",
       runLogPath: "/tmp/photos/lihuacat-output/run-model-info/run.log",
+      ocelotInputPath: "/tmp/photos/lihuacat-output/run-model-info/ocelot-input.json",
+      ocelotOutputPath: "/tmp/photos/lihuacat-output/run-model-info/ocelot-output.json",
+      ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-model-info/ocelot-prompt.log",
     }),
   });
 
@@ -93,8 +102,13 @@ test("accepts xhigh reasoning effort and prints it in model info", async () => {
       outputDir: "/tmp/photos/lihuacat-output/run-model-xhigh",
       mode: "template",
       videoPath: "/tmp/photos/lihuacat-output/run-model-xhigh/video.mp4",
-      storyScriptPath: "/tmp/photos/lihuacat-output/run-model-xhigh/story-script.json",
+      storyBriefPath: "/tmp/photos/lihuacat-output/run-model-xhigh/story-brief.json",
+      renderScriptPath: "/tmp/photos/lihuacat-output/run-model-xhigh/render-script.json",
+      tabbyConversationPath: "/tmp/photos/lihuacat-output/run-model-xhigh/tabby-conversation.jsonl",
       runLogPath: "/tmp/photos/lihuacat-output/run-model-xhigh/run.log",
+      ocelotInputPath: "/tmp/photos/lihuacat-output/run-model-xhigh/ocelot-input.json",
+      ocelotOutputPath: "/tmp/photos/lihuacat-output/run-model-xhigh/ocelot-output.json",
+      ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-model-xhigh/ocelot-prompt.log",
     }),
   });
 
@@ -175,8 +189,13 @@ test("forwards workflow progress events to tui layer", async () => {
         outputDir: "/tmp/photos/lihuacat-output/run-2",
         mode: "template",
         videoPath: "/tmp/photos/lihuacat-output/run-2/video.mp4",
-        storyScriptPath: "/tmp/photos/lihuacat-output/run-2/story-script.json",
+        storyBriefPath: "/tmp/photos/lihuacat-output/run-2/story-brief.json",
+        renderScriptPath: "/tmp/photos/lihuacat-output/run-2/render-script.json",
+        tabbyConversationPath: "/tmp/photos/lihuacat-output/run-2/tabby-conversation.jsonl",
         runLogPath: "/tmp/photos/lihuacat-output/run-2/run.log",
+        ocelotInputPath: "/tmp/photos/lihuacat-output/run-2/ocelot-input.json",
+        ocelotOutputPath: "/tmp/photos/lihuacat-output/run-2/ocelot-output.json",
+        ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-2/ocelot-prompt.log",
       };
     },
   });

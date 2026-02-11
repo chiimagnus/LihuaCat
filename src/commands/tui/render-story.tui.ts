@@ -170,10 +170,14 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
         [
           `mode: ${summary.mode}`,
           `video: ${summary.videoPath}`,
-          `script: ${summary.storyScriptPath}`,
+          `storyBrief: ${summary.storyBriefPath}`,
+          `renderScript: ${summary.renderScriptPath}`,
+          `tabbyConversation: ${summary.tabbyConversationPath}`,
           `runLog: ${summary.runLogPath}`,
           summary.errorLogPath ? `errorLog: ${summary.errorLogPath}` : "",
-          summary.generatedCodePath ? `generatedCode: ${summary.generatedCodePath}` : "",
+          `ocelotInput: ${summary.ocelotInputPath}`,
+          `ocelotOutput: ${summary.ocelotOutputPath}`,
+          `ocelotPrompt: ${summary.ocelotPromptLogPath}`,
         ]
           .filter((line) => line.length > 0)
           .join("\n"),

@@ -8,7 +8,6 @@ import {
   emitProgressAndPersist,
   pushErrorLog,
   pushRunLog,
-  writeStoryScriptArtifact,
   type WorkflowRuntimeArtifacts,
 } from "../workflow-runtime.ts";
 import type { RenderScript } from "../../contracts/render-script.types.ts";
@@ -127,7 +126,6 @@ export const runRenderStage = async ({
 export type RenderStageV2Result = {
   mode: "template";
   videoPath: string;
-  storyScript: StoryScript;
 };
 
 export const runRenderStageV2 = async ({
@@ -163,7 +161,6 @@ export const runRenderStageV2 = async ({
     collected,
     renderScript,
   });
-  await writeStoryScriptArtifact(runtime, storyScript);
 
   try {
     const rendered = await renderByTemplateImpl({
@@ -184,7 +181,6 @@ export const runRenderStageV2 = async ({
     return {
       mode: "template",
       videoPath: rendered.videoPath,
-      storyScript,
     };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);

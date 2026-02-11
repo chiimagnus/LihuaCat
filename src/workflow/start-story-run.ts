@@ -1,24 +1,19 @@
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
-import type { StoryAgentClient } from "../domains/story-script/story-agent.client.ts";
 import type { TabbyAgentClient } from "../domains/tabby/tabby-agent.client.ts";
 import type { TabbySessionTui } from "../domains/tabby/tabby-session.ts";
 import type { StoryBriefAgentClient } from "../domains/story-brief/story-brief-agent.client.ts";
 import type { OcelotAgentClient } from "../domains/render-script/ocelot-agent.client.ts";
-import type { RenderMode } from "../domains/render-choice/render-choice-machine.ts";
 import type { RunSummary } from "../domains/artifact-publish/build-run-summary.ts";
 import type { WorkflowProgressReporter } from "./workflow-events.ts";
 import {
   resolveWorkflowPorts,
-  resolveWorkflowPortsV2,
   type WorkflowPorts,
-  type WorkflowPortsV2,
 } from "./workflow-ports.ts";
 import { initializeWorkflowRuntime } from "./workflow-runtime.ts";
 import { runCollectImagesStage } from "./stages/collect-images.stage.ts";
-import { runGenerateScriptStage } from "./stages/generate-script.stage.ts";
-import { runRenderStage, runRenderStageV2 } from "./stages/render.stage.ts";
+import { runRenderStageV2 } from "./stages/render.stage.ts";
 import { runPublishStage } from "./stages/publish.stage.ts";
 import { runTabbyStage } from "./stages/tabby.stage.ts";
 import { runOcelotStage } from "./stages/ocelot.stage.ts";
@@ -35,27 +30,6 @@ export type StartStoryRunResult = {
   outputDir: string;
 };
 
-export type RunStoryWorkflowInput = {
-  sourceDir: string;
-  storyAgentClient: StoryAgentClient;
-  browserExecutablePath?: string;
-  style: {
-    preset: string;
-    prompt?: string;
-  };
-  chooseRenderMode: (state: {
-    lastFailure?: { mode: RenderMode; reason: string };
-  }) => Promise<RenderMode | "exit">;
-  onRenderFailure?: (input: {
-    mode: RenderMode;
-    reason: string;
-  }) => Promise<void> | void;
-  onProgress?: WorkflowProgressReporter;
-  now?: Date;
-};
-
-export type RunStoryWorkflowDependencies = Partial<WorkflowPorts>;
-
 export const startStoryRun = ({
   sourceDir,
   now = new Date(),
@@ -66,67 +40,6 @@ export const startStoryRun = ({
     runId,
     outputDir: path.join(sourceDir, "lihuacat-output", runId),
   };
-};
-
-export const runStoryWorkflow = async (
-  {
-    sourceDir,
-    storyAgentClient,
-    browserExecutablePath,
-    style,
-    chooseRenderMode,
-    onRenderFailure,
-    onProgress,
-    now,
-  }: RunStoryWorkflowInput,
-  dependencies: RunStoryWorkflowDependencies = {},
-): Promise<RunSummary> => {
-  const ports = resolveWorkflowPorts(dependencies);
-  const { runId, outputDir } = startStoryRun({
-    sourceDir,
-    now,
-  });
-  const runtime = await initializeWorkflowRuntime({
-    runId,
-    sourceDir,
-    outputDir,
-  });
-
-  const collected = await runCollectImagesStage({
-    sourceDir,
-    runtime,
-    onProgress,
-    collectImagesImpl: ports.collectImagesImpl,
-  });
-  const scriptResult = await runGenerateScriptStage({
-    sourceDir,
-    style,
-    storyAgentClient,
-    collected,
-    runtime,
-    onProgress,
-    generateStoryScriptImpl: ports.generateStoryScriptImpl,
-  });
-  const renderResult = await runRenderStage({
-    runtime,
-    storyScript: scriptResult.script,
-    browserExecutablePath,
-    chooseRenderMode,
-    onRenderFailure,
-    onProgress,
-    renderByTemplateImpl: ports.renderByTemplateImpl,
-    renderByAiCodeImpl: ports.renderByAiCodeImpl,
-  });
-
-  return runPublishStage({
-    runtime,
-    mode: renderResult.mode,
-    videoPath: renderResult.videoPath,
-    generatedCodePath: renderResult.generatedCodePath,
-    storyScript: scriptResult.script,
-    onProgress,
-    publishArtifactsImpl: ports.publishArtifactsImpl,
-  });
 };
 
 export type RunStoryWorkflowV2Input = {
@@ -140,7 +53,7 @@ export type RunStoryWorkflowV2Input = {
   now?: Date;
 };
 
-export type RunStoryWorkflowV2Dependencies = Partial<WorkflowPortsV2>;
+export type RunStoryWorkflowV2Dependencies = Partial<WorkflowPorts>;
 
 export const runStoryWorkflowV2 = async (
   {
@@ -155,7 +68,7 @@ export const runStoryWorkflowV2 = async (
   }: RunStoryWorkflowV2Input,
   dependencies: RunStoryWorkflowV2Dependencies = {},
 ): Promise<RunSummary> => {
-  const ports = resolveWorkflowPortsV2(dependencies);
+  const ports = resolveWorkflowPorts(dependencies);
   const { runId, outputDir } = startStoryRun({
     sourceDir,
     now,
@@ -187,7 +100,7 @@ export const runStoryWorkflowV2 = async (
   const ocelot = await runOcelotStage({
     collected,
     runtime,
-    storyBriefRef: path.join(outputDir, "stages", "story-brief.json"),
+    storyBriefRef: runtime.storyBriefPath,
     storyBrief: tabby.storyBrief,
     ocelotAgentClient,
     onProgress,
@@ -205,9 +118,7 @@ export const runStoryWorkflowV2 = async (
 
   return runPublishStage({
     runtime,
-    mode: rendered.mode,
     videoPath: rendered.videoPath,
-    storyScript: rendered.storyScript,
     onProgress,
     publishArtifactsImpl: ports.publishArtifactsImpl,
   });

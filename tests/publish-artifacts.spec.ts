@@ -5,26 +5,46 @@ import os from "node:os";
 import path from "node:path";
 
 import { publishArtifacts } from "../src/domains/artifact-publish/publish-artifacts.ts";
-import type { StoryScript } from "../src/contracts/story-script.types.ts";
 
 test("publishes artifacts and returns summary with key paths", async () => {
   await withTempDir(async (outputDir) => {
     const videoPath = path.join(outputDir, "video.mp4");
     await fs.writeFile(videoPath, "video");
 
+    const storyBriefPath = path.join(outputDir, "story-brief.json");
+    const renderScriptPath = path.join(outputDir, "render-script.json");
+    const tabbyConversationPath = path.join(outputDir, "tabby-conversation.jsonl");
+    const ocelotInputPath = path.join(outputDir, "ocelot-input.json");
+    const ocelotOutputPath = path.join(outputDir, "ocelot-output.json");
+    const ocelotPromptLogPath = path.join(outputDir, "ocelot-prompt.log");
+    await fs.writeFile(storyBriefPath, JSON.stringify({ ok: true }), "utf8");
+    await fs.writeFile(renderScriptPath, JSON.stringify({ ok: true }), "utf8");
+    await fs.writeFile(tabbyConversationPath, "", "utf8");
+    await fs.writeFile(ocelotInputPath, "{}", "utf8");
+    await fs.writeFile(ocelotOutputPath, "{}", "utf8");
+    await fs.writeFile(ocelotPromptLogPath, "prompt", "utf8");
+
     const summary = await publishArtifacts({
       runId: "run-001",
       outputDir,
-      mode: "template",
       videoPath,
-      storyScript: buildStoryScript(),
+      storyBriefPath,
+      renderScriptPath,
+      tabbyConversationPath,
+      ocelotInputPath,
+      ocelotOutputPath,
+      ocelotPromptLogPath,
       runLogs: ["run started", "run succeeded"],
     });
 
     assert.equal(summary.videoPath, videoPath);
-    assert.ok(summary.storyScriptPath.endsWith("story-script.json"));
+    assert.ok(summary.storyBriefPath.endsWith("story-brief.json"));
+    assert.ok(summary.renderScriptPath.endsWith("render-script.json"));
+    assert.ok(summary.tabbyConversationPath.endsWith("tabby-conversation.jsonl"));
     assert.ok(summary.runLogPath.endsWith("run.log"));
-    await assert.doesNotReject(fs.access(summary.storyScriptPath));
+    await assert.doesNotReject(fs.access(summary.storyBriefPath));
+    await assert.doesNotReject(fs.access(summary.renderScriptPath));
+    await assert.doesNotReject(fs.access(summary.tabbyConversationPath));
     await assert.doesNotReject(fs.access(summary.runLogPath));
   });
 });
@@ -37,23 +57,3 @@ const withTempDir = async (run: (dir: string) => Promise<void>) => {
     await fs.rm(dir, { recursive: true, force: true });
   }
 };
-
-const buildStoryScript = (): StoryScript => ({
-  version: "1.0",
-  input: {
-    sourceDir: "/tmp/photos",
-    imageCount: 1,
-    assets: [{ id: "img_001", path: "1.jpg" }],
-  },
-  video: {
-    width: 1080,
-    height: 1920,
-    fps: 30,
-    durationSec: 30,
-  },
-  style: {
-    preset: "healing",
-  },
-  timeline: [{ assetId: "img_001", startSec: 0, endSec: 30, subtitleId: "sub_1" }],
-  subtitles: [{ id: "sub_1", text: "hello", startSec: 0, endSec: 30 }],
-});

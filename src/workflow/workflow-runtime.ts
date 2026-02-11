@@ -2,6 +2,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { StoryScript } from "../contracts/story-script.types.ts";
+import type { StoryBrief } from "../contracts/story-brief.types.ts";
+import type { RenderScript } from "../contracts/render-script.types.ts";
 import type {
   WorkflowProgressEvent,
   WorkflowProgressReporter,
@@ -15,6 +17,12 @@ export type WorkflowRuntimeArtifacts = {
   runLogPath: string;
   errorLogPath: string;
   storyScriptPath: string;
+  storyBriefPath: string;
+  renderScriptPath: string;
+  tabbyConversationPath: string;
+  ocelotInputPath: string;
+  ocelotOutputPath: string;
+  ocelotPromptLogPath: string;
   progressEventsPath: string;
   renderAttemptsPath: string;
   runLogs: string[];
@@ -39,6 +47,12 @@ export const initializeWorkflowRuntime = async ({
     runLogPath: path.join(outputDir, "run.log"),
     errorLogPath: path.join(outputDir, "error.log"),
     storyScriptPath: path.join(outputDir, "story-script.json"),
+    storyBriefPath: path.join(outputDir, "story-brief.json"),
+    renderScriptPath: path.join(outputDir, "render-script.json"),
+    tabbyConversationPath: path.join(outputDir, "tabby-conversation.jsonl"),
+    ocelotInputPath: path.join(outputDir, "ocelot-input.json"),
+    ocelotOutputPath: path.join(outputDir, "ocelot-output.json"),
+    ocelotPromptLogPath: path.join(outputDir, "ocelot-prompt.log"),
     progressEventsPath: path.join(stageDir, "progress-events.jsonl"),
     renderAttemptsPath: path.join(stageDir, "render-attempts.jsonl"),
     runLogs: [],
@@ -96,6 +110,28 @@ export const writeStoryScriptArtifact = async (
   await fs.writeFile(
     runtime.storyScriptPath,
     JSON.stringify(storyScript, null, 2),
+    "utf8",
+  );
+};
+
+export const writeStoryBriefArtifact = async (
+  runtime: WorkflowRuntimeArtifacts,
+  storyBrief: StoryBrief,
+) => {
+  await fs.writeFile(
+    runtime.storyBriefPath,
+    JSON.stringify(storyBrief, null, 2),
+    "utf8",
+  );
+};
+
+export const writeRenderScriptArtifact = async (
+  runtime: WorkflowRuntimeArtifacts,
+  renderScript: RenderScript,
+) => {
+  await fs.writeFile(
+    runtime.renderScriptPath,
+    JSON.stringify(renderScript, null, 2),
     "utf8",
   );
 };

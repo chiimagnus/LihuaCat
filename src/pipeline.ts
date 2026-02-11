@@ -1,9 +1,6 @@
 export {
-  runStoryWorkflow,
   runStoryWorkflowV2,
   startStoryRun,
-  type RunStoryWorkflowInput,
-  type RunStoryWorkflowDependencies,
   type RunStoryWorkflowV2Input,
   type RunStoryWorkflowV2Dependencies,
   type StartStoryRunInput,
