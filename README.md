@@ -1,6 +1,6 @@
 # LihuaCat
 
-[中文](README.zh.md) | [English](README.md)
+[中文](https://github.com/chiimagnus/LihuaCat/blob/main/README.zh.md) | [English](https://github.com/chiimagnus/LihuaCat/blob/main/README.md)
 
 Local-first CLI that turns a folder of images into a short story video. Follow the interactive prompts in your terminal and it renders `video.mp4` locally with Remotion.
 
