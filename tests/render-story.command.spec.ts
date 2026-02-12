@@ -117,7 +117,7 @@ test("accepts xhigh reasoning effort and prints it in model info", async () => {
 });
 
 test("detects browsers at startup and passes selected executable to workflow", async () => {
-  const selectedPath = "/Applications/Arc.app/Contents/MacOS/Arc";
+  const selectedPath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
   const { tui } = createMockTui({
     askBrowserExecutable: async ({ candidates }) => {
       assert.equal(candidates.length, 1);
@@ -131,7 +131,7 @@ test("detects browsers at startup and passes selected executable to workflow", a
     argv: ["--input", "/tmp/photos"],
     tui,
     listAvailableBrowsersImpl: async () => [
-      { browser: "arc", executablePath: selectedPath },
+      { browser: "chrome", executablePath: selectedPath },
     ],
     workflowImpl: async (input) => {
       receivedBrowserPath = input.browserExecutablePath;

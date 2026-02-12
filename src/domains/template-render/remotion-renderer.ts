@@ -31,7 +31,7 @@ export class RemotionRenderError extends Error {
 }
 
 const browserDownloadDisabledMessage =
-  "Automatic browser download is disabled. Install Chrome/Edge/Arc/Brave locally or pass --browser-executable.";
+  "Automatic browser download is disabled. Install Chrome/Edge/Brave locally or pass --browser-executable.";
 
 export const bundleRemotionEntry = async ({
   entryPoint,

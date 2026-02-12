@@ -278,6 +278,5 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
 const toBrowserLabel = (browser: BrowserCandidate["browser"]): string => {
   if (browser === "chrome") return "Google Chrome";
   if (browser === "edge") return "Microsoft Edge";
-  if (browser === "arc") return "Arc";
   return "Brave";
 };
