@@ -45,11 +45,7 @@ test("story brief outputSchema keeps non-empty strings and bounded weights", () 
   assert.equal(intent?.properties.rawUserWords?.minLength, 1);
 
   const audienceNote = intent?.properties.audienceNote;
-  assert.ok(audienceNote && "oneOf" in audienceNote);
-  const audienceNoteOneOf = (audienceNote as { oneOf: unknown[] }).oneOf;
-  assert.equal(Array.isArray(audienceNoteOneOf), true);
-  assert.equal(audienceNoteOneOf.length, 2);
-  assert.deepEqual(audienceNoteOneOf, [{ type: "string", minLength: 1 }, { type: "null" }]);
+  assert.deepEqual(audienceNote, { type: ["string", "null"] });
 
   const photos = storyBriefOutputSchema.properties.photos;
   assert.equal(photos?.type, "array");
@@ -98,23 +94,12 @@ test("render script outputSchema keeps fixed video fields and transition variant
   assert.deepEqual(sceneItem?.properties.subtitlePosition?.enum, ["bottom", "top", "center"]);
 
   const transition = sceneItem?.properties.transition;
-  assert.ok(transition && "oneOf" in transition);
-  const transitionOneOf = (transition as { oneOf: unknown[] }).oneOf;
-  assert.equal(Array.isArray(transitionOneOf), true);
-  assert.equal(transitionOneOf.length, 4);
-
-  const slideVariant = transitionOneOf.find(
-    (variant) =>
-      typeof variant === "object" &&
-      variant !== null &&
-      "properties" in variant &&
-      typeof (variant as any).properties?.type?.const === "string" &&
-      (variant as any).properties.type.const === "slide",
-  ) as any;
-  assert.ok(slideVariant);
-  assert.deepEqual(slideVariant.properties.direction.enum, ["left", "right"]);
+  assert.deepEqual(transition?.type, "object");
+  assert.deepEqual(transition?.additionalProperties, false);
+  assert.deepEqual(transition?.required, ["type", "durationMs", "direction"]);
+  assert.deepEqual(transition?.properties.type?.enum, ["cut", "fade", "dissolve", "slide"]);
+  assert.deepEqual(transition?.properties.direction?.enum, ["left", "right"]);
 
   assert.ok(sceneItem?.properties.kenBurns);
   assert.equal(sceneItem?.properties.kenBurns?.type, "object");
 });
-

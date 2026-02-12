@@ -56,12 +56,10 @@ export const storyBriefOutputSchema = {
         coreEmotion: { type: "string", minLength: 1 },
         tone: { type: "string", minLength: 1 },
         narrativeArc: { type: "string", minLength: 1 },
-        audienceNote: {
-          oneOf: [
-            { type: "string", minLength: 1 },
-            { type: "null" },
-          ],
-        },
+        // Note: Codex outputSchema dialect does not permit oneOf/anyOf.
+        // We keep this as a simple nullable string and rely on the
+        // runtime validator to enforce non-empty strings when present.
+        audienceNote: { type: ["string", "null"] },
         avoidance: {
           type: "array",
           items: { type: "string", minLength: 1 },

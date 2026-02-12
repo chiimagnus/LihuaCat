@@ -16,7 +16,7 @@ export const buildRenderScriptPromptInput = (request: GenerateRenderScriptReques
     "- sum(scenes[].durationSec) must be 30",
     "- every provided photoRef must be used at least once in scenes",
     "- transition.type must be one of: cut|fade|dissolve|slide",
-    "- if transition.type is slide, direction must be left or right (P1 constraint)",
+    "- ALWAYS include transition.direction as left or right (P1 schema constraint); for non-slide types, pick the best fit",
     "- kenBurns is optional; when present, use subtle, safe values if unsure",
     "",
     "StoryBrief (JSON):",
@@ -75,45 +75,16 @@ export const renderScriptOutputSchema = {
           subtitlePosition: { type: "string", enum: ["bottom", "top", "center"] },
           durationSec: { type: "number", exclusiveMinimum: 0 },
           transition: {
-            oneOf: [
-              {
-                type: "object",
-                required: ["type", "durationMs"],
-                additionalProperties: false,
-                properties: {
-                  type: { const: "cut" },
-                  durationMs: { type: "number", minimum: 0 },
-                },
-              },
-              {
-                type: "object",
-                required: ["type", "durationMs"],
-                additionalProperties: false,
-                properties: {
-                  type: { const: "fade" },
-                  durationMs: { type: "number", minimum: 0 },
-                },
-              },
-              {
-                type: "object",
-                required: ["type", "durationMs"],
-                additionalProperties: false,
-                properties: {
-                  type: { const: "dissolve" },
-                  durationMs: { type: "number", minimum: 0 },
-                },
-              },
-              {
-                type: "object",
-                required: ["type", "durationMs", "direction"],
-                additionalProperties: false,
-                properties: {
-                  type: { const: "slide" },
-                  durationMs: { type: "number", minimum: 0 },
-                  direction: { type: "string", enum: ["left", "right"] },
-                },
-              },
-            ],
+            // Note: Codex outputSchema dialect does not permit oneOf/anyOf.
+            // We enforce the discriminated union at runtime (validator).
+            type: "object",
+            required: ["type", "durationMs", "direction"],
+            additionalProperties: false,
+            properties: {
+              type: { type: "string", enum: ["cut", "fade", "dissolve", "slide"] },
+              durationMs: { type: "number", minimum: 0 },
+              direction: { type: "string", enum: ["left", "right"] },
+            },
           },
           kenBurns: {
             type: "object",
