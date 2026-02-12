@@ -14,10 +14,9 @@
     "registry": "https://registry.npmjs.org/"
   },
   "bin": {
-    "lihuacat": "./bin/lihuacat.js"
+    "lihuacat": "./dist/index.js"
   },
   "files": [
-    "bin",
     "dist",
     "README.md"
   ],
