@@ -33,8 +33,8 @@
     "test": "node tests/run-tests.mjs",
     "check": "node ./node_modules/typescript/bin/tsc -p tsconfig.json",
     "build": "node ./node_modules/typescript/bin/tsc -p tsconfig.build.json",
-    "prepack": "pnpm run build",
-    "prepare": "pnpm run build"
+    "prepack": "node ./node_modules/typescript/bin/tsc -p tsconfig.build.json",
+    "prepare": "node ./node_modules/typescript/bin/tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "@clack/prompts": "^1.0.0",
