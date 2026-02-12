@@ -79,7 +79,7 @@ Tabby 是**唯一和用户直接对话的 agent**，也是整个系统的大脑�
     - **交互模式**：每轮给用户 2–4 个建议选项（select），且**必须**带一个「我想自己说…」入口进入自由输入。不做纯开放式提问，降低用户表达门槛
 - **判断**——知道什么时候该继续追问，什么时候信息已经够了，可以收束
 - **确认页**——收束后、调用 Ocelot 之前，向用户展示人话总结（"我理解你想表达的是：…"）。用户可以「确认」或「需要修改」。点「需要修改」回到对话继续聊 1–3 轮，**不做字段级表单**
-- **调度**——决定什么时候调用 Ocelot 写脚本、什么时候调用 Lynx 审稿、审稿不通过怎么处理
+- **调度**——决定何时收束进入确认页；确认后由工作流编排调用 StoryBrief 生成与 🐆 Ocelot 编剧（🐈‍⬛ Lynx 审稿为 P2 规划）
 
 **核心产出：** `CreativeIntent`（用户到底想表达什么）+ `PhotoNote[]`（每张照片的情感标注）。这两样东西组成 StoryBrief 的核心原料。
 
@@ -93,9 +93,11 @@ Ocelot **不和用户对话**，它只服务于 Tabby。美洲虎猫，丛林里
 
 **权限：** 被调用、无自主权。Tabby 让它写它就写，让它改它就改。
 
-### 🐈‍⬛ Lynx（猞猁）—— 审稿人（工具人）
+### 🐈‍⬛ Lynx（猞猁）—— 审稿人（工具人，P2 规划）
 
 Lynx 也**不和用户对话**，同样只服务于 Tabby。古希腊人认为猞猁能看穿墙壁——锐利的双眼，什么都逃不过。
+
+> 当前版本尚未接入主流程；先把“审稿能力”当作质量门槛的设计预留。
 
 **它在干什么：** 拿着用户的原始意图（CreativeIntent）+ 照片 + Ocelot 写出来的脚本，做质检。它回答一个核心问题：**「这个脚本忠实地表达了用户的感受吗？」**
 
@@ -111,23 +113,26 @@ flowchart LR
 
     subgraph Core ["LihuaCat"]
         direction TB
-        Tabby["🐱 Tabby<br>总导演"]
+        Tabby["🐱 Tabby<br>总导演（对话）"]
         Confirm{"📋 确认页<br>确认 / 需要修改"}
+        BriefGen["🧩 StoryBrief 生成<br>（agent）"]
         Ocelot["🐆 Ocelot<br>编剧"]
-        Lynx["🐈‍⬛ Lynx<br>审稿"]
+        Lynx["🐈‍⬛ Lynx<br>审稿（P2）"]
         Brief[/"📄 story-brief.json"/]
         RS[/"🎬 render-script.json"/]
     end
 
     User <-->|"多轮对话<br>select 2-4 选项 + 自由输入"| Tabby
-    Tabby --> Brief
-    Brief --> Confirm
-    Confirm -->|"✅ 确认"| Ocelot
+    Tabby --> Confirm
     Confirm -.->|"需要修改<br>回到对话 1-3 轮"| Tabby
+    Confirm -->|"✅ 确认"| BriefGen
+    BriefGen --> Brief
+    Brief --> Ocelot
     Ocelot --> RS
-    RS -->|"审稿"| Lynx
-    Lynx -->|"审稿意见"| Tabby
-    Lynx -.->|"不通过"| Ocelot
+    RS -.->|"审稿（P2）"| Lynx
+    Brief -.->|"审稿依据（P2）"| Lynx
+    Lynx -.->|"审稿意见（P2）"| Tabby
+    Lynx -.->|"不通过（P2）"| Ocelot
 
     subgraph Render ["🎬 呈现层"]
         direction LR
@@ -135,7 +140,7 @@ flowchart LR
         R2["漫画 / AVP / ..."]
     end
 
-    RS -->|"✅ 通过"| Render
+    RS -->|"输入"| Render
 ```
 
 ---
@@ -146,9 +151,9 @@ flowchart LR
 
 StoryBrief 是整个系统的**核心资产**，描述「用户想表达什么、照片承载什么情感、故事怎么走」。它**只关心叙事**，不包含任何渲染细节。
 
-**产出者：** 🐱 Tabby
+**产出者：** StoryBrief 生成器（agent，输入为 Tabby 对话 + confirmed summary）
 
-**消费者：** 🐆 Ocelot（读取 StoryBrief 来写渲染脚本）、🐈‍⬛ Lynx（读取 StoryBrief 来审稿）
+**消费者：** 🐆 Ocelot（读取 StoryBrief 来写渲染脚本）；🐈‍⬛ Lynx（P2，读取 StoryBrief 来审稿）
 
 **关键特性：** 即使换掉整个呈现层（从视频换成漫画、AVP），StoryBrief 不需要改动。它是「理解用户」的结晶，和输出形态无关。
 
@@ -241,12 +246,13 @@ interface KenBurnsEffect {
 
 ```mermaid
 flowchart LR
-    Tabby["🐱 Tabby"] -->|"产出"| SB["📄 story-brief.json<br>叙事资产"]
+    Tabby["🐱 Tabby"] -->|"确认摘要"| BriefGen["🧩 StoryBrief 生成"]
+    BriefGen -->|"产出"| SB["📄 story-brief.json<br>叙事资产"]
     SB -->|"输入"| Ocelot["🐆 Ocelot"]
     Ocelot -->|"产出"| RS["🎬 render-script.json<br>渲染指令"]
     RS -->|"输入"| Render["🎬 呈现层"]
-    SB -.->|"审稿依据"| Lynx["🐈‍⬛ Lynx"]
-    RS -.->|"审稿对象"| Lynx
+    SB -.->|"审稿依据（P2）"| Lynx["🐈‍⬛ Lynx"]
+    RS -.->|"审稿对象（P2）"| Lynx
 ```
 
 > **换呈现层时：** StoryBrief 不动，只改 Ocelot 的 RenderScript 输出格式 + Renderer 的消费逻辑。
@@ -268,6 +274,11 @@ flowchart LR
 
 **策略：破坏性重构**——不做旧结构兼容，直接用新架构替换整个中间层。每个阶段都是可独立验证的 MVP。
 
+**现状（截至 v0.2.0）：**
+
+- P1 已落地：Tabby 对话 → StoryBrief → RenderScript → Remotion 本机渲染
+- P2 规划中：Lynx 审稿与脚本修改循环
+
 **关键决策：**
 
 - 目录选择与素材校验（能力 A）保留不动
@@ -282,22 +293,23 @@ flowchart LR
 
 ---
 
-### P1：🐱 Tabby 看图对话 + 🐆 Ocelot 编剧 + StoryBrief 数据合同
+### P1：🐱 Tabby 看图对话 + 🐆 Ocelot 编剧 + StoryBrief 数据合同（已落地）
 
 **目标：** 端到端跑通完整的「看图对话 → StoryBrief → Ocelot 写脚本 → 渲染出片」闭环。Tabby 从第一步就具备多模态看图能力，Ocelot 作为独立 agent 负责编剧。
 
-**做什么：**
+**落地内容：**
 
 1. **类型定义**：在代码中定义 `StoryBrief`（CreativeIntent + PhotoNote[] + NarrativeStructure）和 `RenderScript`（RenderScene[]）两套类型，删除现有 `story-script` 相关类型
 2. **🐱 Tabby 多模态对话**：替换现有的「能力 B：交互式偏好收集」
     - 看图：分析照片内容（场景、人物、光线、氛围），「戴着用户给的有色眼镜」去看
     - 聊天：多轮对话追问感受、挖背后故事，结合视觉信息提问（"这张海边的合影是在哪拍的？"）
     - 收束：判断信息够了就停，产出 `CreativeIntent` + 完整的 `PhotoNote[]`（含视觉分析 + 情感权重）
-3. **🐆 Ocelot 独立 agent**：Tabby 通过 tool call 调用
+3. **StoryBrief 生成器（agent）**：基于 Tabby 的对话历史 + confirmed summary 生成 `story-brief.json`（带结构校验与重试）
+4. **🐆 Ocelot 独立 agent**：由工作流编排调用
     - 输入：完整的 `story-brief.json`
     - 输出：`render-script.json`（具体渲染指令：每个 scene 的字幕文案、镜头运动、过场方式、时长等）
-4. **Remotion 渲染器改造**：保留现有模板组件（图片铺满、字幕渐变底），在模板内新增实现转场动画（fade/cut/dissolve/slide）与 Ken Burns 效果。数据源从 `story-script.json` 切换到 `render-script.json` 的 `scenes[]`。废弃 template / ai_code 双模式选择逻辑，只保留单一渲染路径，失败即报错退出
-5. **删除旧代码**：删除 `story-script.json` 相关生成逻辑、askStyle/askPrompt 交互、渲染模式选择逻辑（能力 D）
+5. **Remotion 渲染器改造**：保留现有模板组件（图片铺满、字幕渐变底），在模板内新增实现转场动画（fade/cut/dissolve/slide）与 Ken Burns 效果。数据源从 `story-script.json` 切换到 `render-script.json` 的 `scenes[]`。废弃 template / ai_code 双模式选择逻辑，只保留单一渲染路径，失败即报错退出
+6. **删除旧代码**：删除 `story-script.json` 相关生成逻辑、askStyle/askPrompt 交互、渲染模式选择逻辑（能力 D）
 
 **Tabby 对话合同（P1）**
 
@@ -315,22 +327,22 @@ flowchart LR
 **不做：**
 
 - 不做 🐈‍⬛ Lynx 审稿（留给 P2）
-- 不做多轮修改循环（Tabby 调一次 Ocelot 就定稿）
+- 不做基于审稿的脚本重写循环（留给 P2）；P1 默认一次生成定稿，失败即报错退出
 - 不保留 story-script 数据结构、template/ai_code 模式选择逻辑、能力 B/C/D 的交互代码（破坏性重构，不做向后兼容）
 - Remotion 模板的现有组件（图片铺满、字幕渐变底）保留并改造，转场动画与 Ken Burns 为新增实现
-- 将同步更新 `README.md`、`.github/docs/business-logic.md` 及现有测试基线（目前全部围绕 story-script、template|ai_code、mode-sequence），确保「每阶段可独立验证」不失真
+- 已完成文档与测试基线迁移到 RenderScript（不再依赖 story-script / mode-sequence 等旧概念）
 
 **产出文件（用于调试/审核）：**
 
 | 文件 | 内容 | 调试用途 |
 | --- | --- | --- |
 | `tabby-conversation.jsonl` | 完整对话历史（用户消息 + Tabby JSON 输出 + internalNotes + 时间戳） | 审阅对话质量：Tabby 追问是否自然、收束时机是否合理；回放现场用于调试 |
-| `story-brief.json` | Tabby 产出的叙事资产（CreativeIntent + PhotoNote[] + NarrativeStructure） | 审阅叙事质量：CreativeIntent 是否忠实、beats 是否合理 |
+| `story-brief.json` | StoryBrief 生成器产出的叙事资产（CreativeIntent + PhotoNote[] + NarrativeStructure） | 审阅叙事质量：CreativeIntent 是否忠实、beats 是否合理 |
 | `render-script.json` | Ocelot 产出的渲染指令（RenderScene[]），呈现层直接消费 | 审阅渲染指令：字幕文案、镜头运动、过场方式是否匹配叙事意图 |
-| `ocelot-input.json` | Tabby 发给 Ocelot 的输入（完整 story-brief.json） | 定位问题：如果渲染指令质量差，先看叙事输入是否充分 |
-| `ocelot-output.json` | 和 render-script.json 相同（冗余备份，含 Ocelot 的原始响应） | 对比 Ocelot 原始输出 vs 最终 render-script |
+| `ocelot-input.json` | 提供给 Ocelot 的输入快照（`storyBriefRef` + `storyBrief`） | 定位问题：如果渲染指令质量差，先看叙事输入是否充分 |
+| `ocelot-output.json` | Ocelot 产出的 render-script 候选（结构化/清洗后；通常与 `render-script.json` 内容一致） | 对比生成候选与最终落盘脚本，定位清洗/校验问题 |
 | `ocelot-prompt.log` | 发给 Ocelot 的实际 prompt | 调 prompt 用 |
-| `run.log` | 管线执行日志（每步耗时、token 消耗、错误信息） | 性能分析 + 排错 |
+| `run.log` | 管线执行日志（runId/sourceDir/关键阶段状态与 attempts/错误信息） | 排错与复盘 |
 
 **验收标准：**
 

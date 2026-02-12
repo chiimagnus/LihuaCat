@@ -76,16 +76,44 @@ LihuaCat 是一个本地优先的交互式 CLI：把“一个图片文件夹”�
 2. 用户提供浏览器可执行文件位置
 3. 系统使用该浏览器继续完成渲染
 
-## 4) 业务规则与约束（Rules & Constraints）
+## 4) 业务流程图（Mermaid）
+
+```mermaid
+flowchart TD
+  Start["开始：用户启动 CLI"] --> PickDir["选择/确认图片目录"]
+  PickDir --> Intake["素材收集与校验<br/>（仅第一层；jpg/jpeg/png；最多 20）"]
+  Intake -->|不通过| FailInput["报错退出<br/>提示原因（不存在/不支持格式/数量超限）"]
+
+  Intake -->|通过| Tabby["🐱 Tabby 看图对话<br/>2-4 选项 + 自由输入"]
+  Tabby --> Confirm{"确认页：确认 / 需要修改"}
+  Confirm -->|需要修改| Tabby
+
+  Confirm -->|确认| Brief["生成 StoryBrief<br/>落盘 story-brief.json"]
+  Brief --> Ocelot["🐆 Ocelot 生成 RenderScript<br/>落盘 render-script.json"]
+  Ocelot --> Render["本机渲染（Remotion）<br/>输出 video.mp4"]
+
+  Render --> Done["结束：产物落盘（含 run.log）"]
+
+  Tabby -->|鉴权/模型失败| FailAI["报错退出<br/>落盘 error.log"]
+  Brief -->|生成失败| FailAI
+  Ocelot -->|生成失败| FailAI
+
+  Render -->|浏览器不可用| NeedBrowser["提示需要浏览器可执行文件路径"]
+  NeedBrowser --> Render
+  Render -->|渲染失败| FailRender["报错退出<br/>落盘 error.log"]
+```
+
+## 5) 业务规则与约束（Rules & Constraints）
 
 - 输入目录仅扫描第一层文件，不递归
 - 仅支持 `jpg/jpeg/png`，最多 20 张
 - 目录内出现任意不支持格式会直接报错（防止“部分可用”导致结果不可预期）
 - 渲染路径：单一路径（template），渲染失败即报错退出（不做降级与 fallback）
+- 交互形态为 TUI，必须在 TTY 终端中运行；非 TTY 环境会直接报错退出
 
-## 5) 产物与可见结果（Outputs）
+## 6) 产物与可见结果（Outputs）
 
-默认产物目录：`<inputDir>/lihuacat-output/<runId>/`
+默认产物目录：输入目录下的 `lihuacat-output/<runId>/`
 
 常见产物：
 - `video.mp4`：最终视频
@@ -96,13 +124,13 @@ LihuaCat 是一个本地优先的交互式 CLI：把“一个图片文件夹”�
 - `error.log`：失败时的错误日志
 - `ocelot-input.json` / `ocelot-output.json` / `ocelot-prompt.log`：Ocelot 调试文件
 
-## 6) 术语表（Glossary）
+## 7) 术语表（Glossary）
 
 - StoryBrief：叙事资产（用户想表达什么 + 每张照片的情感标注 + 叙事结构）
 - RenderScript：渲染指令（场景化：哪张图、配什么字、节奏与转场/镜头）
 - runId：一次运行的唯一标识，用于隔离产物目录
 
-## 7) 入口索引（可选）
+## 8) 入口索引（可选）
 
 - `src/index.ts`：CLI 入口与交互起点
 - `src/flows/create-story-video/create-story-video.flow.ts`：端到端用户流程编排入口
