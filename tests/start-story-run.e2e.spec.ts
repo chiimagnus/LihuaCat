@@ -6,6 +6,36 @@ import path from "node:path";
 
 import { runStoryWorkflowV2 } from "../src/workflow/start-story-run.ts";
 
+const compressImagesNoop = async ({
+  images,
+  outputDir,
+  targetBytes,
+}: {
+  images: Array<{ index: number; fileName: string; absolutePath: string }>;
+  outputDir: string;
+  targetBytes?: number;
+}) => ({
+  publicDir: path.join(outputDir, "remotion-public"),
+  stagedDir: path.join(outputDir, "remotion-public", "lihuacat-assets"),
+  images: images.map((img) => ({
+    index: img.index,
+    fileName: img.fileName,
+    absolutePath: img.absolutePath,
+    extension: ".jpg" as const,
+  })),
+  report: images.map((img) => ({
+    index: img.index,
+    fileName: img.fileName,
+    originalAbsolutePath: img.absolutePath,
+    stagedAbsolutePath: img.absolutePath,
+    originalBytes: 0,
+    stagedBytes: 0,
+    targetBytes: targetBytes ?? 0,
+    quality: 82,
+    scale: 1,
+  })),
+});
+
 test("workflow ends directly when template succeeds in first attempt", async () => {
   await withTempDir(async (sourceDir) => {
     await fs.writeFile(path.join(sourceDir, "1.jpg"), "fake-image");
@@ -65,6 +95,7 @@ test("workflow ends directly when template succeeds in first attempt", async () 
             },
           ],
         }),
+        compressImagesImpl: compressImagesNoop,
         runTabbySessionImpl: async ({ conversationLogPath }) => {
           if (conversationLogPath) {
             await fs.appendFile(conversationLogPath, `{\"type\":\"user\"}\n`, "utf8");
@@ -191,6 +222,7 @@ test("workflow emits progress events across core stages", async () => {
             },
           ],
         }),
+        compressImagesImpl: compressImagesNoop,
         runTabbySessionImpl: async ({ conversationLogPath }) => {
           if (conversationLogPath) {
             await fs.appendFile(conversationLogPath, `{\"type\":\"user\"}\n`, "utf8");
@@ -259,6 +291,8 @@ test("workflow emits progress events across core stages", async () => {
 
     assert.ok(events.includes("collect_images_start"));
     assert.ok(events.includes("collect_images_done"));
+    assert.ok(events.includes("compress_images_start"));
+    assert.ok(events.includes("compress_images_done"));
     assert.ok(events.includes("tabby_start"));
     assert.ok(events.includes("tabby_done"));
     assert.ok(events.includes("ocelot_start"));
@@ -314,6 +348,7 @@ test("persists stage artifacts even when run exits after render failure", async 
               },
             ],
           }),
+          compressImagesImpl: compressImagesNoop,
           runTabbySessionImpl: async ({ conversationLogPath }) => {
             if (conversationLogPath) {
               await fs.appendFile(conversationLogPath, `{\"type\":\"user\"}\n`, "utf8");
@@ -379,6 +414,7 @@ test("persists stage artifacts even when run exits after render failure", async 
     await assert.doesNotReject(fs.access(path.join(runDir, "run.log")));
     await assert.doesNotReject(fs.access(path.join(runDir, "error.log")));
     await assert.doesNotReject(fs.access(path.join(runDir, "stages", "material-intake.json")));
+    await assert.doesNotReject(fs.access(path.join(runDir, "stages", "compress-images.json")));
     await assert.doesNotReject(fs.access(path.join(runDir, "stages", "progress-events.jsonl")));
 
     const errorLog = await fs.readFile(path.join(runDir, "error.log"), "utf8");
@@ -411,6 +447,7 @@ test("writes error.log when workflow fails before render stage", async () => {
               },
             ],
           }),
+          compressImagesImpl: compressImagesNoop,
           runTabbySessionImpl: async ({ conversationLogPath }) => {
             if (conversationLogPath) {
               await fs.appendFile(conversationLogPath, `{\"type\":\"user\"}\n`, "utf8");

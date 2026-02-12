@@ -2,6 +2,8 @@ export type WorkflowProgressEvent = {
   stage:
     | "collect_images_start"
     | "collect_images_done"
+    | "compress_images_start"
+    | "compress_images_done"
     | "tabby_start"
     | "tabby_done"
     | "ocelot_start"

@@ -67,6 +67,37 @@ test("keeps remote asset URL unchanged", async () => {
   });
 });
 
+test("keeps already-staged relative assets unchanged", async () => {
+  await withTempDir(async (dir) => {
+    const stagedDir = path.join(dir, "remotion-public", "lihuacat-assets");
+    await fs.mkdir(stagedDir, { recursive: true });
+    await fs.writeFile(path.join(stagedDir, "001-x.jpg"), "img-data");
+
+    const result = await stageRemotionAssets({
+      outputDir: dir,
+      assets: [{ id: "img_004", path: "lihuacat-assets/001-x.jpg" }],
+    });
+
+    assert.equal(result.assets[0]?.path, "lihuacat-assets/001-x.jpg");
+  });
+});
+
+test("keeps assets already inside staged directory without copying", async () => {
+  await withTempDir(async (dir) => {
+    const stagedDir = path.join(dir, "remotion-public", "lihuacat-assets");
+    await fs.mkdir(stagedDir, { recursive: true });
+    const stagedFile = path.join(stagedDir, "001-y.jpg");
+    await fs.writeFile(stagedFile, "img-data");
+
+    const result = await stageRemotionAssets({
+      outputDir: dir,
+      assets: [{ id: "img_005", path: stagedFile }],
+    });
+
+    assert.equal(result.assets[0]?.path, "lihuacat-assets/001-y.jpg");
+  });
+});
+
 const withTempDir = async (run: (dir: string) => Promise<void>) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "lihuacat-stage-assets-"));
   try {
