@@ -101,5 +101,15 @@ test("render script outputSchema keeps fixed video fields and transition variant
   assert.deepEqual(transition?.properties.direction?.enum, ["left", "right"]);
 
   assert.ok(sceneItem?.properties.kenBurns);
-  assert.equal(sceneItem?.properties.kenBurns?.type, "object");
+  assert.deepEqual(sceneItem?.required, [
+    "sceneId",
+    "photoRef",
+    "subtitle",
+    "subtitlePosition",
+    "durationSec",
+    "transition",
+    "kenBurns",
+  ]);
+  assert.deepEqual(sceneItem?.properties.kenBurns?.type, ["object", "null"]);
+  assert.deepEqual(sceneItem?.properties.kenBurns?.required, ["startScale", "endScale", "panDirection"]);
 });

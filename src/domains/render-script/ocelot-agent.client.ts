@@ -114,7 +114,7 @@ export const createCodexOcelotAgentClient = ({
         outputSchema: renderScriptOutputSchema,
       });
 
-      const parsed = parseJsonFromFinalResponse(turn.finalResponse);
+      const parsed = normalizeRenderScriptCandidate(parseJsonFromFinalResponse(turn.finalResponse));
       const structure = validateRenderScriptStructure(parsed);
       if (!structure.valid || !structure.script) {
         throw new OcelotAgentResponseParseError(
@@ -147,6 +147,39 @@ export const createCodexOcelotAgentClient = ({
       return structure.script;
     },
   };
+};
+
+const normalizeRenderScriptCandidate = (input: unknown): unknown => {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    return input;
+  }
+  const script = input as Record<string, unknown>;
+  const scenes = script.scenes;
+  if (!Array.isArray(scenes)) {
+    return script;
+  }
+
+  for (const scene of scenes) {
+    if (typeof scene !== "object" || scene === null || Array.isArray(scene)) {
+      continue;
+    }
+    const sceneRecord = scene as Record<string, unknown>;
+
+    if (sceneRecord.kenBurns === null) {
+      delete sceneRecord.kenBurns;
+    }
+
+    const transition = sceneRecord.transition;
+    if (typeof transition !== "object" || transition === null || Array.isArray(transition)) {
+      continue;
+    }
+    const transitionRecord = transition as Record<string, unknown>;
+    if (transitionRecord.type !== "slide" && "direction" in transitionRecord) {
+      delete transitionRecord.direction;
+    }
+  }
+
+  return script;
 };
 
 const parseJsonFromFinalResponse = (finalResponse: string): unknown => {
