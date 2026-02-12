@@ -19,6 +19,15 @@ export type TabbySessionTui = {
     reviseDisabled: boolean;
   }) => Promise<TabbyOption>;
   askFreeInput: (input: { message: string }) => Promise<string>;
+  onTurnStart?: (input: {
+    turn: number;
+    phase: "start" | "chat" | "revise";
+  }) => Promise<void> | void;
+  onTurnDone?: (input: {
+    turn: number;
+    phase: "start" | "chat" | "revise";
+    output: TabbyTurnOutput;
+  }) => Promise<void> | void;
 };
 
 export type RunTabbySessionInput = {
@@ -49,12 +58,14 @@ export const runTabbySession = async ({
   let reviseRounds = 0;
 
   while (true) {
+    await tui.onTurnStart?.({ turn, phase });
     const output = await client.generateTurn({
       photos,
       conversation,
       phase,
       turn,
     });
+    await tui.onTurnDone?.({ turn, phase, output });
 
     await appendEvent(conversation, conversationLogPath, {
       type: "tabby",
@@ -124,4 +135,3 @@ const appendEvent = async (
   if (!logPath) return;
   await fs.appendFile(logPath, `${JSON.stringify(event)}\n`, "utf8");
 };
-

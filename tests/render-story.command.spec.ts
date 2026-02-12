@@ -116,6 +116,45 @@ test("accepts xhigh reasoning effort and prints it in model info", async () => {
   assert.equal(state.introInput?.reasoningEffort, "xhigh");
 });
 
+test("detects browsers at startup and passes selected executable to workflow", async () => {
+  const selectedPath = "/Applications/Arc.app/Contents/MacOS/Arc";
+  const { tui } = createMockTui({
+    askBrowserExecutable: async ({ candidates }) => {
+      assert.equal(candidates.length, 1);
+      assert.equal(candidates[0]?.executablePath, selectedPath);
+      return selectedPath;
+    },
+  });
+  let receivedBrowserPath: string | undefined;
+
+  const exitCode = await runRenderStoryCommand({
+    argv: ["--input", "/tmp/photos"],
+    tui,
+    listAvailableBrowsersImpl: async () => [
+      { browser: "arc", executablePath: selectedPath },
+    ],
+    workflowImpl: async (input) => {
+      receivedBrowserPath = input.browserExecutablePath;
+      return {
+        runId: "run-browser",
+        outputDir: "/tmp/photos/lihuacat-output/run-browser",
+        mode: "template",
+        videoPath: "/tmp/photos/lihuacat-output/run-browser/video.mp4",
+        storyBriefPath: "/tmp/photos/lihuacat-output/run-browser/story-brief.json",
+        renderScriptPath: "/tmp/photos/lihuacat-output/run-browser/render-script.json",
+        tabbyConversationPath: "/tmp/photos/lihuacat-output/run-browser/tabby-conversation.jsonl",
+        runLogPath: "/tmp/photos/lihuacat-output/run-browser/run.log",
+        ocelotInputPath: "/tmp/photos/lihuacat-output/run-browser/ocelot-input.json",
+        ocelotOutputPath: "/tmp/photos/lihuacat-output/run-browser/ocelot-output.json",
+        ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-browser/ocelot-prompt.log",
+      };
+    },
+  });
+
+  assert.equal(exitCode, 0);
+  assert.equal(receivedBrowserPath, selectedPath);
+});
+
 test("prints readable failure reason", async () => {
   const { tui, state } = createMockTui();
 
@@ -219,7 +258,9 @@ test("fails fast when terminal is not interactive", async () => {
   assert.match(err.content(), /requires a TTY terminal/);
 });
 
-const createMockTui = (): {
+const createMockTui = (overrides: {
+  askBrowserExecutable?: RenderStoryTui["askBrowserExecutable"];
+} = {}): {
   tui: RenderStoryTui;
   state: MockTuiState;
 } => {
@@ -235,6 +276,7 @@ const createMockTui = (): {
     async askSourceDir() {
       return "/tmp/photos";
     },
+    askBrowserExecutable: overrides.askBrowserExecutable,
     async tabbyChooseOption() {
       throw new Error("not used in this test");
     },

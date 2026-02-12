@@ -40,6 +40,9 @@ test("tabby session logs conversation and ends on confirm", async () => {
     ];
 
     let callIndex = 0;
+    const startedTurns: Array<{ turn: number; phase: string }> = [];
+    const finishedTurns: Array<{ turn: number; phase: string }> = [];
+
     const result = await runTabbySession({
       photos: photoPaths,
       client: {
@@ -53,6 +56,12 @@ test("tabby session logs conversation and ends on confirm", async () => {
       tui: createMockTui({
         chooseQueue: ["free_input", "confirm"],
         freeInputText: "说不清，但很轻。",
+        onTurnStart(input) {
+          startedTurns.push({ turn: input.turn, phase: input.phase });
+        },
+        onTurnDone(input) {
+          finishedTurns.push({ turn: input.turn, phase: input.phase });
+        },
       }),
       conversationLogPath: logPath,
       now: () => new Date("2026-02-12T00:00:00.000Z"),
@@ -65,6 +74,14 @@ test("tabby session logs conversation and ends on confirm", async () => {
     assert.ok(lines[0]!.includes("\"type\":\"tabby\""));
     assert.ok(lines[1]!.includes("\"kind\":\"free_input\""));
     assert.ok(lines[0]!.includes("internalNotes"));
+    assert.deepEqual(startedTurns, [
+      { turn: 1, phase: "start" },
+      { turn: 2, phase: "chat" },
+    ]);
+    assert.deepEqual(finishedTurns, [
+      { turn: 1, phase: "start" },
+      { turn: 2, phase: "chat" },
+    ]);
   });
 });
 
@@ -122,11 +139,21 @@ test("tabby session revises and re-enters chat phase", async () => {
 const createMockTui = ({
   chooseQueue,
   freeInputText,
+  onTurnStart,
+  onTurnDone,
 }: {
   chooseQueue: string[];
   freeInputText: string;
+  onTurnStart?: (input: { turn: number; phase: "start" | "chat" | "revise" }) => void;
+  onTurnDone?: (input: {
+    turn: number;
+    phase: "start" | "chat" | "revise";
+    output: TabbyTurnOutput;
+  }) => void;
 }) => {
   return {
+    onTurnStart,
+    onTurnDone,
     async chooseOption({ options }: { options: Array<{ id: string; label: string }> }) {
       const id = chooseQueue.shift();
       if (!id) {

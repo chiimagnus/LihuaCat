@@ -5,6 +5,7 @@ import path from "node:path";
 
 import {
   BrowserExecutableNotFoundError,
+  listAvailableBrowserExecutables,
   locateBrowserExecutable,
 } from "../src/domains/template-render/browser-locator.ts";
 
@@ -53,5 +54,26 @@ test("throws readable error when no browser executable is found", async () => {
       assert.match(error.message, /Chrome\/Edge\/Arc\/Brave/);
       return true;
     },
+  );
+});
+
+test("lists detected browser executables in scan order", async () => {
+  const chromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  const bravePath = path.join(
+    os.homedir(),
+    "Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+  );
+  const result = await listAvailableBrowserExecutables({
+    existsFn: async (value) => value === chromePath || value === bravePath,
+  });
+
+  assert.equal(result.length, 2);
+  assert.deepEqual(
+    result.map((item) => item.browser),
+    ["chrome", "brave"],
+  );
+  assert.deepEqual(
+    result.map((item) => item.executablePath),
+    [chromePath, bravePath],
   );
 });

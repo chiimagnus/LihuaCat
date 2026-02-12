@@ -1,4 +1,5 @@
 import path from "node:path";
+import { listAvailableBrowserExecutables } from "../domains/template-render/browser-locator.ts";
 
 import { createStoryVideoFlow } from "../flows/create-story-video/create-story-video.flow.ts";
 import {
@@ -28,6 +29,7 @@ export type RunRenderStoryCommandInput = {
   workflowImpl?: typeof runStoryWorkflowV2;
   tui?: RenderStoryTui;
   isInteractiveTerminal?: () => boolean;
+  listAvailableBrowsersImpl?: typeof listAvailableBrowserExecutables;
 };
 
 export const runRenderStoryCommand = async ({
@@ -36,6 +38,7 @@ export const runRenderStoryCommand = async ({
   workflowImpl = runStoryWorkflowV2,
   tui,
   isInteractiveTerminal = () => Boolean(process.stdin.isTTY && process.stdout.isTTY),
+  listAvailableBrowsersImpl = listAvailableBrowserExecutables,
 }: RunRenderStoryCommandInput): Promise<number> => {
   const args = parseArgs(argv);
   const model = args.get("model") ?? DEFAULT_CODEX_MODEL;
@@ -43,7 +46,7 @@ export const runRenderStoryCommand = async ({
     args.get("model-reasoning-effort"),
   );
   const resolvedReasoningEffort = modelReasoningEffort ?? DEFAULT_CODEX_REASONING_EFFORT;
-  const browserExecutablePath = args.get("browser-executable")
+  let browserExecutablePath = args.get("browser-executable")
     ? path.resolve(args.get("browser-executable")!)
     : undefined;
   const sourceDirInitial = args.get("input");
@@ -77,6 +80,12 @@ export const runRenderStoryCommand = async ({
     reasoningEffort: resolvedReasoningEffort,
   });
 
+  if (!browserExecutablePath && ui.askBrowserExecutable) {
+    const detectedBrowsers = await listAvailableBrowsersImpl();
+    const selectedPath = await ui.askBrowserExecutable({ candidates: detectedBrowsers });
+    browserExecutablePath = path.resolve(selectedPath);
+  }
+
   try {
     const summary = await createStoryVideoFlow({
       prompts: {
@@ -85,6 +94,8 @@ export const runRenderStoryCommand = async ({
       },
       tabbyAgentClient,
       tabbyTui: {
+        onTurnStart: ui.tabbyOnTurnStart,
+        onTurnDone: ui.tabbyOnTurnDone,
         chooseOption: ui.tabbyChooseOption,
         askFreeInput: ui.tabbyAskFreeInput,
       },

@@ -15,6 +15,7 @@ import type {
   WorkflowProgressEvent,
 } from "../../pipeline.ts";
 import type { TabbyOption } from "../../contracts/tabby-turn.types.ts";
+import type { BrowserCandidate } from "../../domains/template-render/browser-locator.ts";
 
 export type RenderStoryTuiIntroInput = {
   model: string;
@@ -24,6 +25,14 @@ export type RenderStoryTuiIntroInput = {
 export type RenderStoryTui = {
   intro: (input: RenderStoryTuiIntroInput) => void;
   askSourceDir: () => Promise<string>;
+  askBrowserExecutable?: (input: {
+    candidates: BrowserCandidate[];
+  }) => Promise<string>;
+  tabbyOnTurnStart?: (input: {
+    turn: number;
+    phase: "start" | "chat" | "revise";
+  }) => void;
+  tabbyOnTurnDone?: () => void;
   tabbyChooseOption: (input: {
     say: string;
     options: TabbyOption[];
@@ -56,12 +65,28 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
     hasActiveSpinner = false;
   };
 
-  const mustContinue = <T>(value: T | symbol): T => {
-    if (isCancel(value)) {
-      cancel("Operation cancelled.");
-      throw new TuiCancelledError();
+  const promptWithCancelGuard = async <T>(
+    runPrompt: () => Promise<T | symbol>,
+  ): Promise<T> => {
+    while (true) {
+      const value = await runPrompt();
+      if (!isCancel(value)) {
+        return value;
+      }
+
+      stopSpinnerIfNeeded();
+      const decision = await select({
+        message: "检测到 Esc，是否退出当前流程？",
+        options: [
+          { value: "continue", label: "继续操作" },
+          { value: "exit", label: "退出" },
+        ],
+      });
+      if (isCancel(decision) || decision === "exit") {
+        cancel("Operation cancelled.");
+        throw new TuiCancelledError();
+      }
     }
-    return value;
   };
 
   return {
@@ -71,8 +96,8 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
     },
 
     async askSourceDir() {
-      const answer = mustContinue(
-        await text({
+      const answer = await promptWithCancelGuard(
+        () => text({
           message: "Source directory",
           placeholder: "/ABS/PATH/TO/PHOTOS",
           validate(value) {
@@ -86,6 +111,54 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
       return answer.trim();
     },
 
+    async askBrowserExecutable({ candidates }) {
+      stopSpinnerIfNeeded();
+      const options = [
+        ...candidates.map((candidate) => ({
+          value: candidate.executablePath,
+          label: `${toBrowserLabel(candidate.browser)} (${candidate.executablePath})`,
+        })),
+        {
+          value: "__manual__",
+          label: "手动输入浏览器可执行文件路径",
+        },
+      ];
+      const selected = await promptWithCancelGuard(
+        () => select({
+          message: "选择用于渲染的浏览器",
+          options,
+        }),
+      );
+      if (selected !== "__manual__") {
+        return selected;
+      }
+      const manualPath = await promptWithCancelGuard(
+        () => text({
+          message: "Browser executable path",
+          placeholder: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+          validate(value) {
+            if (!value || value.trim().length === 0) {
+              return "Executable path cannot be empty.";
+            }
+            return undefined;
+          },
+        }),
+      );
+      return manualPath.trim();
+    },
+
+    tabbyOnTurnStart({ turn }) {
+      if (hasActiveSpinner) {
+        status.stop();
+      }
+      status.start(`🐱 Tabby thinking... (turn ${turn})`);
+      hasActiveSpinner = true;
+    },
+
+    tabbyOnTurnDone() {
+      // Spinner is intentionally stopped when user-facing output is shown.
+    },
+
     async tabbyChooseOption({ say, options, done, reviseDisabled }) {
       stopSpinnerIfNeeded();
       note(say, "🐱 Tabby");
@@ -93,8 +166,8 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
         log.message("  (已达到最大修改次数，不能再“需要修改”)");
       }
 
-      const choice = mustContinue(
-        await select({
+      const choice = await promptWithCancelGuard(
+        () => select({
           message: done ? "确认一下这个感觉？" : "你更接近哪一句？",
           options: options.map((option) => ({
             value: option.id,
@@ -112,8 +185,8 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
 
     async tabbyAskFreeInput({ message }) {
       stopSpinnerIfNeeded();
-      const answer = mustContinue(
-        await text({
+      const answer = await promptWithCancelGuard(
+        () => text({
           message,
           placeholder: "一句话也可以",
           validate(value) {
@@ -200,4 +273,11 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
       stopSpinnerIfNeeded();
     },
   };
+};
+
+const toBrowserLabel = (browser: BrowserCandidate["browser"]): string => {
+  if (browser === "chrome") return "Google Chrome";
+  if (browser === "edge") return "Microsoft Edge";
+  if (browser === "arc") return "Arc";
+  return "Brave";
 };

@@ -26,6 +26,10 @@ export type LocateBrowserExecutableInput = {
   existsFn?: (value: string) => Promise<boolean>;
 };
 
+export type ListAvailableBrowserExecutablesInput = {
+  existsFn?: (value: string) => Promise<boolean>;
+};
+
 const browserRelativePaths: Record<SupportedBrowser, string> = {
   chrome: "Google Chrome.app/Contents/MacOS/Google Chrome",
   edge: "Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
@@ -48,16 +52,7 @@ export const locateBrowserExecutable = async ({
     throw new BrowserExecutableNotFoundError([resolved]);
   }
 
-  const appRoots = ["/Applications", path.join(os.homedir(), "Applications")];
-  const candidates: BrowserCandidate[] = [];
-  for (const appRoot of appRoots) {
-    for (const browser of ["chrome", "edge", "arc", "brave"] as const) {
-      candidates.push({
-        browser,
-        executablePath: path.join(appRoot, browserRelativePaths[browser]),
-      });
-    }
-  }
+  const candidates = buildKnownCandidates();
 
   const triedPaths: string[] = [];
   for (const candidate of candidates) {
@@ -68,6 +63,19 @@ export const locateBrowserExecutable = async ({
   }
 
   throw new BrowserExecutableNotFoundError(triedPaths);
+};
+
+export const listAvailableBrowserExecutables = async ({
+  existsFn = fileExists,
+}: ListAvailableBrowserExecutablesInput = {}): Promise<BrowserCandidate[]> => {
+  const candidates = buildKnownCandidates();
+  const found: BrowserCandidate[] = [];
+  for (const candidate of candidates) {
+    if (await existsFn(candidate.executablePath)) {
+      found.push(candidate);
+    }
+  }
+  return found;
 };
 
 const inferBrowserName = (executablePath: string): SupportedBrowser => {
@@ -91,4 +99,18 @@ const fileExists = async (value: string): Promise<boolean> => {
   } catch {
     return false;
   }
+};
+
+const buildKnownCandidates = (): BrowserCandidate[] => {
+  const appRoots = ["/Applications", path.join(os.homedir(), "Applications")];
+  const candidates: BrowserCandidate[] = [];
+  for (const appRoot of appRoots) {
+    for (const browser of ["chrome", "edge", "arc", "brave"] as const) {
+      candidates.push({
+        browser,
+        executablePath: path.join(appRoot, browserRelativePaths[browser]),
+      });
+    }
+  }
+  return candidates;
 };
