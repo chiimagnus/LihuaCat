@@ -4,6 +4,8 @@ import type { TabbySessionTui } from "../../domains/tabby/tabby-session.ts";
 import type { runTabbySession } from "../../domains/tabby/tabby-session.ts";
 import type { StoryBriefAgentClient } from "../../domains/story-brief/story-brief-agent.client.ts";
 import type { generateStoryBrief } from "../../domains/story-brief/generate-story-brief.ts";
+import type { StoryBrief } from "../../contracts/story-brief.types.ts";
+import type { TabbyConversationEvent } from "../../contracts/tabby-conversation.types.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
   emitProgressAndPersist,
@@ -14,9 +16,9 @@ import {
 } from "../workflow-runtime.ts";
 
 export type TabbyStageResult = {
-  conversation: unknown[];
+  conversation: TabbyConversationEvent[];
   confirmedSummary: string;
-  storyBrief: unknown;
+  storyBrief: StoryBrief;
   attempts: number;
 };
 

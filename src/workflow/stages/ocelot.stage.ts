@@ -1,5 +1,7 @@
 import type { collectImages } from "../../domains/material-intake/collect-images.ts";
 import type { OcelotAgentClient } from "../../domains/render-script/ocelot-agent.client.ts";
+import type { StoryBrief } from "../../contracts/story-brief.types.ts";
+import type { RenderScript } from "../../contracts/render-script.types.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
   emitProgressAndPersist,
@@ -10,7 +12,7 @@ import {
 } from "../workflow-runtime.ts";
 
 export type OcelotStageResult = {
-  renderScript: unknown;
+  renderScript: RenderScript;
 };
 
 export const runOcelotStage = async ({
@@ -24,7 +26,7 @@ export const runOcelotStage = async ({
   collected: Awaited<ReturnType<typeof collectImages>>;
   runtime: WorkflowRuntimeArtifacts;
   storyBriefRef: string;
-  storyBrief: unknown;
+  storyBrief: StoryBrief;
   ocelotAgentClient: OcelotAgentClient;
   onProgress?: WorkflowProgressReporter;
 }): Promise<OcelotStageResult> => {
@@ -40,11 +42,9 @@ export const runOcelotStage = async ({
 
   const renderScript = await ocelotAgentClient.generateRenderScript({
     storyBriefRef,
-    storyBrief: storyBrief as never,
+    storyBrief,
     photos,
     video: { width: 1080, height: 1920, fps: 30 },
-    attempt: 1,
-    previousErrors: [],
     debug: {
       inputPath: runtime.ocelotInputPath,
       outputPath: runtime.ocelotOutputPath,

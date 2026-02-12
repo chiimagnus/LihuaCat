@@ -162,8 +162,6 @@ const buildRequest = (): GenerateRenderScriptRequest => ({
     { photoRef: "2.jpg", path: "/tmp/photos/2.jpg" },
   ],
   video: { width: 1080, height: 1920, fps: 30 },
-  attempt: 1,
-  previousErrors: [],
 });
 
 const buildValidRenderScript = () => ({

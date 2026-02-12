@@ -36,8 +36,6 @@ export type GenerateRenderScriptRequest = {
   storyBrief: StoryBrief;
   photos: Array<{ photoRef: string; path: string }>;
   video: { width: number; height: number; fps: number };
-  attempt: number;
-  previousErrors: string[];
   debug?: {
     inputPath?: string;
     outputPath?: string;

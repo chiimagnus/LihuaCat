@@ -1,10 +1,11 @@
 import type { StoryBrief } from "../../contracts/story-brief.types.ts";
+import type { TabbyConversationEvent } from "../../contracts/tabby-conversation.types.ts";
 import type { StoryBriefAgentClient } from "./story-brief-agent.client.ts";
 import { validateStoryBriefStructure } from "./validate-story-brief.ts";
 
 export type GenerateStoryBriefInput = {
   photos: Array<{ photoRef: string; path: string }>;
-  conversation: unknown[];
+  conversation: TabbyConversationEvent[];
   confirmedSummary: string;
   client: StoryBriefAgentClient;
   maxRetries?: number;
@@ -67,4 +68,3 @@ export const generateStoryBrief = async ({
 
   throw new StoryBriefGenerationFailedError(maxAttempts, reasons);
 };
-
