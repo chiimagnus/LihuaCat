@@ -11,6 +11,11 @@
 - Node.js >= 20
 - Chromium 内核浏览器（Chrome / Edge / Arc / Brave）
 
+## 仓库开发说明
+
+- 仓库开发统一使用 `pnpm`（如：`pnpm install`、`pnpm test`、`pnpm run build`）。
+- 为避免锁文件与依赖解析不一致，`preinstall` 会阻止使用 `npm`/`yarn` 安装依赖。
+
 ## 基础用法（交互式）
 
 1) 全局安装（包名：`@chiimagnus/lihuacat`，命令：`lihuacat`）：

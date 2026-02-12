@@ -9,6 +9,11 @@ Local-first CLI that turns a folder of images into a short story video. Follow t
 - Node.js >= 20
 - A Chromium-based browser (Chrome / Edge / Arc / Brave)
 
+## Development in this repo
+
+- Use `pnpm` for repository development (`pnpm install`, `pnpm test`, `pnpm run build`).
+- `npm`/`yarn` install is blocked by `preinstall` to keep lockfile and dependency resolution consistent.
+
 ## Basic usage (interactive)
 
 1) Install it globally (package: `@chiimagnus/lihuacat`, command: `lihuacat`):

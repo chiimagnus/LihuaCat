@@ -28,6 +28,7 @@
     ]
   },
   "scripts": {
+    "preinstall": "node ./scripts/enforce-pnpm.mjs",
     "dev": "node --experimental-strip-types src/index.ts",
     "start": "node --experimental-strip-types src/index.ts",
     "test": "node tests/run-tests.mjs",
