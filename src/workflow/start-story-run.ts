@@ -118,7 +118,7 @@ export const runStoryWorkflowV2 = async (
     const rendered = await runRenderStage({
       runtime,
       collected: processed,
-      renderScript: ocelot.renderScript as never,
+      renderScript: ocelot.renderScript,
       browserExecutablePath,
       onProgress,
       renderByTemplateV2Impl: ports.renderByTemplateV2Impl,

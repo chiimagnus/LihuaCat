@@ -2,14 +2,7 @@ import fs from "node:fs/promises";
 
 import type { TabbyAgentClient } from "./tabby-agent.client.ts";
 import type { TabbyOption, TabbyTurnOutput } from "../../contracts/tabby-turn.types.ts";
-
-export type TabbyUserInput =
-  | { kind: "option"; id: string; label: string }
-  | { kind: "free_input"; text: string };
-
-export type TabbyConversationEvent =
-  | { type: "tabby"; time: string; output: TabbyTurnOutput }
-  | { type: "user"; time: string; input: TabbyUserInput };
+import type { TabbyConversationEvent } from "../../contracts/tabby-conversation.types.ts";
 
 export type TabbySessionTui = {
   chooseOption: (input: {

@@ -14,7 +14,7 @@ test("generateStoryBrief retries and succeeds when structure validation passes",
       { photoRef: "1.jpg", path: "/tmp/1.jpg" },
       { photoRef: "2.jpg", path: "/tmp/2.jpg" },
     ],
-    conversation: [{ type: "user", text: "hello" }],
+    conversation: [{ type: "user", time: "t", input: { kind: "option", id: "x", label: "x" } }],
     confirmedSummary: "summary",
     client: {
       async generateStoryBrief({ attempt, previousErrors }) {
@@ -83,4 +83,3 @@ const buildValidStoryBrief = (photoRefs: string[]) => ({
     ],
   },
 });
-

@@ -6,6 +6,7 @@ import {
   buildStoryBriefPromptInput,
   storyBriefOutputSchema,
 } from "../../prompts/story-brief.prompt.ts";
+import type { TabbyConversationEvent } from "../../contracts/tabby-conversation.types.ts";
 
 type ModelReasoningEffort =
   | "minimal"
@@ -25,7 +26,7 @@ type CodexLike = {
 
 export type GenerateStoryBriefRequest = {
   photos: Array<{ photoRef: string; path: string }>;
-  conversation: unknown[];
+  conversation: TabbyConversationEvent[];
   confirmedSummary: string;
   attempt: number;
   previousErrors: string[];

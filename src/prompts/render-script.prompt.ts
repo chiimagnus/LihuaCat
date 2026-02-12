@@ -26,12 +26,6 @@ export const buildRenderScriptPromptInput = (request: GenerateRenderScriptReques
     ...request.photos.map((photo) => `- ${photo.photoRef}: ${photo.path}`),
   ];
 
-  if (request.previousErrors.length > 0) {
-    promptLines.push("");
-    promptLines.push("Previous validation errors to fix:");
-    promptLines.push(...request.previousErrors.map((error) => `- ${error}`));
-  }
-
   return [
     { type: "text" as const, text: promptLines.join("\n") },
     ...request.photos.map((photo) => ({ type: "local_image" as const, path: photo.path })),

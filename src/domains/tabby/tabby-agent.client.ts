@@ -8,6 +8,7 @@ import {
 } from "../../prompts/tabby-turn.prompt.ts";
 import { validateTabbyTurnOutput } from "./validate-tabby-turn.ts";
 import type { TabbyTurnOutput } from "../../contracts/tabby-turn.types.ts";
+import type { TabbyConversationEvent } from "../../contracts/tabby-conversation.types.ts";
 
 type ModelReasoningEffort =
   | "minimal"
@@ -27,7 +28,7 @@ type CodexLike = {
 
 export type GenerateTabbyTurnRequest = {
   photos: Array<{ photoRef: string; path: string }>;
-  conversation: unknown[];
+  conversation: TabbyConversationEvent[];
   phase: "start" | "chat" | "revise";
   turn: number;
 };
