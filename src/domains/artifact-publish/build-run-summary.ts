@@ -1,12 +1,16 @@
 export type RunSummaryInput = {
   runId: string;
   outputDir: string;
-  mode: "template" | "ai_code";
+  mode: "template";
   videoPath: string;
-  storyScriptPath: string;
+  storyBriefPath: string;
+  renderScriptPath: string;
+  tabbyConversationPath: string;
   runLogPath: string;
   errorLogPath?: string;
-  generatedCodePath?: string;
+  ocelotInputPath: string;
+  ocelotOutputPath: string;
+  ocelotPromptLogPath: string;
 };
 
 export type RunSummary = RunSummaryInput;

@@ -1,4 +1,4 @@
-type StoryScriptGenerationFailedLike = {
+type StoryBriefGenerationFailedLike = {
   reasons: string[];
 };
 
@@ -6,21 +6,21 @@ type ErrorClass<T> = new (...args: never[]) => T;
 
 export const buildRenderFailureOutput = ({
   error,
-  StoryScriptGenerationFailedErrorClass,
+  StoryBriefGenerationFailedErrorClass,
   SourceDirectoryNotFoundErrorClass,
 }: {
   error: unknown;
-  StoryScriptGenerationFailedErrorClass: ErrorClass<StoryScriptGenerationFailedLike>;
+  StoryBriefGenerationFailedErrorClass: ErrorClass<StoryBriefGenerationFailedLike>;
   SourceDirectoryNotFoundErrorClass: ErrorClass<object>;
 }): { lines: string[] } => {
   const message = error instanceof Error ? error.message : String(error);
-  const lines: string[] = [`Render failed: ${message}`];
+  const lines: string[] = [`Run failed: ${message}`];
 
   if (
-    error instanceof StoryScriptGenerationFailedErrorClass &&
+    error instanceof StoryBriefGenerationFailedErrorClass &&
     error.reasons.length > 0
   ) {
-    lines.push("Story script generation failure details:");
+    lines.push("StoryBrief generation failure details:");
     for (const reason of error.reasons) {
       lines.push(`- ${reason}`);
     }

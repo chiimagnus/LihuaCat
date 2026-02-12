@@ -1,16 +1,22 @@
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
-import type { StoryAgentClient } from "../domains/story-script/story-agent.client.ts";
-import type { RenderMode } from "../domains/render-choice/render-choice-machine.ts";
+import type { TabbyAgentClient } from "../domains/tabby/tabby-agent.client.ts";
+import type { TabbySessionTui } from "../domains/tabby/tabby-session.ts";
+import type { StoryBriefAgentClient } from "../domains/story-brief/story-brief-agent.client.ts";
+import type { OcelotAgentClient } from "../domains/render-script/ocelot-agent.client.ts";
 import type { RunSummary } from "../domains/artifact-publish/build-run-summary.ts";
 import type { WorkflowProgressReporter } from "./workflow-events.ts";
-import { resolveWorkflowPorts, type WorkflowPorts } from "./workflow-ports.ts";
-import { initializeWorkflowRuntime } from "./workflow-runtime.ts";
+import {
+  resolveWorkflowPorts,
+  type WorkflowPorts,
+} from "./workflow-ports.ts";
+import { initializeWorkflowRuntime, pushErrorLog } from "./workflow-runtime.ts";
 import { runCollectImagesStage } from "./stages/collect-images.stage.ts";
-import { runGenerateScriptStage } from "./stages/generate-script.stage.ts";
 import { runRenderStage } from "./stages/render.stage.ts";
 import { runPublishStage } from "./stages/publish.stage.ts";
+import { runTabbyStage } from "./stages/tabby.stage.ts";
+import { runOcelotStage } from "./stages/ocelot.stage.ts";
 
 export type { WorkflowProgressEvent } from "./workflow-events.ts";
 
@@ -24,27 +30,6 @@ export type StartStoryRunResult = {
   outputDir: string;
 };
 
-export type RunStoryWorkflowInput = {
-  sourceDir: string;
-  storyAgentClient: StoryAgentClient;
-  browserExecutablePath?: string;
-  style: {
-    preset: string;
-    prompt?: string;
-  };
-  chooseRenderMode: (state: {
-    lastFailure?: { mode: RenderMode; reason: string };
-  }) => Promise<RenderMode | "exit">;
-  onRenderFailure?: (input: {
-    mode: RenderMode;
-    reason: string;
-  }) => Promise<void> | void;
-  onProgress?: WorkflowProgressReporter;
-  now?: Date;
-};
-
-export type RunStoryWorkflowDependencies = Partial<WorkflowPorts>;
-
 export const startStoryRun = ({
   sourceDir,
   now = new Date(),
@@ -57,18 +42,31 @@ export const startStoryRun = ({
   };
 };
 
-export const runStoryWorkflow = async (
+export type RunStoryWorkflowV2Input = {
+  sourceDir: string;
+  tabbyAgentClient: TabbyAgentClient;
+  tabbyTui: TabbySessionTui;
+  storyBriefAgentClient: StoryBriefAgentClient;
+  ocelotAgentClient: OcelotAgentClient;
+  browserExecutablePath?: string;
+  onProgress?: WorkflowProgressReporter;
+  now?: Date;
+};
+
+export type RunStoryWorkflowV2Dependencies = Partial<WorkflowPorts>;
+
+export const runStoryWorkflowV2 = async (
   {
     sourceDir,
-    storyAgentClient,
+    tabbyAgentClient,
+    tabbyTui,
+    storyBriefAgentClient,
+    ocelotAgentClient,
     browserExecutablePath,
-    style,
-    chooseRenderMode,
-    onRenderFailure,
     onProgress,
     now,
-  }: RunStoryWorkflowInput,
-  dependencies: RunStoryWorkflowDependencies = {},
+  }: RunStoryWorkflowV2Input,
+  dependencies: RunStoryWorkflowV2Dependencies = {},
 ): Promise<RunSummary> => {
   const ports = resolveWorkflowPorts(dependencies);
   const { runId, outputDir } = startStoryRun({
@@ -81,41 +79,59 @@ export const runStoryWorkflow = async (
     outputDir,
   });
 
-  const collected = await runCollectImagesStage({
-    sourceDir,
-    runtime,
-    onProgress,
-    collectImagesImpl: ports.collectImagesImpl,
-  });
-  const scriptResult = await runGenerateScriptStage({
-    sourceDir,
-    style,
-    storyAgentClient,
-    collected,
-    runtime,
-    onProgress,
-    generateStoryScriptImpl: ports.generateStoryScriptImpl,
-  });
-  const renderResult = await runRenderStage({
-    runtime,
-    storyScript: scriptResult.script,
-    browserExecutablePath,
-    chooseRenderMode,
-    onRenderFailure,
-    onProgress,
-    renderByTemplateImpl: ports.renderByTemplateImpl,
-    renderByAiCodeImpl: ports.renderByAiCodeImpl,
-  });
+  try {
+    const collected = await runCollectImagesStage({
+      sourceDir,
+      runtime,
+      onProgress,
+      collectImagesImpl: ports.collectImagesImpl,
+    });
 
-  return runPublishStage({
-    runtime,
-    mode: renderResult.mode,
-    videoPath: renderResult.videoPath,
-    generatedCodePath: renderResult.generatedCodePath,
-    storyScript: scriptResult.script,
-    onProgress,
-    publishArtifactsImpl: ports.publishArtifactsImpl,
-  });
+    const tabby = await runTabbyStage({
+      collected,
+      runtime,
+      tabbyAgentClient,
+      tabbyTui,
+      storyBriefAgentClient,
+      onProgress,
+      runTabbySessionImpl: ports.runTabbySessionImpl,
+      generateStoryBriefImpl: ports.generateStoryBriefImpl,
+    });
+
+    const ocelot = await runOcelotStage({
+      collected,
+      runtime,
+      storyBriefRef: runtime.storyBriefPath,
+      storyBrief: tabby.storyBrief,
+      ocelotAgentClient,
+      onProgress,
+    });
+
+    const rendered = await runRenderStage({
+      runtime,
+      collected,
+      renderScript: ocelot.renderScript as never,
+      browserExecutablePath,
+      onProgress,
+      renderByTemplateV2Impl: ports.renderByTemplateV2Impl,
+    });
+
+    return runPublishStage({
+      runtime,
+      videoPath: rendered.videoPath,
+      onProgress,
+      publishArtifactsImpl: ports.publishArtifactsImpl,
+    });
+  } catch (error) {
+    if (runtime.errorLogs.length === 0) {
+      const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+      await pushErrorLog(runtime, reason);
+      if (error instanceof Error && typeof error.stack === "string") {
+        await pushErrorLog(runtime, error.stack);
+      }
+    }
+    throw error;
+  }
 };
 
 const formatTimestamp = (value: Date): string => {

@@ -2,12 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  createCodexStoryAgentClient,
-  StoryAgentResponseParseError,
-  type GenerateStoryScriptRequest,
-} from "../src/domains/story-script/story-agent.client.ts";
+  createCodexTabbyAgentClient,
+  TabbyAgentResponseParseError,
+  type GenerateTabbyTurnRequest,
+} from "../src/domains/tabby/tabby-agent.client.ts";
 
-test("calls Codex SDK with model override and parses JSON result", async () => {
+test("calls Codex SDK with model override and validates JSON result", async () => {
   const calls: {
     threadOptions?: {
       model?: string;
@@ -19,7 +19,7 @@ test("calls Codex SDK with model override and parses JSON result", async () => {
     runOptions?: unknown;
   } = {};
 
-  const client = createCodexStoryAgentClient({
+  const client = createCodexTabbyAgentClient({
     model: "gpt-5-codex",
     modelReasoningEffort: "high",
     workingDirectory: "/tmp/project",
@@ -27,11 +27,11 @@ test("calls Codex SDK with model override and parses JSON result", async () => {
       startThread(options) {
         calls.threadOptions = options;
         return {
-          async run(input, turnOptions) {
+          async run(input, options2) {
             calls.runInput = input;
-            calls.runOptions = turnOptions;
+            calls.runOptions = options2;
             return {
-              finalResponse: JSON.stringify(buildValidStoryScript(), null, 2),
+              finalResponse: JSON.stringify(buildValidTurn(), null, 2),
             };
           },
         };
@@ -42,8 +42,8 @@ test("calls Codex SDK with model override and parses JSON result", async () => {
     },
   });
 
-  const result = await client.generateStoryScript(buildRequest());
-  assert.equal((result as { version: string }).version, "1.0");
+  const result = await client.generateTurn(buildRequest());
+  assert.equal(result.done, false);
   assert.equal(calls.threadOptions?.model, "gpt-5-codex");
   assert.equal(calls.threadOptions?.modelReasoningEffort, "high");
   assert.equal(calls.threadOptions?.workingDirectory, "/tmp/project");
@@ -56,22 +56,15 @@ test("calls Codex SDK with model override and parses JSON result", async () => {
 });
 
 test("uses project defaults when no model options are provided", async () => {
-  const calls: {
-    threadOptions?: {
-      model?: string;
-      modelReasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
-    };
-  } = {};
+  const calls: { threadOptions?: { model?: string; modelReasoningEffort?: string } } = {};
 
-  const client = createCodexStoryAgentClient({
+  const client = createCodexTabbyAgentClient({
     codexFactory: () => ({
       startThread(options) {
         calls.threadOptions = options;
         return {
           async run() {
-            return {
-              finalResponse: JSON.stringify(buildValidStoryScript(), null, 2),
-            };
+            return { finalResponse: JSON.stringify(buildValidTurn()) };
           },
         };
       },
@@ -81,19 +74,38 @@ test("uses project defaults when no model options are provided", async () => {
     },
   });
 
-  await client.generateStoryScript(buildRequest());
+  await client.generateTurn(buildRequest());
   assert.equal(calls.threadOptions?.model, "gpt-5.1-codex-mini");
   assert.equal(calls.threadOptions?.modelReasoningEffort, "medium");
 });
 
 test("throws parse error when SDK returns non-JSON content", async () => {
-  const client = createCodexStoryAgentClient({
+  const client = createCodexTabbyAgentClient({
+    codexFactory: () => ({
+      startThread() {
+        return {
+          async run() {
+            return { finalResponse: "This is not JSON" };
+          },
+        };
+      },
+    }),
+    assertAuthenticated: async () => {
+      return;
+    },
+  });
+
+  await assert.rejects(client.generateTurn(buildRequest()), TabbyAgentResponseParseError);
+});
+
+test("throws parse error when JSON violates turn constraints", async () => {
+  const client = createCodexTabbyAgentClient({
     codexFactory: () => ({
       startThread() {
         return {
           async run() {
             return {
-              finalResponse: "This is not JSON",
+              finalResponse: JSON.stringify({ say: "x", done: true, options: [] }),
             };
           },
         };
@@ -104,12 +116,12 @@ test("throws parse error when SDK returns non-JSON content", async () => {
     },
   });
 
-  await assert.rejects(client.generateStoryScript(buildRequest()), StoryAgentResponseParseError);
+  await assert.rejects(client.generateTurn(buildRequest()), /failed validation/i);
 });
 
 test("propagates auth failure before calling SDK", async () => {
   let called = false;
-  const client = createCodexStoryAgentClient({
+  const client = createCodexTabbyAgentClient({
     codexFactory: () => ({
       startThread() {
         called = true;
@@ -125,54 +137,28 @@ test("propagates auth failure before calling SDK", async () => {
     },
   });
 
-  await assert.rejects(client.generateStoryScript(buildRequest()), /missing auth/);
+  await assert.rejects(client.generateTurn(buildRequest()), /missing auth/);
   assert.equal(called, false);
 });
 
-const buildRequest = (): GenerateStoryScriptRequest => ({
-  sourceDir: "/tmp/photos",
-  assets: [
-    { id: "img_001", path: "/tmp/photos/1.jpg" },
-    { id: "img_002", path: "/tmp/photos/2.jpg" },
+const buildRequest = (): GenerateTabbyTurnRequest => ({
+  photos: [
+    { photoRef: "1.jpg", path: "/tmp/photos/1.jpg" },
+    { photoRef: "2.jpg", path: "/tmp/photos/2.jpg" },
   ],
-  style: {
-    preset: "healing",
-    prompt: "calm and warm",
-  },
-  constraints: {
-    durationSec: 30,
-    minDurationPerAssetSec: 1,
-    requireAllAssetsUsed: true,
-  },
-  attempt: 1,
-  previousErrors: [],
+  conversation: [],
+  phase: "start",
+  turn: 1,
 });
 
-const buildValidStoryScript = () => ({
-  version: "1.0",
-  input: {
-    sourceDir: "/tmp/photos",
-    imageCount: 2,
-    assets: [
-      { id: "img_001", path: "/tmp/photos/1.jpg" },
-      { id: "img_002", path: "/tmp/photos/2.jpg" },
-    ],
-  },
-  video: {
-    width: 1080,
-    height: 1920,
-    fps: 30,
-    durationSec: 30,
-  },
-  style: {
-    preset: "healing",
-  },
-  timeline: [
-    { assetId: "img_001", startSec: 0, endSec: 15, subtitleId: "sub_1" },
-    { assetId: "img_002", startSec: 15, endSec: 30, subtitleId: "sub_2" },
+const buildValidTurn = () => ({
+  say: "看到这组照片，你最想留下的感觉是什么？",
+  done: false,
+  options: [
+    { id: "warm", label: "温柔、克制" },
+    { id: "relief", label: "一种释然" },
+    { id: "free_input", label: "我想自己说…" },
   ],
-  subtitles: [
-    { id: "sub_1", text: "first", startSec: 0, endSec: 15 },
-    { id: "sub_2", text: "second", startSec: 15, endSec: 30 },
-  ],
+  internalNotes: "Start by eliciting core emotion.",
 });
+

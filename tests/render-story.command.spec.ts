@@ -5,7 +5,7 @@ import { runRenderStoryCommand } from "../src/commands/render-story.command.ts";
 import {
   type RunSummary,
   SourceDirectoryNotFoundError,
-  StoryScriptGenerationFailedError,
+  StoryBriefGenerationFailedError,
 } from "../src/pipeline.ts";
 import type {
   RenderStoryTui,
@@ -31,17 +31,21 @@ test("prints key artifact paths on success", async () => {
       outputDir: "/tmp/photos/lihuacat-output/run-1",
       mode: "template",
       videoPath: "/tmp/photos/lihuacat-output/run-1/video.mp4",
-      storyScriptPath: "/tmp/photos/lihuacat-output/run-1/story-script.json",
+      storyBriefPath: "/tmp/photos/lihuacat-output/run-1/story-brief.json",
+      renderScriptPath: "/tmp/photos/lihuacat-output/run-1/render-script.json",
+      tabbyConversationPath: "/tmp/photos/lihuacat-output/run-1/tabby-conversation.jsonl",
       runLogPath: "/tmp/photos/lihuacat-output/run-1/run.log",
-      generatedCodePath: "/tmp/photos/lihuacat-output/run-1/generated-remotion",
+      ocelotInputPath: "/tmp/photos/lihuacat-output/run-1/ocelot-input.json",
+      ocelotOutputPath: "/tmp/photos/lihuacat-output/run-1/ocelot-output.json",
+      ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-1/ocelot-prompt.log",
     }),
   });
 
   assert.equal(exitCode, 0);
   assert.equal(state.completedSummary?.videoPath, "/tmp/photos/lihuacat-output/run-1/video.mp4");
   assert.equal(
-    state.completedSummary?.storyScriptPath,
-    "/tmp/photos/lihuacat-output/run-1/story-script.json",
+    state.completedSummary?.storyBriefPath,
+    "/tmp/photos/lihuacat-output/run-1/story-brief.json",
   );
   assert.equal(state.completedSummary?.runLogPath, "/tmp/photos/lihuacat-output/run-1/run.log");
   assert.equal(state.failedLines.length, 0);
@@ -65,8 +69,13 @@ test("prints selected Codex model info", async () => {
       outputDir: "/tmp/photos/lihuacat-output/run-model-info",
       mode: "template",
       videoPath: "/tmp/photos/lihuacat-output/run-model-info/video.mp4",
-      storyScriptPath: "/tmp/photos/lihuacat-output/run-model-info/story-script.json",
+      storyBriefPath: "/tmp/photos/lihuacat-output/run-model-info/story-brief.json",
+      renderScriptPath: "/tmp/photos/lihuacat-output/run-model-info/render-script.json",
+      tabbyConversationPath: "/tmp/photos/lihuacat-output/run-model-info/tabby-conversation.jsonl",
       runLogPath: "/tmp/photos/lihuacat-output/run-model-info/run.log",
+      ocelotInputPath: "/tmp/photos/lihuacat-output/run-model-info/ocelot-input.json",
+      ocelotOutputPath: "/tmp/photos/lihuacat-output/run-model-info/ocelot-output.json",
+      ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-model-info/ocelot-prompt.log",
     }),
   });
 
@@ -93,13 +102,57 @@ test("accepts xhigh reasoning effort and prints it in model info", async () => {
       outputDir: "/tmp/photos/lihuacat-output/run-model-xhigh",
       mode: "template",
       videoPath: "/tmp/photos/lihuacat-output/run-model-xhigh/video.mp4",
-      storyScriptPath: "/tmp/photos/lihuacat-output/run-model-xhigh/story-script.json",
+      storyBriefPath: "/tmp/photos/lihuacat-output/run-model-xhigh/story-brief.json",
+      renderScriptPath: "/tmp/photos/lihuacat-output/run-model-xhigh/render-script.json",
+      tabbyConversationPath: "/tmp/photos/lihuacat-output/run-model-xhigh/tabby-conversation.jsonl",
       runLogPath: "/tmp/photos/lihuacat-output/run-model-xhigh/run.log",
+      ocelotInputPath: "/tmp/photos/lihuacat-output/run-model-xhigh/ocelot-input.json",
+      ocelotOutputPath: "/tmp/photos/lihuacat-output/run-model-xhigh/ocelot-output.json",
+      ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-model-xhigh/ocelot-prompt.log",
     }),
   });
 
   assert.equal(exitCode, 0);
   assert.equal(state.introInput?.reasoningEffort, "xhigh");
+});
+
+test("detects browsers at startup and passes selected executable to workflow", async () => {
+  const selectedPath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  const { tui } = createMockTui({
+    askBrowserExecutable: async ({ candidates }) => {
+      assert.equal(candidates.length, 1);
+      assert.equal(candidates[0]?.executablePath, selectedPath);
+      return selectedPath;
+    },
+  });
+  let receivedBrowserPath: string | undefined;
+
+  const exitCode = await runRenderStoryCommand({
+    argv: ["--input", "/tmp/photos"],
+    tui,
+    listAvailableBrowsersImpl: async () => [
+      { browser: "chrome", executablePath: selectedPath },
+    ],
+    workflowImpl: async (input) => {
+      receivedBrowserPath = input.browserExecutablePath;
+      return {
+        runId: "run-browser",
+        outputDir: "/tmp/photos/lihuacat-output/run-browser",
+        mode: "template",
+        videoPath: "/tmp/photos/lihuacat-output/run-browser/video.mp4",
+        storyBriefPath: "/tmp/photos/lihuacat-output/run-browser/story-brief.json",
+        renderScriptPath: "/tmp/photos/lihuacat-output/run-browser/render-script.json",
+        tabbyConversationPath: "/tmp/photos/lihuacat-output/run-browser/tabby-conversation.jsonl",
+        runLogPath: "/tmp/photos/lihuacat-output/run-browser/run.log",
+        ocelotInputPath: "/tmp/photos/lihuacat-output/run-browser/ocelot-input.json",
+        ocelotOutputPath: "/tmp/photos/lihuacat-output/run-browser/ocelot-output.json",
+        ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-browser/ocelot-prompt.log",
+      };
+    },
+  });
+
+  assert.equal(exitCode, 0);
+  assert.equal(receivedBrowserPath, selectedPath);
 });
 
 test("prints readable failure reason", async () => {
@@ -114,29 +167,29 @@ test("prints readable failure reason", async () => {
   });
 
   assert.equal(exitCode, 1);
-  assert.match(state.failedLines.join("\n"), /Render failed:/);
+  assert.match(state.failedLines.join("\n"), /Run failed:/);
   assert.match(state.failedLines.join("\n"), /template render failed/);
 });
 
-test("prints generation failure details when story script retries are exhausted", async () => {
+test("prints generation failure details when story brief retries are exhausted", async () => {
   const { tui, state } = createMockTui();
 
   const exitCode = await runRenderStoryCommand({
     argv: [],
     tui,
     workflowImpl: async () => {
-      throw new StoryScriptGenerationFailedError(3, [
+      throw new StoryBriefGenerationFailedError(3, [
         "attempt 1: missing codex auth",
         "attempt 2: model returned invalid JSON",
-        "attempt 3: timeline duration mismatch",
+        "attempt 3: photos length mismatch",
       ]);
     },
   });
 
   assert.equal(exitCode, 1);
-  assert.match(state.failedLines.join("\n"), /Story script generation failure details:/);
+  assert.match(state.failedLines.join("\n"), /StoryBrief generation failure details:/);
   assert.match(state.failedLines.join("\n"), /attempt 1: missing codex auth/);
-  assert.match(state.failedLines.join("\n"), /attempt 3: timeline duration mismatch/);
+  assert.match(state.failedLines.join("\n"), /attempt 3: photos length mismatch/);
 });
 
 test("prints input tip when source directory path is invalid", async () => {
@@ -167,16 +220,21 @@ test("forwards workflow progress events to tui layer", async () => {
         message: "Collecting images from input directory...",
       });
       await onProgress?.({
-        stage: "generate_script_start",
-        message: "Generating story script with Codex...",
+        stage: "tabby_start",
+        message: "Tabby is watching photos and chatting...",
       });
       return {
         runId: "run-2",
         outputDir: "/tmp/photos/lihuacat-output/run-2",
         mode: "template",
         videoPath: "/tmp/photos/lihuacat-output/run-2/video.mp4",
-        storyScriptPath: "/tmp/photos/lihuacat-output/run-2/story-script.json",
+        storyBriefPath: "/tmp/photos/lihuacat-output/run-2/story-brief.json",
+        renderScriptPath: "/tmp/photos/lihuacat-output/run-2/render-script.json",
+        tabbyConversationPath: "/tmp/photos/lihuacat-output/run-2/tabby-conversation.jsonl",
         runLogPath: "/tmp/photos/lihuacat-output/run-2/run.log",
+        ocelotInputPath: "/tmp/photos/lihuacat-output/run-2/ocelot-input.json",
+        ocelotOutputPath: "/tmp/photos/lihuacat-output/run-2/ocelot-output.json",
+        ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-2/ocelot-prompt.log",
       };
     },
   });
@@ -184,7 +242,7 @@ test("forwards workflow progress events to tui layer", async () => {
   assert.equal(exitCode, 0);
   assert.equal(state.progressEvents.length, 2);
   assert.equal(state.progressEvents[0]?.stage, "collect_images_start");
-  assert.equal(state.progressEvents[1]?.stage, "generate_script_start");
+  assert.equal(state.progressEvents[1]?.stage, "tabby_start");
 });
 
 test("fails fast when terminal is not interactive", async () => {
@@ -200,7 +258,9 @@ test("fails fast when terminal is not interactive", async () => {
   assert.match(err.content(), /requires a TTY terminal/);
 });
 
-const createMockTui = (): {
+const createMockTui = (overrides: {
+  askBrowserExecutable?: RenderStoryTui["askBrowserExecutable"];
+} = {}): {
   tui: RenderStoryTui;
   state: MockTuiState;
 } => {
@@ -216,14 +276,12 @@ const createMockTui = (): {
     async askSourceDir() {
       return "/tmp/photos";
     },
-    async askStylePreset() {
-      return "healing";
+    askBrowserExecutable: overrides.askBrowserExecutable,
+    async tabbyChooseOption() {
+      throw new Error("not used in this test");
     },
-    async askPrompt() {
-      return "";
-    },
-    async chooseRenderMode() {
-      return "template";
+    async tabbyAskFreeInput() {
+      throw new Error("not used in this test");
     },
     onWorkflowProgress(event) {
       state.progressEvents.push(event);

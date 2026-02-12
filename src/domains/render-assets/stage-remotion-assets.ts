@@ -2,29 +2,29 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { StoryAsset } from "../../contracts/story-script.types.ts";
+export type StageRemotionAsset = { path: string } & ({ id: string } | { photoRef: string });
 
-export type StageRemotionAssetsInput = {
-  assets: StoryAsset[];
+export type StageRemotionAssetsInput<TAsset extends StageRemotionAsset = StageRemotionAsset> = {
+  assets: TAsset[];
   outputDir: string;
 };
 
-export type StageRemotionAssetsResult = {
+export type StageRemotionAssetsResult<TAsset extends StageRemotionAsset = StageRemotionAsset> = {
   publicDir: string;
-  assets: StoryAsset[];
+  assets: TAsset[];
 };
 
 const stagedRootDirName = "lihuacat-assets";
 
-export const stageRemotionAssets = async ({
+export const stageRemotionAssets = async <TAsset extends StageRemotionAsset>({
   assets,
   outputDir,
-}: StageRemotionAssetsInput): Promise<StageRemotionAssetsResult> => {
+}: StageRemotionAssetsInput<TAsset>): Promise<StageRemotionAssetsResult<TAsset>> => {
   const publicDir = path.join(outputDir, "remotion-public");
   const stagedRoot = path.join(publicDir, stagedRootDirName);
   await fs.mkdir(stagedRoot, { recursive: true });
 
-  const stagedAssets: StoryAsset[] = [];
+  const stagedAssets: TAsset[] = [];
   for (const [index, asset] of assets.entries()) {
     if (/^https?:\/\//.test(asset.path)) {
       stagedAssets.push(asset);
@@ -33,15 +33,16 @@ export const stageRemotionAssets = async ({
 
     const localPath = toLocalFilePath(asset.path);
     const extension = path.extname(localPath) || ".jpg";
-    const safeId = sanitizeForFileName(asset.id);
-    const fileName = `${String(index + 1).padStart(3, "0")}-${safeId}${extension.toLowerCase()}`;
+    const ref = "photoRef" in asset ? asset.photoRef : asset.id;
+    const safeRef = sanitizeForFileName(ref);
+    const fileName = `${String(index + 1).padStart(3, "0")}-${safeRef}${extension.toLowerCase()}`;
     const stagedAbsolutePath = path.join(stagedRoot, fileName);
     await fs.copyFile(localPath, stagedAbsolutePath);
 
     stagedAssets.push({
       ...asset,
       path: `${stagedRootDirName}/${fileName}`,
-    });
+    } as TAsset);
   }
 
   return {

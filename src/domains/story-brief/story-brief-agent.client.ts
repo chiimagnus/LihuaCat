@@ -1,34 +1,11 @@
 import { Codex } from "@openai/codex-sdk";
 import type { Thread } from "@openai/codex-sdk";
 
-import { assertCodexCliAuthenticated } from "./codex-auth-guard.ts";
+import { assertCodexCliAuthenticated } from "../codex-auth/codex-auth-guard.ts";
 import {
-  buildStoryScriptPromptInput,
-  storyScriptOutputSchema,
-} from "../../prompts/index.ts";
-
-export type GenerateStoryScriptRequest = {
-  sourceDir: string;
-  assets: Array<{
-    id: string;
-    path: string;
-  }>;
-  style: {
-    preset: string;
-    prompt?: string;
-  };
-  constraints: {
-    durationSec: number;
-    minDurationPerAssetSec: number;
-    requireAllAssetsUsed: boolean;
-  };
-  attempt: number;
-  previousErrors: string[];
-};
-
-export interface StoryAgentClient {
-  generateStoryScript(request: GenerateStoryScriptRequest): Promise<unknown>;
-}
+  buildStoryBriefPromptInput,
+  storyBriefOutputSchema,
+} from "../../prompts/story-brief.prompt.ts";
 
 type ModelReasoningEffort =
   | "minimal"
@@ -46,7 +23,19 @@ type CodexLike = {
   }) => Pick<Thread, "run">;
 };
 
-export type CreateCodexStoryAgentClientInput = {
+export type GenerateStoryBriefRequest = {
+  photos: Array<{ photoRef: string; path: string }>;
+  conversation: unknown[];
+  confirmedSummary: string;
+  attempt: number;
+  previousErrors: string[];
+};
+
+export interface StoryBriefAgentClient {
+  generateStoryBrief(request: GenerateStoryBriefRequest): Promise<unknown>;
+}
+
+export type CreateCodexStoryBriefAgentClientInput = {
   model?: string;
   modelReasoningEffort?: ModelReasoningEffort;
   workingDirectory?: string;
@@ -54,29 +43,27 @@ export type CreateCodexStoryAgentClientInput = {
   assertAuthenticated?: () => Promise<void>;
 };
 
-export const DEFAULT_CODEX_MODEL = "gpt-5.1-codex-mini";
-export const DEFAULT_CODEX_REASONING_EFFORT = "medium" as const;
+export const DEFAULT_STORY_BRIEF_CODEX_MODEL = "gpt-5.1-codex-mini";
+export const DEFAULT_STORY_BRIEF_CODEX_REASONING_EFFORT = "medium" as const;
 
-export class StoryAgentResponseParseError extends Error {
+export class StoryBriefAgentResponseParseError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "StoryAgentResponseParseError";
+    this.name = "StoryBriefAgentResponseParseError";
   }
 }
 
-export const createCodexStoryAgentClient = ({
-  model = DEFAULT_CODEX_MODEL,
-  modelReasoningEffort = DEFAULT_CODEX_REASONING_EFFORT,
+export const createCodexStoryBriefAgentClient = ({
+  model = DEFAULT_STORY_BRIEF_CODEX_MODEL,
+  modelReasoningEffort = DEFAULT_STORY_BRIEF_CODEX_REASONING_EFFORT,
   workingDirectory,
   codexFactory = () => new Codex(),
   assertAuthenticated = async () => assertCodexCliAuthenticated(),
-}: CreateCodexStoryAgentClientInput = {}): StoryAgentClient => {
+}: CreateCodexStoryBriefAgentClientInput = {}): StoryBriefAgentClient => {
   let thread: Pick<Thread, "run"> | undefined;
 
   const getThread = (): Pick<Thread, "run"> => {
-    if (thread) {
-      return thread;
-    }
+    if (thread) return thread;
     const codex = codexFactory();
     thread = codex.startThread({
       model,
@@ -88,24 +75,24 @@ export const createCodexStoryAgentClient = ({
   };
 
   return {
-    async generateStoryScript(request: GenerateStoryScriptRequest): Promise<unknown> {
+    async generateStoryBrief(request: GenerateStoryBriefRequest): Promise<unknown> {
       await assertAuthenticated();
-      const turn = await getThread().run(buildStoryScriptPromptInput(request), {
-        outputSchema: storyScriptOutputSchema,
+      const turn = await getThread().run(buildStoryBriefPromptInput(request), {
+        outputSchema: storyBriefOutputSchema,
       });
-      return parseStoryScriptFromResponse(turn.finalResponse);
+      return parseJsonFromFinalResponse(turn.finalResponse);
     },
   };
 };
 
-const parseStoryScriptFromResponse = (finalResponse: string): unknown => {
+const parseJsonFromFinalResponse = (finalResponse: string): unknown => {
   const normalized = finalResponse.trim();
   const candidate =
     tryParseJson(normalized) ??
     tryParseJson(stripCodeFence(normalized));
 
   if (!candidate.ok) {
-    throw new StoryAgentResponseParseError(
+    throw new StoryBriefAgentResponseParseError(
       `Codex returned non-JSON response: ${truncateForError(normalized)}`,
     );
   }
@@ -114,9 +101,7 @@ const parseStoryScriptFromResponse = (finalResponse: string): unknown => {
 };
 
 const stripCodeFence = (value: string): string => {
-  if (!value.startsWith("```")) {
-    return value;
-  }
+  if (!value.startsWith("```")) return value;
   return value
     .replace(/^```[a-zA-Z]*\n?/, "")
     .replace(/\n?```$/, "")
@@ -134,8 +119,6 @@ const tryParseJson = (
 };
 
 const truncateForError = (value: string): string => {
-  if (value.length <= 240) {
-    return value;
-  }
+  if (value.length <= 240) return value;
   return `${value.slice(0, 240)}...`;
 };

@@ -30,7 +30,7 @@
 
 ### P1：合同与校验（先定地基）
 
-### Task 1: 新增 `StoryBrief` 合同与 schema 校验
+### ✅Task 1: 新增 `StoryBrief` 合同与 schema 校验
 
 **Files:**
 - Create: `src/contracts/story-brief.types.ts`
@@ -46,7 +46,7 @@
 - Run: `pnpm test -- tests/validate-story-brief.spec.ts`
 - Expected: PASS
 
-### Task 2: 新增场景化 `RenderScript` 合同与语义校验
+### ✅Task 2: 新增场景化 `RenderScript` 合同与语义校验
 
 **Files:**
 - Create: `src/contracts/render-script.types.ts`
@@ -71,7 +71,7 @@
 
 ### P1：Tabby（对话）→ StoryBrief（叙事资产）
 
-### Task 3: 定义 Tabby 回合输出合同（outputSchema + 本地校验）
+### ✅Task 3: 定义 Tabby 回合输出合同（outputSchema + 本地校验）
 
 **Files:**
 - Create: `src/contracts/tabby-turn.types.ts`
@@ -79,7 +79,7 @@
 - Test: `tests/validate-tabby-turn.spec.ts`
 
 **Step 1: 实现**
-- 定义 `TabbyTurnOutput = { say: string; options: {id,label}[]; done: boolean; internalNotes?: string }`
+- 定义 `TabbyTurnOutput = { say: string; options: {id,label}[]; done: boolean; internalNotes: string }`
 - 校验规则：
   - `options.length` ∈ [2,4]
   - `done=false` 时必须包含 `free_input`
@@ -91,7 +91,7 @@
 - Run: `pnpm test -- tests/validate-tabby-turn.spec.ts`
 - Expected: PASS
 
-### Task 4: 实现 Tabby agent client（多轮回合输出，强制 JSON）
+### ✅Task 4: 实现 Tabby agent client（多轮回合输出，强制 JSON）
 
 **Files:**
 - Create: `src/domains/tabby/tabby-agent.client.ts`
@@ -109,7 +109,7 @@
 - Run: `pnpm test -- tests/tabby-agent.client.spec.ts`
 - Expected: PASS（用 mock codexFactory 断言 outputSchema 与解析行为）
 
-### Task 5: 实现 Tabby session（TUI：select + free_input + confirm/revise）
+### ✅Task 5: 实现 Tabby session（TUI：select + free_input + confirm/revise）
 
 **Files:**
 - Create: `src/domains/tabby/tabby-session.ts`
@@ -127,7 +127,7 @@
 - Run: `pnpm test -- tests/tabby-session.spec.ts`
 - Expected: PASS（用 mock TabbyAgentClient 断言 select 分支与日志写入）
 
-### Task 6: Tabby 最终产出 StoryBrief（确认后落盘）
+### ✅Task 6: Tabby 最终产出 StoryBrief（确认后落盘）
 
 **Files:**
 - Create: `src/domains/story-brief/generate-story-brief.ts`
@@ -149,7 +149,7 @@
 
 ### P1：Ocelot（编剧）→ RenderScript（渲染指令）
 
-### Task 7: 实现 Ocelot agent client（StoryBrief → RenderScript）
+### ✅Task 7: 实现 Ocelot agent client（StoryBrief → RenderScript）
 
 **Files:**
 - Create: `src/domains/render-script/ocelot-agent.client.ts`
@@ -173,7 +173,7 @@
 
 ### P1：Workflow/CLI 编排（破坏性替换 B/C/D + 新产物落盘）
 
-### Task 8: 新增 workflow stages：tabby、ocelot、render（单路径）
+### ✅Task 8: 新增 workflow stages：tabby、ocelot、render（单路径）
 
 **Files:**
 - Create: `src/workflow/stages/tabby.stage.ts`
@@ -190,7 +190,7 @@
 - Run: `pnpm test -- tests/workflow-contract.spec.ts`
 - Expected: PASS（断言 stage events 顺序更新）
 
-### Task 9: 重写/替换 CLI flow：去掉 askStyle/askPrompt/模式选择
+### ✅Task 9: 重写/替换 CLI flow：去掉 askStyle/askPrompt/模式选择
 
 **Files:**
 - Modify: `src/flows/create-story-video/create-story-video.flow.ts`
@@ -213,7 +213,7 @@
 - Run: `pnpm test -- tests/render-story.command.spec.ts`
 - Expected: PASS（删除 `--mode`/`--mode-sequence` 相关断言并更新行为）
 
-### Task 10: 重构 workflow runtime 产物：新增 StoryBrief/RenderScript 路径与 jsonl 追加写
+### ✅Task 10: 重构 workflow runtime 产物：新增 StoryBrief/RenderScript 路径与 jsonl 追加写
 
 **Files:**
 - Modify: `src/workflow/workflow-runtime.ts`
@@ -241,7 +241,7 @@
 
 ### P1：Remotion 模板改造（消费 RenderScript scenes）
 
-### Task 11: 模板 props 从 StoryScript 切换到 RenderScript
+### ✅Task 11: 模板 props 从 StoryScript 切换到 RenderScript
 
 **Files:**
 - Modify: `src/story-template/StoryComposition.schema.ts`
@@ -257,7 +257,7 @@
 - Run: `pnpm test -- tests/StoryComposition.spec.ts`
 - Expected: PASS
 
-### Task 12: 新增转场动画（fade/cut/dissolve/slide）
+### ✅Task 12: 新增转场动画（fade/cut/dissolve/slide）
 
 **Files:**
 - Modify: `src/story-template/StoryComposition.tsx`
@@ -274,7 +274,7 @@
 - Run: `pnpm test -- tests/StoryComposition.spec.ts`
 - Expected: PASS（至少保证逻辑层生成的 frames 不出错）
 
-### Task 13: 新增 Ken Burns（scale + panDirection）
+### ✅Task 13: 新增 Ken Burns（scale + panDirection）
 
 **Files:**
 - Modify: `src/story-template/StoryComposition.tsx`
@@ -287,7 +287,7 @@
 - Run: `pnpm test -- tests/StoryComposition.spec.ts`
 - Expected: PASS
 
-### Task 14: 渲染 domain 改造：`render-by-template` 读取 RenderScript
+### ✅Task 14: 渲染 domain 改造：`render-by-template` 读取 RenderScript
 
 **Files:**
 - Modify: `src/domains/template-render/render-by-template.ts`
@@ -307,7 +307,7 @@
 
 ### P1：删除旧代码（破坏性重构落地）
 
-### Task 15: 删除 story-script 相关 contracts/domains/prompts/tests
+### ✅Task 15: 删除 story-script 相关 contracts/domains/prompts/tests
 
 **Files:**
 - Delete: `src/contracts/story-script.types.ts`
@@ -324,7 +324,7 @@
 - Run: `pnpm run build`
 - Expected: build success
 
-### Task 16: 删除 ai_code 渲染与渲染模式选择链路
+### ✅Task 16: 删除 ai_code 渲染与渲染模式选择链路
 
 **Files:**
 - Delete: `src/domains/ai-code-render/*`
@@ -343,7 +343,7 @@
 
 ### P1：对外文档与基线同步
 
-### Task 17: 更新 README 与 business-logic
+### ✅Task 17: 更新 README 与 business-logic
 
 **Files:**
 - Modify: `README.md`

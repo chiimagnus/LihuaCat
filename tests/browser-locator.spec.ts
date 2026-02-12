@@ -5,6 +5,7 @@ import path from "node:path";
 
 import {
   BrowserExecutableNotFoundError,
+  listAvailableBrowserExecutables,
   locateBrowserExecutable,
 } from "../src/domains/template-render/browser-locator.ts";
 
@@ -19,14 +20,14 @@ test("returns preferred executable when provided and existing", async () => {
   assert.equal(result.executablePath, preferred);
 });
 
-test("finds Arc from known macOS locations", async () => {
-  const arcPath = "/Applications/Arc.app/Contents/MacOS/Arc";
+test("finds Chrome from known macOS locations", async () => {
+  const chromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
   const result = await locateBrowserExecutable({
-    existsFn: async (value) => value === arcPath,
+    existsFn: async (value) => value === chromePath,
   });
 
-  assert.equal(result.browser, "arc");
-  assert.equal(result.executablePath, arcPath);
+  assert.equal(result.browser, "chrome");
+  assert.equal(result.executablePath, chromePath);
 });
 
 test("finds Brave in user Applications folder", async () => {
@@ -50,8 +51,29 @@ test("throws readable error when no browser executable is found", async () => {
     (error: unknown) => {
       assert.ok(error instanceof BrowserExecutableNotFoundError);
       assert.ok(error.triedPaths.length >= 4);
-      assert.match(error.message, /Chrome\/Edge\/Arc\/Brave/);
+      assert.match(error.message, /Chrome\/Edge\/Brave/);
       return true;
     },
+  );
+});
+
+test("lists detected browser executables in scan order", async () => {
+  const chromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  const bravePath = path.join(
+    os.homedir(),
+    "Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+  );
+  const result = await listAvailableBrowserExecutables({
+    existsFn: async (value) => value === chromePath || value === bravePath,
+  });
+
+  assert.equal(result.length, 2);
+  assert.deepEqual(
+    result.map((item) => item.browser),
+    ["chrome", "brave"],
+  );
+  assert.deepEqual(
+    result.map((item) => item.executablePath),
+    [chromePath, bravePath],
   );
 });

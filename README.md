@@ -28,19 +28,13 @@ lihuacat
 3) You’ll be guided through a few prompts (arrow keys + Enter), usually including:
 
 - Source image directory (if you didn’t pass `--input`)
-- Style preset (optionally `custom`)
-- Optional extra description (prompt)
-- Render mode: `template` / `ai_code` / `exit`
+- Tabby chat: select 2–4 suggested options (or “free input”), then confirm / revise
 
 ## Common flags (optional)
 
 Use flags to prefill prompts and skip steps:
 
 - `--input <dir>`: image directory (must be a single directory path)
-- `--style <preset>`: style preset
-- `--prompt <text>`: extra description
-- `--mode <template|ai_code>`: initial render mode
-- `--mode-sequence <m1,m2,...>`: preset multi-round mode sequence (for retry loops)
 - `--browser-executable <path>`: explicit browser executable path
 - `--model <name>`: override Codex model name
 - `--model-reasoning-effort <minimal|low|medium|high|xhigh>`: override reasoning effort
@@ -61,14 +55,21 @@ Defaults (when not provided):
 
 By default, outputs to: `<inputDir>/lihuacat-output/<runId>/`
 
-Common artifacts: `video.mp4`, `story-script.json`, `run.log` (and `error.log` on failures).
+Common artifacts:
+
+- `video.mp4`
+- `story-brief.json`
+- `render-script.json`
+- `tabby-conversation.jsonl`
+- `run.log` (and `error.log` on failures)
+- `ocelot-input.json`, `ocelot-output.json`, `ocelot-prompt.log` (debug)
 
 ## Browser (manual override)
 
 If auto-detection fails, specify a browser executable path:
 
 ```bash
-lihuacat --input /ABS/PATH/TO/PHOTOS --mode template --browser-executable "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+lihuacat --input /ABS/PATH/TO/PHOTOS --browser-executable "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 ```
 
 ## Troubleshooting
@@ -76,5 +77,4 @@ lihuacat --input /ABS/PATH/TO/PHOTOS --mode template --browser-executable "/Appl
 - `Source directory does not exist ...`: `--input` must be a directory (not multiple file paths)
 - `Unsupported image format ...`: unsupported images exist in the directory
 - Browser launch failed: install Chrome/Edge/Arc/Brave, or set `--browser-executable`
-- Script generation failed: check Codex auth/model options, then inspect `error.log`
-
+- StoryBrief / RenderScript generation failed: check Codex auth/model options, then inspect `error.log`

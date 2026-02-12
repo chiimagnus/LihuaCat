@@ -4,13 +4,15 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { renderByTemplate, TemplateRenderError } from "../src/domains/template-render/render-by-template.ts";
-import type { StoryScript } from "../src/contracts/story-script.types.ts";
+import { renderByTemplateV2, TemplateRenderError } from "../src/domains/template-render/render-by-template.ts";
+import type { RenderScript } from "../src/contracts/render-script.types.ts";
 
-test("template render consumes story-script and produces video file", async () => {
+test("template render consumes render-script and produces video file", async () => {
   await withTempDir(async (outputDir) => {
-    const result = await renderByTemplate({
-      storyScript: buildValidStoryScript(),
+    const assets = await writeTempAssets(outputDir);
+    const result = await renderByTemplateV2({
+      renderScript: buildValidRenderScript(),
+      assets,
       outputDir,
       renderAdapter: async ({ outputFilePath }) => {
         await fs.writeFile(outputFilePath, "video");
@@ -23,11 +25,13 @@ test("template render consumes story-script and produces video file", async () =
 
 test("template render rejects invalid semantic script", async () => {
   await withTempDir(async (outputDir) => {
-    const invalid = buildValidStoryScript();
-    invalid.timeline[0]!.endSec = 0.2;
+    const assets = await writeTempAssets(outputDir);
+    const invalid = buildValidRenderScript();
+    invalid.scenes[0]!.durationSec = 1;
     await assert.rejects(
-      renderByTemplate({
-        storyScript: invalid,
+      renderByTemplateV2({
+        renderScript: invalid,
+        assets,
         outputDir,
       }),
       TemplateRenderError,
@@ -44,31 +48,44 @@ const withTempDir = async (run: (dir: string) => Promise<void>) => {
   }
 };
 
-const buildValidStoryScript = (): StoryScript => ({
-  version: "1.0",
-  input: {
-    sourceDir: "/tmp/photos",
-    imageCount: 2,
-    assets: [
-      { id: "img_001", path: "1.jpg" },
-      { id: "img_002", path: "2.png" },
-    ],
-  },
+const writeTempAssets = async (
+  outputDir: string,
+): Promise<Array<{ photoRef: string; path: string }>> => {
+  const asset1 = path.join(outputDir, "1.jpg");
+  const asset2 = path.join(outputDir, "2.png");
+  await fs.writeFile(asset1, "img-1");
+  await fs.writeFile(asset2, "img-2");
+  return [
+    { photoRef: "1.jpg", path: asset1 },
+    { photoRef: "2.png", path: asset2 },
+  ];
+};
+
+const buildValidRenderScript = (): RenderScript => ({
+  storyBriefRef: "/tmp/photos/lihuacat-output/run-1/story-brief.json",
   video: {
     width: 1080,
     height: 1920,
     fps: 30,
-    durationSec: 30,
   },
-  style: {
-    preset: "healing",
-  },
-  timeline: [
-    { assetId: "img_001", startSec: 0, endSec: 10, subtitleId: "sub_1" },
-    { assetId: "img_002", startSec: 10, endSec: 30, subtitleId: "sub_2" },
-  ],
-  subtitles: [
-    { id: "sub_1", text: "first", startSec: 0, endSec: 10 },
-    { id: "sub_2", text: "second", startSec: 10, endSec: 30 },
+  scenes: [
+    {
+      sceneId: "scene_001",
+      photoRef: "1.jpg",
+      subtitle: "first",
+      subtitlePosition: "bottom",
+      durationSec: 15,
+      transition: { type: "cut", durationMs: 0, direction: "left" },
+      kenBurns: { startScale: 1, endScale: 1.1, panDirection: "left" },
+    },
+    {
+      sceneId: "scene_002",
+      photoRef: "2.png",
+      subtitle: "second",
+      subtitlePosition: "bottom",
+      durationSec: 15,
+      transition: { type: "cut", durationMs: 0, direction: "left" },
+      kenBurns: { startScale: 1, endScale: 1.1, panDirection: "right" },
+    },
   ],
 });

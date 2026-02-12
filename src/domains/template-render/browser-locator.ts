@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-export type SupportedBrowser = "chrome" | "edge" | "arc" | "brave";
+export type SupportedBrowser = "chrome" | "edge" | "brave";
 
 export type BrowserCandidate = {
   browser: SupportedBrowser;
@@ -14,7 +14,7 @@ export class BrowserExecutableNotFoundError extends Error {
 
   constructor(triedPaths: string[]) {
     super(
-      `No supported Chromium browser found. Tried: ${triedPaths.join(", ")}. Install Chrome/Edge/Arc/Brave or pass --browser-executable.`,
+      `No supported Chromium browser found. Tried: ${triedPaths.join(", ")}. Install Chrome/Edge/Brave or pass --browser-executable.`,
     );
     this.name = "BrowserExecutableNotFoundError";
     this.triedPaths = triedPaths;
@@ -26,10 +26,13 @@ export type LocateBrowserExecutableInput = {
   existsFn?: (value: string) => Promise<boolean>;
 };
 
+export type ListAvailableBrowserExecutablesInput = {
+  existsFn?: (value: string) => Promise<boolean>;
+};
+
 const browserRelativePaths: Record<SupportedBrowser, string> = {
   chrome: "Google Chrome.app/Contents/MacOS/Google Chrome",
   edge: "Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-  arc: "Arc.app/Contents/MacOS/Arc",
   brave: "Brave Browser.app/Contents/MacOS/Brave Browser",
 };
 
@@ -48,16 +51,7 @@ export const locateBrowserExecutable = async ({
     throw new BrowserExecutableNotFoundError([resolved]);
   }
 
-  const appRoots = ["/Applications", path.join(os.homedir(), "Applications")];
-  const candidates: BrowserCandidate[] = [];
-  for (const appRoot of appRoots) {
-    for (const browser of ["chrome", "edge", "arc", "brave"] as const) {
-      candidates.push({
-        browser,
-        executablePath: path.join(appRoot, browserRelativePaths[browser]),
-      });
-    }
-  }
+  const candidates = buildKnownCandidates();
 
   const triedPaths: string[] = [];
   for (const candidate of candidates) {
@@ -70,6 +64,19 @@ export const locateBrowserExecutable = async ({
   throw new BrowserExecutableNotFoundError(triedPaths);
 };
 
+export const listAvailableBrowserExecutables = async ({
+  existsFn = fileExists,
+}: ListAvailableBrowserExecutablesInput = {}): Promise<BrowserCandidate[]> => {
+  const candidates = buildKnownCandidates();
+  const found: BrowserCandidate[] = [];
+  for (const candidate of candidates) {
+    if (await existsFn(candidate.executablePath)) {
+      found.push(candidate);
+    }
+  }
+  return found;
+};
+
 const inferBrowserName = (executablePath: string): SupportedBrowser => {
   const lower = executablePath.toLowerCase();
   if (lower.includes("microsoft edge")) {
@@ -77,9 +84,6 @@ const inferBrowserName = (executablePath: string): SupportedBrowser => {
   }
   if (lower.includes("brave")) {
     return "brave";
-  }
-  if (lower.includes("arc")) {
-    return "arc";
   }
   return "chrome";
 };
@@ -91,4 +95,18 @@ const fileExists = async (value: string): Promise<boolean> => {
   } catch {
     return false;
   }
+};
+
+const buildKnownCandidates = (): BrowserCandidate[] => {
+  const appRoots = ["/Applications", path.join(os.homedir(), "Applications")];
+  const candidates: BrowserCandidate[] = [];
+  for (const appRoot of appRoots) {
+    for (const browser of ["chrome", "edge", "brave"] as const) {
+      candidates.push({
+        browser,
+        executablePath: path.join(appRoot, browserRelativePaths[browser]),
+      });
+    }
+  }
+  return candidates;
 };

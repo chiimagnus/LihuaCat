@@ -11,26 +11,35 @@ import {
 } from "@clack/prompts";
 
 import type {
-  RenderMode,
   RunSummary,
   WorkflowProgressEvent,
 } from "../../pipeline.ts";
+import type { TabbyOption } from "../../contracts/tabby-turn.types.ts";
+import type { BrowserCandidate } from "../../domains/template-render/browser-locator.ts";
 
 export type RenderStoryTuiIntroInput = {
   model: string;
   reasoningEffort: "minimal" | "low" | "medium" | "high" | "xhigh";
 };
 
-export type RenderModeSelectionState = {
-  lastFailure?: { mode: RenderMode; reason: string };
-};
-
 export type RenderStoryTui = {
   intro: (input: RenderStoryTuiIntroInput) => void;
   askSourceDir: () => Promise<string>;
-  askStylePreset: () => Promise<string>;
-  askPrompt: () => Promise<string>;
-  chooseRenderMode: (state: RenderModeSelectionState) => Promise<RenderMode | "exit">;
+  askBrowserExecutable?: (input: {
+    candidates: BrowserCandidate[];
+  }) => Promise<string>;
+  tabbyOnTurnStart?: (input: {
+    turn: number;
+    phase: "start" | "chat" | "revise";
+  }) => void;
+  tabbyOnTurnDone?: () => void;
+  tabbyChooseOption: (input: {
+    say: string;
+    options: TabbyOption[];
+    done: boolean;
+    reviseDisabled: boolean;
+  }) => Promise<TabbyOption>;
+  tabbyAskFreeInput: (input: { message: string }) => Promise<string>;
   onWorkflowProgress: (event: WorkflowProgressEvent) => void;
   complete: (summary: RunSummary) => void;
   fail: (lines: string[]) => void;
@@ -56,12 +65,28 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
     hasActiveSpinner = false;
   };
 
-  const mustContinue = <T>(value: T | symbol): T => {
-    if (isCancel(value)) {
-      cancel("Operation cancelled.");
-      throw new TuiCancelledError();
+  const promptWithCancelGuard = async <T>(
+    runPrompt: () => Promise<T | symbol>,
+  ): Promise<T> => {
+    while (true) {
+      const value = await runPrompt();
+      if (!isCancel(value)) {
+        return value;
+      }
+
+      stopSpinnerIfNeeded();
+      const decision = await select({
+        message: "检测到 Esc，是否退出当前流程？",
+        options: [
+          { value: "continue", label: "继续操作" },
+          { value: "exit", label: "退出" },
+        ],
+      });
+      if (isCancel(decision) || decision === "exit") {
+        cancel("Operation cancelled.");
+        throw new TuiCancelledError();
+      }
     }
-    return value;
   };
 
   return {
@@ -71,8 +96,8 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
     },
 
     async askSourceDir() {
-      const answer = mustContinue(
-        await text({
+      const answer = await promptWithCancelGuard(
+        () => text({
           message: "Source directory",
           placeholder: "/ABS/PATH/TO/PHOTOS",
           validate(value) {
@@ -86,88 +111,108 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
       return answer.trim();
     },
 
-    async askStylePreset() {
-      const options: Array<{
-        value: string;
-        label: string;
-        hint: string;
-      }> = [
-        { value: "healing", label: "healing", hint: "Soft, healing" },
-        { value: "warm", label: "warm", hint: "Warm lifestyle" },
-        { value: "cinematic", label: "cinematic", hint: "Cinematic narration" },
-        { value: "minimal", label: "minimal", hint: "Minimal and restrained" },
-        { value: "custom", label: "custom", hint: "Custom preset" },
+    async askBrowserExecutable({ candidates }) {
+      stopSpinnerIfNeeded();
+      const options = [
+        ...candidates.map((candidate) => ({
+          value: candidate.executablePath,
+          label: `${toBrowserLabel(candidate.browser)} (${candidate.executablePath})`,
+        })),
+        {
+          value: "__manual__",
+          label: "手动输入浏览器可执行文件路径",
+        },
       ];
-      const choice = mustContinue(
-        await select({
-          message: "Select style preset",
-          initialValue: "healing",
+      const selected = await promptWithCancelGuard(
+        () => select({
+          message: "选择用于渲染的浏览器",
           options,
         }),
       );
-
-      if (choice !== "custom") {
-        return choice;
+      if (selected !== "__manual__") {
+        return selected;
       }
-
-      const custom = mustContinue(
-        await text({
-          message: "Enter custom preset",
+      const manualPath = await promptWithCancelGuard(
+        () => text({
+          message: "Browser executable path",
+          placeholder: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
           validate(value) {
             if (!value || value.trim().length === 0) {
-              return "Preset cannot be empty.";
+              return "Executable path cannot be empty.";
             }
             return undefined;
           },
         }),
       );
-      return custom.trim();
+      return manualPath.trim();
     },
 
-    async askPrompt() {
-      const answer = mustContinue(
-        await text({
-          message: "Extra description (optional)",
-          placeholder: "e.g. spring, slow pace, healing vibe",
+    tabbyOnTurnStart({ turn }) {
+      if (hasActiveSpinner) {
+        status.stop();
+      }
+      status.start(`🐱 Tabby thinking... (turn ${turn})`);
+      hasActiveSpinner = true;
+    },
+
+    tabbyOnTurnDone() {
+      // Spinner is intentionally stopped when user-facing output is shown.
+    },
+
+    async tabbyChooseOption({ say, options, done, reviseDisabled }) {
+      stopSpinnerIfNeeded();
+      note(say, "🐱 Tabby");
+      if (done && reviseDisabled) {
+        log.message("  (已达到最大修改次数，不能再“需要修改”)");
+      }
+
+      const choice = await promptWithCancelGuard(
+        () => select({
+          message: done ? "确认一下这个感觉？" : "你更接近哪一句？",
+          options: options.map((option) => ({
+            value: option.id,
+            label: option.label,
+          })),
+        }),
+      );
+
+      const selected = options.find((option) => option.id === choice);
+      if (!selected) {
+        throw new Error("Unexpected selection: option not found");
+      }
+      return selected;
+    },
+
+    async tabbyAskFreeInput({ message }) {
+      stopSpinnerIfNeeded();
+      const answer = await promptWithCancelGuard(
+        () => text({
+          message,
+          placeholder: "一句话也可以",
+          validate(value) {
+            if (!value || value.trim().length === 0) {
+              return "Text cannot be empty.";
+            }
+            return undefined;
+          },
         }),
       );
       return answer.trim();
     },
 
-    async chooseRenderMode({ lastFailure }) {
-      if (lastFailure) {
-        note(
-          `mode: ${lastFailure.mode}\nreason: ${lastFailure.reason}`,
-          "Last attempt failed",
-        );
-      }
-      const mode = await select({
-        message: "Select render mode",
-        options: [
-          { value: "template", label: "template", hint: "Stable, fast" },
-          { value: "ai_code", label: "ai_code", hint: "Customizable, retryable" },
-          { value: "exit", label: "exit", hint: "Exit this run" },
-        ],
-      });
-      if (isCancel(mode)) {
-        return "exit";
-      }
-      return mode;
-    },
-
     onWorkflowProgress(event) {
+      if (event.stage === "tabby_start") {
+        stopSpinnerIfNeeded();
+        log.step(`▸ ${event.message}`);
+        return;
+      }
+
       if (event.stage.endsWith("_start")) {
         if (hasActiveSpinner) {
           status.stop();
         }
         status.start(`● ${event.message}`);
         hasActiveSpinner = true;
-        return;
-      }
-
-      if (event.stage === "choose_mode") {
-        stopSpinnerIfNeeded();
-        log.step(`▸ ${event.message}`);
         return;
       }
 
@@ -198,10 +243,14 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
         [
           `mode: ${summary.mode}`,
           `video: ${summary.videoPath}`,
-          `script: ${summary.storyScriptPath}`,
+          `storyBrief: ${summary.storyBriefPath}`,
+          `renderScript: ${summary.renderScriptPath}`,
+          `tabbyConversation: ${summary.tabbyConversationPath}`,
           `runLog: ${summary.runLogPath}`,
           summary.errorLogPath ? `errorLog: ${summary.errorLogPath}` : "",
-          summary.generatedCodePath ? `generatedCode: ${summary.generatedCodePath}` : "",
+          `ocelotInput: ${summary.ocelotInputPath}`,
+          `ocelotOutput: ${summary.ocelotOutputPath}`,
+          `ocelotPrompt: ${summary.ocelotPromptLogPath}`,
         ]
           .filter((line) => line.length > 0)
           .join("\n"),
@@ -224,4 +273,10 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
       stopSpinnerIfNeeded();
     },
   };
+};
+
+const toBrowserLabel = (browser: BrowserCandidate["browser"]): string => {
+  if (browser === "chrome") return "Google Chrome";
+  if (browser === "edge") return "Microsoft Edge";
+  return "Brave";
 };
