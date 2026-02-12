@@ -14,21 +14,27 @@
     "registry": "https://registry.npmjs.org/"
   },
   "bin": {
-    "lihuacat": "./bin/lihuacat.js"
+    "lihuacat": "./dist/index.js"
   },
   "files": [
-    "bin",
     "dist",
     "README.md"
   ],
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
+  },
   "scripts": {
+    "preinstall": "node ./scripts/enforce-pnpm.mjs",
     "dev": "node --experimental-strip-types src/index.ts",
     "start": "node --experimental-strip-types src/index.ts",
     "test": "node tests/run-tests.mjs",
-    "check": "tsc -p tsconfig.json",
-    "build": "tsc -p tsconfig.build.json",
-    "prepack": "npm run build",
-    "prepare": "npm run build"
+    "check": "node ./node_modules/typescript/bin/tsc -p tsconfig.json",
+    "build": "node ./node_modules/typescript/bin/tsc -p tsconfig.build.json",
+    "prepack": "node ./node_modules/typescript/bin/tsc -p tsconfig.build.json",
+    "prepare": "node ./node_modules/typescript/bin/tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "@clack/prompts": "^1.0.0",
@@ -38,6 +44,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "remotion": "^4.0.343",
+    "sharp": "^0.33.5",
     "zod": "3.22.3"
   },
   "devDependencies": {

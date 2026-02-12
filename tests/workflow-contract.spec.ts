@@ -66,6 +66,27 @@ test("workflow contract: emits ordered core stage events on first-pass template 
             },
           ],
         }),
+        compressImagesImpl: async ({ images, outputDir, targetBytes }) => ({
+          publicDir: path.join(outputDir, "remotion-public"),
+          stagedDir: path.join(outputDir, "remotion-public", "lihuacat-assets"),
+          images: images.map((img) => ({
+            index: img.index,
+            fileName: img.fileName,
+            absolutePath: img.absolutePath,
+            extension: ".jpg",
+          })),
+          report: images.map((img) => ({
+            index: img.index,
+            fileName: img.fileName,
+            originalAbsolutePath: img.absolutePath,
+            stagedAbsolutePath: img.absolutePath,
+            originalBytes: 0,
+            stagedBytes: 0,
+            targetBytes: targetBytes ?? 0,
+            quality: 82,
+            scale: 1,
+          })),
+        }),
         runTabbySessionImpl: async () => ({
           conversation: [{ type: "user", time: "t", input: { kind: "option", id: "x", label: "x" } }],
           confirmedSummary: "summary",
@@ -133,6 +154,8 @@ test("workflow contract: emits ordered core stage events on first-pass template 
     assert.deepEqual(stages, [
       "collect_images_start",
       "collect_images_done",
+      "compress_images_start",
+      "compress_images_done",
       "tabby_start",
       "tabby_done",
       "ocelot_start",

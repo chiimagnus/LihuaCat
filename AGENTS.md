@@ -65,6 +65,12 @@
 - 仅支持 `jpg/jpeg/png`，最大 20 张。
 - 目录内若出现 `webp/heic/heif/gif/bmp/tiff/avif` 会作为不支持格式报错。
 
+## 提交与 Pull Request 规范
+- Commit message 使用 Conventional Commits（如 `feat:` / `fix:` / `chore:` / `docs:` / `refactor:` / `test:`），保持单次提交意图明确、可回滚。
+- PR 描述清楚：改动目的、影响范围、如何验证（命令/关键输出）；如关联 `.github/plans/` 任务或 issue，注明链接/编号。
+- 行为变化优先补测试（`tests/*.spec.ts`），避免只改实现不留回归保护。
+- 不提交运行产物（尤其 `lihuacat-output/`）和任何本地凭证/缓存文件。
+
 ## 安全与配置提示
 - 不提交任何凭证（如 `~/.codex/auth.json`）或本地产物目录。
 - `lihuacat-output/` 属于运行产物，必须保持在 `.gitignore` 中。

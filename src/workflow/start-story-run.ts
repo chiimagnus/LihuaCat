@@ -13,6 +13,7 @@ import {
 } from "./workflow-ports.ts";
 import { initializeWorkflowRuntime, pushErrorLog } from "./workflow-runtime.ts";
 import { runCollectImagesStage } from "./stages/collect-images.stage.ts";
+import { runCompressImagesStage } from "./stages/compress-images.stage.ts";
 import { runRenderStage } from "./stages/render.stage.ts";
 import { runPublishStage } from "./stages/publish.stage.ts";
 import { runTabbyStage } from "./stages/tabby.stage.ts";
@@ -87,8 +88,15 @@ export const runStoryWorkflowV2 = async (
       collectImagesImpl: ports.collectImagesImpl,
     });
 
-    const tabby = await runTabbyStage({
+    const processed = await runCompressImagesStage({
       collected,
+      runtime,
+      onProgress,
+      compressImagesImpl: ports.compressImagesImpl,
+    });
+
+    const tabby = await runTabbyStage({
+      collected: processed,
       runtime,
       tabbyAgentClient,
       tabbyTui,
@@ -99,7 +107,7 @@ export const runStoryWorkflowV2 = async (
     });
 
     const ocelot = await runOcelotStage({
-      collected,
+      collected: processed,
       runtime,
       storyBriefRef: runtime.storyBriefPath,
       storyBrief: tabby.storyBrief,
@@ -109,7 +117,7 @@ export const runStoryWorkflowV2 = async (
 
     const rendered = await runRenderStage({
       runtime,
-      collected,
+      collected: processed,
       renderScript: ocelot.renderScript as never,
       browserExecutablePath,
       onProgress,

@@ -31,7 +31,25 @@ export const stageRemotionAssets = async <TAsset extends StageRemotionAsset>({
       continue;
     }
 
+    const alreadyStagedRelative = normalizeAlreadyStagedRelativePath(asset.path);
+    if (alreadyStagedRelative) {
+      stagedAssets.push({
+        ...asset,
+        path: alreadyStagedRelative,
+      } as TAsset);
+      continue;
+    }
+
     const localPath = toLocalFilePath(asset.path);
+    if (isInsideDir(localPath, stagedRoot)) {
+      const fileName = path.basename(localPath);
+      stagedAssets.push({
+        ...asset,
+        path: `${stagedRootDirName}/${fileName}`,
+      } as TAsset);
+      continue;
+    }
+
     const extension = path.extname(localPath) || ".jpg";
     const ref = "photoRef" in asset ? asset.photoRef : asset.id;
     const safeRef = sanitizeForFileName(ref);
@@ -61,4 +79,20 @@ const toLocalFilePath = (value: string): string => {
 const sanitizeForFileName = (value: string): string => {
   const normalized = value.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
   return normalized || "asset";
+};
+
+const normalizeAlreadyStagedRelativePath = (value: string): string | null => {
+  const normalized = value.replace(/^\/+/, "");
+  if (!normalized.startsWith(`${stagedRootDirName}/`)) return null;
+  const rest = normalized.slice(`${stagedRootDirName}/`.length);
+  if (!rest || rest.includes("..") || rest.includes("\\") || rest.includes(":")) return null;
+  return normalized;
+};
+
+const isInsideDir = (filePath: string, dirPath: string): boolean => {
+  const relative = path.relative(dirPath, filePath);
+  if (!relative) return false;
+  if (relative.startsWith("..")) return false;
+  if (path.isAbsolute(relative)) return false;
+  return true;
 };
