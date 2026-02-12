@@ -80,27 +80,67 @@ LihuaCat 是一个本地优先的交互式 CLI：把“一个图片文件夹”�
 
 ```mermaid
 flowchart TD
-  Start["开始：用户启动 CLI"] --> PickDir["选择/确认图片目录"]
-  PickDir --> Intake["素材收集与校验<br/>（仅第一层；jpg/jpeg/png；最多 20）"]
-  Intake -->|不通过| FailInput["报错退出<br/>提示原因（不存在/不支持格式/数量超限）"]
+  Start(["▶ 用户启动 CLI"])
+  Done(["✅ 产物落盘"])
 
-  Intake -->|通过| Tabby["🐱 Tabby 看图对话<br/>2-4 选项 + 自由输入"]
-  Tabby --> Confirm{"确认页：确认 / 需要修改"}
-  Confirm -->|需要修改| Tabby
+  subgraph input ["📂 素材输入"]
+    direction TB
+    PickDir["选择图片目录"]
+    Intake["素材收集与校验<br/>仅第一层 · jpg/jpeg/png · ≤20 张"]
+  end
 
-  Confirm -->|确认| Brief["生成 StoryBrief<br/>落盘 story-brief.json"]
-  Brief --> Ocelot["🐆 Ocelot 生成 RenderScript<br/>落盘 render-script.json"]
-  Ocelot --> Render["本机渲染（Remotion）<br/>输出 video.mp4"]
+  subgraph ai ["🧠 AI 生成"]
+    direction TB
+    Tabby["🐱 Tabby 看图对话<br/>2-4 选项 + 自由输入"]
+    Confirm{"确认 or 修改?"}
+    Brief["生成 StoryBrief<br/>→ story-brief.json"]
+    Ocelot["🐆 Ocelot 生成 RenderScript<br/>→ render-script.json"]
+  end
 
-  Render --> Done["结束：产物落盘（含 run.log）"]
+  subgraph render ["🎬 渲染输出"]
+    direction TB
+    Render["Remotion 本机渲染<br/>→ video.mp4"]
+    NeedBrowser["提示指定浏览器路径"]
+  end
 
-  Tabby -->|鉴权/模型失败| FailAI["报错退出<br/>落盘 error.log"]
-  Brief -->|生成失败| FailAI
-  Ocelot -->|生成失败| FailAI
+  subgraph fail ["❌ 异常退出"]
+    direction TB
+    FailInput["报错：目录/格式/数量"]
+    FailAI["报错：AI 调用失败<br/>→ error.log"]
+    FailRender["报错：渲染失败<br/>→ error.log"]
+  end
 
-  Render -->|浏览器不可用| NeedBrowser["提示需要浏览器可执行文件路径"]
-  NeedBrowser --> Render
-  Render -->|渲染失败| FailRender["报错退出<br/>落盘 error.log"]
+  Start --> PickDir
+  PickDir --> Intake
+  Intake -- "✓ 通过" --> Tabby
+  Intake -. "✗ 不通过" .-> FailInput
+
+  Tabby --> Confirm
+  Confirm -- "需要修改" --> Tabby
+  Confirm -- "确认 ✓" --> Brief
+  Brief --> Ocelot
+
+  Ocelot --> Render
+  Render --> Done
+
+  Tabby -. "鉴权/模型失败" .-> FailAI
+  Brief -. "生成失败" .-> FailAI
+  Ocelot -. "生成失败" .-> FailAI
+
+  Render -. "浏览器不可用" .-> NeedBrowser
+  NeedBrowser -- "指定路径后重试" --> Render
+  Render -. "渲染失败" .-> FailRender
+
+  style Start fill:#a8e6cf,stroke:#5cb85c,color:#1a1a1a
+  style Done fill:#a8e6cf,stroke:#5cb85c,color:#1a1a1a
+  style input fill:#e8f4fd,stroke:#5bc0de,color:#1a1a1a
+  style ai fill:#fef9e7,stroke:#f0ad4e,color:#1a1a1a
+  style render fill:#f2e8ff,stroke:#9b59b6,color:#1a1a1a
+  style fail fill:#fde8e8,stroke:#d9534f,color:#1a1a1a
+  style FailInput fill:#f8d7da,stroke:#d9534f,color:#721c24
+  style FailAI fill:#f8d7da,stroke:#d9534f,color:#721c24
+  style FailRender fill:#f8d7da,stroke:#d9534f,color:#721c24
+  style Confirm fill:#fff3cd,stroke:#f0ad4e,color:#1a1a1a
 ```
 
 ## 5) 业务规则与约束（Rules & Constraints）
