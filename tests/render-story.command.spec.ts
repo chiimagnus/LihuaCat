@@ -128,7 +128,7 @@ test("prints readable failure reason", async () => {
   });
 
   assert.equal(exitCode, 1);
-  assert.match(state.failedLines.join("\n"), /Render failed:/);
+  assert.match(state.failedLines.join("\n"), /Run failed:/);
   assert.match(state.failedLines.join("\n"), /template render failed/);
 });
 

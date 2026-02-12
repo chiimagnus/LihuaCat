@@ -46,22 +46,20 @@ export const tabbyTurnOutputSchema = {
   required: ["say", "options", "done", "internalNotes"],
   additionalProperties: false,
   properties: {
-    say: { type: "string", minLength: 1 },
+    say: { type: "string" },
     options: {
       type: "array",
-      minItems: 2,
-      maxItems: 4,
       items: {
         type: "object",
         required: ["id", "label"],
         additionalProperties: false,
         properties: {
-          id: { type: "string", minLength: 1 },
-          label: { type: "string", minLength: 1 },
+          id: { type: "string" },
+          label: { type: "string" },
         },
       },
     },
     done: { type: "boolean" },
-    internalNotes: { type: "string", minLength: 1 },
+    internalNotes: { type: "string" },
   },
 } as const;

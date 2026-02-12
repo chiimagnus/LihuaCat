@@ -43,20 +43,19 @@ export const renderScriptOutputSchema = {
   required: ["storyBriefRef", "video", "scenes"],
   additionalProperties: false,
   properties: {
-    storyBriefRef: { type: "string", minLength: 1 },
+    storyBriefRef: { type: "string" },
     video: {
       type: "object",
       required: ["width", "height", "fps"],
       additionalProperties: false,
       properties: {
-        width: { type: "integer", minimum: 1 },
-        height: { type: "integer", minimum: 1 },
-        fps: { type: "integer", minimum: 1 },
+        width: { type: "integer" },
+        height: { type: "integer" },
+        fps: { type: "integer" },
       },
     },
     scenes: {
       type: "array",
-      minItems: 1,
       items: {
         type: "object",
         required: [
@@ -69,60 +68,29 @@ export const renderScriptOutputSchema = {
         ],
         additionalProperties: false,
         properties: {
-          sceneId: { type: "string", minLength: 1 },
-          photoRef: { type: "string", minLength: 1 },
-          subtitle: { type: "string", minLength: 1 },
-          subtitlePosition: { type: "string", enum: ["bottom", "top", "center"] },
-          durationSec: { type: "number", exclusiveMinimum: 0 },
+          sceneId: { type: "string" },
+          photoRef: { type: "string" },
+          subtitle: { type: "string" },
+          subtitlePosition: { type: "string" },
+          durationSec: { type: "number" },
           transition: {
-            oneOf: [
-              {
-                type: "object",
-                required: ["type", "durationMs"],
-                additionalProperties: false,
-                properties: {
-                  type: { const: "cut" },
-                  durationMs: { type: "number", minimum: 0 },
-                },
-              },
-              {
-                type: "object",
-                required: ["type", "durationMs"],
-                additionalProperties: false,
-                properties: {
-                  type: { const: "fade" },
-                  durationMs: { type: "number", minimum: 0 },
-                },
-              },
-              {
-                type: "object",
-                required: ["type", "durationMs"],
-                additionalProperties: false,
-                properties: {
-                  type: { const: "dissolve" },
-                  durationMs: { type: "number", minimum: 0 },
-                },
-              },
-              {
-                type: "object",
-                required: ["type", "durationMs", "direction"],
-                additionalProperties: false,
-                properties: {
-                  type: { const: "slide" },
-                  durationMs: { type: "number", minimum: 0 },
-                  direction: { type: "string", enum: ["left", "right"] },
-                },
-              },
-            ],
+            type: "object",
+            required: ["type", "durationMs"],
+            additionalProperties: true,
+            properties: {
+              type: { type: "string" },
+              durationMs: { type: "number" },
+              direction: { type: "string" },
+            },
           },
           kenBurns: {
             type: "object",
             required: ["startScale", "endScale", "panDirection"],
             additionalProperties: false,
             properties: {
-              startScale: { type: "number", exclusiveMinimum: 0 },
-              endScale: { type: "number", exclusiveMinimum: 0 },
-              panDirection: { type: "string", enum: ["left", "right", "up", "down", "center"] },
+              startScale: { type: "number" },
+              endScale: { type: "number" },
+              panDirection: { type: "string" },
             },
           },
         },

@@ -14,7 +14,7 @@ export const buildRenderFailureOutput = ({
   SourceDirectoryNotFoundErrorClass: ErrorClass<object>;
 }): { lines: string[] } => {
   const message = error instanceof Error ? error.message : String(error);
-  const lines: string[] = [`Render failed: ${message}`];
+  const lines: string[] = [`Run failed: ${message}`];
 
   if (
     error instanceof StoryBriefGenerationFailedErrorClass &&
