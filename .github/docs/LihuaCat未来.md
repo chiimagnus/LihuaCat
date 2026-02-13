@@ -98,6 +98,7 @@ Ocelot **不和用户对话**，它只服务于 Tabby。美洲虎猫，丛林里
 Lynx 也**不和用户对话**，同样只服务于 Tabby。古希腊人认为猞猁能看穿墙壁——锐利的双眼，什么都逃不过。
 
 > 当前版本尚未接入主流程；先把“审稿能力”当作质量门槛的设计预留。
+> 
 
 **它在干什么：** 拿着用户的原始意图（CreativeIntent）+ 照片 + Ocelot 写出来的脚本，做质检。它回答一个核心问题：**「这个脚本忠实地表达了用户的感受吗？」**
 
@@ -276,7 +277,7 @@ flowchart LR
 
 **现状（截至 v0.2.0）：**
 
-- P1 已落地：Tabby 对话 → StoryBrief → RenderScript → Remotion 本机渲染
+- P1 已落地：[P1（Tabby → StoryBrief → Ocelot → RenderScript → Remotion）实施计划](https://www.notion.so/P1-Tabby-StoryBrief-Ocelot-RenderScript-Remotion-304be9d6386a80b0a921d925a68cc136?pvs=21)
 - P2 规划中：Lynx 审稿与脚本修改循环
 
 **关键决策：**
@@ -294,6 +295,8 @@ flowchart LR
 ---
 
 ### P1：🐱 Tabby 看图对话 + 🐆 Ocelot 编剧 + StoryBrief 数据合同（已落地）
+
+[P1（Tabby → StoryBrief → Ocelot → RenderScript → Remotion）实施计划](https://www.notion.so/P1-Tabby-StoryBrief-Ocelot-RenderScript-Remotion-304be9d6386a80b0a921d925a68cc136?pvs=21) 
 
 **目标：** 端到端跑通完整的「看图对话 → StoryBrief → Ocelot 写脚本 → 渲染出片」闭环。Tabby 从第一步就具备多模态看图能力，Ocelot 作为独立 agent 负责编剧。
 
@@ -318,8 +321,8 @@ flowchart LR
 - 选择 `free_input` 时，进入自由输入框（text），用户输入的文本作为该轮回答
 - `done === true` 表示进入「确认页」：`say` 为人话总结；`options` 固定为 `confirm` / `revise` 二选一
 - `done === true` 时，`options` 固定为：
-  - `{ id: "confirm", label: "就是这个感觉" }`
-  - `{ id: "revise", label: "需要修改" }`
+    - `{ id: "confirm", label: "就是这个感觉" }`
+    - `{ id: "revise", label: "需要修改" }`
 - 用户选择 `revise`：回到对话继续聊（最多 3 轮），Tabby 再次 `done === true` 后回到确认页；不做字段级表单编辑
 - `internalNotes` 会被落盘到对话日志中用于调试，但**不展示**给用户
 - Tabby 的“受众（发给谁看）”为可选项：会问，但允许跳过
@@ -389,3 +392,5 @@ flowchart LR
 ### 后续阶段（待规划）
 
 - **P3**：更多 Renderer（漫画、AVP 沉浸式等）+ 音乐/风格自动匹配
+- **P4**：Tabby 记忆系统——跨会话记住用户的表达偏好、历史故事、情感模式
+- **P5**：实况照片（Live Photo）支持——将动态照片作为素材输入，渲染层支持动态视频片段而非纯静态图片
