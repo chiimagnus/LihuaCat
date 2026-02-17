@@ -28,6 +28,7 @@ export const runScriptStage = async ({
   storyBrief,
   ocelotAgentClient,
   lynxAgentClient,
+  enableLynxReview = false,
   onProgress,
   maxRounds = 3,
 }: {
@@ -36,13 +37,16 @@ export const runScriptStage = async ({
   storyBriefRef: string;
   storyBrief: StoryBrief;
   ocelotAgentClient: OcelotAgentClient;
-  lynxAgentClient: LynxAgentClient;
+  lynxAgentClient?: LynxAgentClient;
+  enableLynxReview?: boolean;
   onProgress?: WorkflowProgressReporter;
   maxRounds?: number;
 }): Promise<ScriptStageResult> => {
   await emitProgressAndPersist(runtime, onProgress, {
     stage: "script_start",
-    message: "Generating RenderScript with Lynx review loop...",
+    message: enableLynxReview
+      ? "Generating RenderScript with Lynx review loop..."
+      : "Generating RenderScript...",
   });
 
   const photos = collected.images.map((image) => ({
@@ -50,11 +54,86 @@ export const runScriptStage = async ({
     path: image.absolutePath,
   }));
 
+  const video = { width: 1080, height: 1920, fps: 30 };
+
+  if (!enableLynxReview) {
+    const reasons: string[] = [];
+    const maxAttempts = 3;
+    let revisionNotes: string[] | undefined = undefined;
+
+    const generateOnce = async () =>
+      ocelotAgentClient.generateRenderScript({
+        storyBriefRef,
+        storyBrief,
+        photos,
+        video,
+        revisionNotes,
+        debug: {
+          inputPath: runtime.ocelotInputPath,
+          outputPath: runtime.ocelotOutputPath,
+          promptLogPath: runtime.ocelotPromptLogPath,
+        },
+      });
+
+    let renderScript: RenderScript | undefined = undefined;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        renderScript = await generateOnce();
+        break;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        reasons.push(`attempt ${attempt}: ${message}`);
+        if (attempt >= maxAttempts) {
+          throw error;
+        }
+
+        revisionNotes = [
+          ...(revisionNotes ?? []),
+          "Previous attempt failed automated validation. Fix all validation errors and return a fully valid RenderScript JSON.",
+          `Validation error: ${message}`,
+          "Reminder: you MUST use every provided photoRef at least once in scenes[].photoRef.",
+        ];
+      }
+    }
+
+    if (!renderScript) {
+      throw new Error(`Unexpected: failed to generate renderScript. Reasons: ${reasons.join(" | ")}`);
+    }
+
+    await pushRunLog(runtime, "lynxReviewEnabled=false");
+    await pushRunLog(runtime, `renderScriptGeneratedInAttempts=${reasons.length + 1}`);
+
+    await writeRenderScriptArtifact(runtime, renderScript);
+    await writeStageArtifact(runtime, "render-script.json", renderScript);
+    await writeStageArtifact(runtime, "script-stage.json", {
+      lynxEnabled: false,
+      rounds: 1,
+      finalPassed: true,
+      attempts: reasons.length + 1,
+      createdAt: new Date().toISOString(),
+    });
+
+    await emitProgressAndPersist(runtime, onProgress, {
+      stage: "script_done",
+      message: "RenderScript ready (lynx=disabled).",
+    });
+
+    return {
+      renderScript,
+      finalPassed: true,
+      rounds: 1,
+    };
+  }
+
+  if (!lynxAgentClient) {
+    throw new Error("Lynx review is enabled but lynxAgentClient is not provided.");
+  }
+
   const result = await reviseRenderScriptWithLynx({
     storyBriefRef,
     storyBrief,
     photos,
-    video: { width: 1080, height: 1920, fps: 30 },
+    video,
     ocelotClient: {
       async generateRenderScript(request) {
         return ocelotAgentClient.generateRenderScript({
@@ -100,12 +179,14 @@ export const runScriptStage = async ({
   }
 
   await pushRunLog(runtime, `renderScriptGeneratedInAttempts=${result.rounds.length}`);
+  await pushRunLog(runtime, "lynxReviewEnabled=true");
   await pushRunLog(runtime, `lynxReviewRounds=${result.rounds.length}`);
   await pushRunLog(runtime, `lynxFinalPassed=${result.finalPassed}`);
 
   await writeRenderScriptArtifact(runtime, result.finalScript);
   await writeStageArtifact(runtime, "render-script.json", result.finalScript);
   await writeStageArtifact(runtime, "script-stage.json", {
+    lynxEnabled: true,
     rounds: result.rounds.length,
     finalPassed: result.finalPassed,
     createdAt: new Date().toISOString(),

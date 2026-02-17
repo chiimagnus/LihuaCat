@@ -21,7 +21,8 @@ export type CreateStoryVideoFlowInput = {
   tabbyTui: TabbySessionTui;
   storyBriefAgentClient: StoryBriefAgentClient;
   ocelotAgentClient: OcelotAgentClient;
-  lynxAgentClient: LynxAgentClient;
+  lynxAgentClient?: LynxAgentClient;
+  enableLynxReview?: boolean;
   browserExecutablePath?: string;
   onProgress?: (event: WorkflowProgressEvent) => Promise<void> | void;
   workflowImpl?: typeof runStoryWorkflowV2;
@@ -34,6 +35,7 @@ export const createStoryVideoFlow = async ({
   storyBriefAgentClient,
   ocelotAgentClient,
   lynxAgentClient,
+  enableLynxReview,
   browserExecutablePath,
   onProgress,
   workflowImpl = runStoryWorkflowV2,
@@ -47,6 +49,7 @@ export const createStoryVideoFlow = async ({
     storyBriefAgentClient,
     ocelotAgentClient,
     lynxAgentClient,
+    enableLynxReview,
     browserExecutablePath,
     onProgress,
   });

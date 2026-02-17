@@ -52,7 +52,7 @@ test("workflow contract: emits ordered core stage events on first-pass template 
         },
         lynxAgentClient: {
           async reviewRenderScript() {
-            return { passed: true, issues: [], requiredChanges: [] };
+            throw new Error("lynx should not be called when lynx-review is disabled");
           },
         },
         onProgress: (event) => {

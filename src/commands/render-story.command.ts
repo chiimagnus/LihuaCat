@@ -47,6 +47,7 @@ export const runRenderStoryCommand = async ({
     args.get("model-reasoning-effort"),
   );
   const resolvedReasoningEffort = modelReasoningEffort ?? DEFAULT_CODEX_REASONING_EFFORT;
+  const enableLynxReview = parseBooleanFlag(args.get("lynx-review"), false);
   let browserExecutablePath = args.get("browser-executable")
     ? path.resolve(args.get("browser-executable")!)
     : undefined;
@@ -75,11 +76,13 @@ export const runRenderStoryCommand = async ({
     modelReasoningEffort: resolvedReasoningEffort,
     workingDirectory: process.cwd(),
   });
-  const lynxAgentClient = createCodexLynxAgentClient({
-    model,
-    modelReasoningEffort: resolvedReasoningEffort,
-    workingDirectory: process.cwd(),
-  });
+  const lynxAgentClient = enableLynxReview
+    ? createCodexLynxAgentClient({
+        model,
+        modelReasoningEffort: resolvedReasoningEffort,
+        workingDirectory: process.cwd(),
+      })
+    : undefined;
 
   ui.intro({
     model,
@@ -108,6 +111,7 @@ export const runRenderStoryCommand = async ({
       storyBriefAgentClient,
       ocelotAgentClient,
       lynxAgentClient,
+      enableLynxReview,
       browserExecutablePath,
       onProgress: (event) => ui.onWorkflowProgress(event),
       workflowImpl,
@@ -136,12 +140,18 @@ const parseArgs = (argv: string[]): Map<string, string> => {
   const args = new Map<string, string>();
   for (let i = 0; i < argv.length; i += 1) {
     const token = argv[i]!;
-    if (!token.startsWith("--")) {
+    const isFlagToken =
+      token.startsWith("--") || (token.startsWith("-") && !/^-\\d/.test(token));
+    if (!isFlagToken) {
       continue;
     }
-    const key = token.slice(2);
+
+    const key = token.startsWith("--") ? token.slice(2) : token.slice(1);
     const next = argv[i + 1];
-    if (!next || next.startsWith("--")) {
+    const nextIsFlagToken =
+      typeof next === "string" &&
+      (next.startsWith("--") || (next.startsWith("-") && !/^-\\d/.test(next)));
+    if (!next || nextIsFlagToken) {
       args.set(key, "true");
       continue;
     }
@@ -179,4 +189,16 @@ const resolveInputPath = (input: string): string => {
     return path.resolve(initCwd, input);
   }
   return path.resolve(process.cwd(), input);
+};
+
+const parseBooleanFlag = (raw: string | undefined, defaultValue: boolean): boolean => {
+  if (raw === undefined) return defaultValue;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "y") {
+    return true;
+  }
+  if (normalized === "false" || normalized === "0" || normalized === "no" || normalized === "n") {
+    return false;
+  }
+  return defaultValue;
 };

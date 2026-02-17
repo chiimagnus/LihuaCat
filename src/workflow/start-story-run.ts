@@ -50,7 +50,8 @@ export type RunStoryWorkflowV2Input = {
   tabbyTui: TabbySessionTui;
   storyBriefAgentClient: StoryBriefAgentClient;
   ocelotAgentClient: OcelotAgentClient;
-  lynxAgentClient: LynxAgentClient;
+  lynxAgentClient?: LynxAgentClient;
+  enableLynxReview?: boolean;
   browserExecutablePath?: string;
   onProgress?: WorkflowProgressReporter;
   now?: Date;
@@ -66,6 +67,7 @@ export const runStoryWorkflowV2 = async (
     storyBriefAgentClient,
     ocelotAgentClient,
     lynxAgentClient,
+    enableLynxReview = false,
     browserExecutablePath,
     onProgress,
     now,
@@ -116,6 +118,7 @@ export const runStoryWorkflowV2 = async (
       storyBrief: tabby.storyBrief,
       ocelotAgentClient,
       lynxAgentClient,
+      enableLynxReview,
       onProgress,
     });
 

@@ -183,9 +183,9 @@ test("workflow ends directly when template succeeds in first attempt", async () 
     await assert.doesNotReject(fs.access(summary.tabbyConversationPath));
     await assert.doesNotReject(fs.access(summary.runLogPath));
 
-    await assert.doesNotReject(fs.access(summary.ocelotRevisionPaths[0]!));
-    await assert.doesNotReject(fs.access(summary.lynxReviewPaths[0]!));
-    await assert.doesNotReject(fs.access(summary.lynxPromptLogPaths[0]!));
+    assert.equal(summary.ocelotRevisionPaths.length, 0);
+    assert.equal(summary.lynxReviewPaths.length, 0);
+    assert.equal(summary.lynxPromptLogPaths.length, 0);
   });
 });
 
@@ -444,9 +444,6 @@ test("persists stage artifacts even when run exits after render failure", async 
     const runDir = path.join(outputRoot, runDirs[0]!);
     await assert.doesNotReject(fs.access(path.join(runDir, "story-brief.json")));
     await assert.doesNotReject(fs.access(path.join(runDir, "render-script.json")));
-    await assert.doesNotReject(fs.access(path.join(runDir, "ocelot-revision-1.json")));
-    await assert.doesNotReject(fs.access(path.join(runDir, "lynx-review-1.json")));
-    await assert.doesNotReject(fs.access(path.join(runDir, "lynx-prompt-1.log")));
     await assert.doesNotReject(fs.access(path.join(runDir, "tabby-conversation.jsonl")));
     await assert.doesNotReject(fs.access(path.join(runDir, "run.log")));
     await assert.doesNotReject(fs.access(path.join(runDir, "error.log")));
@@ -526,6 +523,7 @@ test("lynx review loop converges in second round and persists artifacts", async 
     const summary = await runStoryWorkflowV2(
       {
         sourceDir,
+        enableLynxReview: true,
         tabbyAgentClient: { async generateTurn() { throw new Error("not used"); } },
         tabbyTui: { async chooseOption() { throw new Error("not used"); }, async askFreeInput() { throw new Error("not used"); } },
         storyBriefAgentClient: { async generateStoryBrief() { throw new Error("not used"); } },
@@ -671,6 +669,7 @@ test("lynx review loop reaches max rounds and still renders last version", async
     const summary = await runStoryWorkflowV2(
       {
         sourceDir,
+        enableLynxReview: true,
         tabbyAgentClient: { async generateTurn() { throw new Error("not used"); } },
         tabbyTui: { async chooseOption() { throw new Error("not used"); }, async askFreeInput() { throw new Error("not used"); } },
         storyBriefAgentClient: { async generateStoryBrief() { throw new Error("not used"); } },
@@ -806,6 +805,7 @@ test("fails workflow when Lynx review throws", async () => {
       runStoryWorkflowV2(
         {
           sourceDir,
+          enableLynxReview: true,
           tabbyAgentClient: { async generateTurn() { throw new Error("not used"); } },
           tabbyTui: { async chooseOption() { throw new Error("not used"); }, async askFreeInput() { throw new Error("not used"); } },
           storyBriefAgentClient: { async generateStoryBrief() { throw new Error("not used"); } },

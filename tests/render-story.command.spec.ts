@@ -125,6 +125,38 @@ test("accepts xhigh reasoning effort and prints it in model info", async () => {
   assert.equal(state.introInput?.reasoningEffort, "xhigh");
 });
 
+test("passes --lynx-review flag into workflow input", async () => {
+  const { tui } = createMockTui();
+  let receivedEnableLynxReview: boolean | undefined = undefined;
+
+  const exitCode = await runRenderStoryCommand({
+    argv: ["--lynx-review"],
+    tui,
+    workflowImpl: async (input) => {
+      receivedEnableLynxReview = input.enableLynxReview;
+      return {
+        runId: "run-lynx-flag",
+        outputDir: "/tmp/photos/lihuacat-output/run-lynx-flag",
+        mode: "template",
+        videoPath: "/tmp/photos/lihuacat-output/run-lynx-flag/video.mp4",
+        storyBriefPath: "/tmp/photos/lihuacat-output/run-lynx-flag/story-brief.json",
+        renderScriptPath: "/tmp/photos/lihuacat-output/run-lynx-flag/render-script.json",
+        tabbyConversationPath: "/tmp/photos/lihuacat-output/run-lynx-flag/tabby-conversation.jsonl",
+        runLogPath: "/tmp/photos/lihuacat-output/run-lynx-flag/run.log",
+        ocelotInputPath: "/tmp/photos/lihuacat-output/run-lynx-flag/ocelot-input.json",
+        ocelotOutputPath: "/tmp/photos/lihuacat-output/run-lynx-flag/ocelot-output.json",
+        ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-lynx-flag/ocelot-prompt.log",
+        lynxReviewPaths: [],
+        lynxPromptLogPaths: [],
+        ocelotRevisionPaths: [],
+      };
+    },
+  });
+
+  assert.equal(exitCode, 0);
+  assert.equal(receivedEnableLynxReview, true);
+});
+
 test("detects browsers at startup and passes selected executable to workflow", async () => {
   const selectedPath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
   const { tui } = createMockTui({
