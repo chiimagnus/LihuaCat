@@ -18,7 +18,7 @@ import { runCompressImagesStage } from "./stages/compress-images.stage.ts";
 import { runRenderStage } from "./stages/render.stage.ts";
 import { runPublishStage } from "./stages/publish.stage.ts";
 import { runTabbyStage } from "./stages/tabby.stage.ts";
-import { runOcelotStage } from "./stages/ocelot.stage.ts";
+import { runScriptStage } from "./stages/script.stage.ts";
 
 export type { WorkflowProgressEvent } from "./workflow-events.ts";
 
@@ -109,19 +109,24 @@ export const runStoryWorkflowV2 = async (
       generateStoryBriefImpl: ports.generateStoryBriefImpl,
     });
 
-    const ocelot = await runOcelotStage({
+    if (!lynxAgentClient) {
+      throw new Error("lynxAgentClient is required");
+    }
+
+    const script = await runScriptStage({
       collected: processed,
       runtime,
       storyBriefRef: runtime.storyBriefPath,
       storyBrief: tabby.storyBrief,
       ocelotAgentClient,
+      lynxAgentClient,
       onProgress,
     });
 
     const rendered = await runRenderStage({
       runtime,
       collected: processed,
-      renderScript: ocelot.renderScript,
+      renderScript: script.renderScript,
       browserExecutablePath,
       onProgress,
       renderByTemplateV2Impl: ports.renderByTemplateV2Impl,
