@@ -50,6 +50,11 @@ test("workflow contract: emits ordered core stage events on first-pass template 
             };
           },
         },
+        lynxAgentClient: {
+          async reviewRenderScript() {
+            return { passed: true, issues: [], requiredChanges: [] };
+          },
+        },
         onProgress: (event) => {
           stages.push(event.stage);
         },
@@ -158,8 +163,8 @@ test("workflow contract: emits ordered core stage events on first-pass template 
       "compress_images_done",
       "tabby_start",
       "tabby_done",
-      "ocelot_start",
-      "ocelot_done",
+      "script_start",
+      "script_done",
       "render_start",
       "render_success",
       "publish_start",
