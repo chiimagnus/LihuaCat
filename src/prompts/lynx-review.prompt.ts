@@ -49,16 +49,15 @@ export const buildLynxReviewPromptInput = ({
 export const lynxReviewOutputSchema = {
   type: "object",
   required: ["passed", "issues", "requiredChanges"],
-  additionalProperties: false,
+  additionalProperties: true,
   properties: {
     passed: { type: "boolean" },
-    summary: { type: "string", minLength: 1 },
     issues: {
       type: "array",
       items: {
         type: "object",
         required: ["category", "message"],
-        additionalProperties: false,
+        additionalProperties: true,
         properties: {
           category: {
             type: "string",
@@ -71,10 +70,6 @@ export const lynxReviewOutputSchema = {
             ],
           },
           message: { type: "string", minLength: 1 },
-          evidence: { type: "string", minLength: 1 },
-          sceneId: { type: "string", minLength: 1 },
-          photoRef: { type: "string", minLength: 1 },
-          subtitle: { type: "string", minLength: 1 },
         },
       },
     },
