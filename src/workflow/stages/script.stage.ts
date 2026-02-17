@@ -78,6 +78,7 @@ export const runScriptStage = async ({
       },
     },
     maxRounds,
+    maxOcelotRetriesPerRound: 2,
   });
 
   for (const round of result.rounds) {
@@ -121,4 +122,3 @@ export const runScriptStage = async ({
     rounds: result.rounds.length,
   };
 };
-

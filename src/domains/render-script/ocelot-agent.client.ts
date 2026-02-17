@@ -138,6 +138,13 @@ export const createCodexOcelotAgentClient = ({
         allowedSlideDirections: ["left", "right"],
       });
       if (!semantic.valid) {
+        if (request.debug?.outputPath) {
+          await fs.writeFile(
+            request.debug.outputPath,
+            JSON.stringify(structure.script, null, 2),
+            "utf8",
+          );
+        }
         throw new OcelotAgentResponseParseError(
           `render-script semantics invalid: ${semantic.errors.join("; ")}`,
         );

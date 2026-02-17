@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { reviseRenderScriptWithLynx } from "../src/domains/render-script/revise-render-script-with-lynx.ts";
 import type { RenderScript } from "../src/contracts/render-script.types.ts";
+import { OcelotAgentResponseParseError } from "../src/domains/render-script/ocelot-agent.client.ts";
 
 const baseStoryBrief = {
   intent: {
@@ -169,3 +170,40 @@ test("throws when Lynx throws", async () => {
   );
 });
 
+test("retries Ocelot within a round when output fails validation", async () => {
+  let calls = 0;
+  const seenNotes: Array<string[] | undefined> = [];
+
+  const result = await reviseRenderScriptWithLynx({
+    storyBriefRef: "/tmp/run/story-brief.json",
+    storyBrief: baseStoryBrief as any,
+    photos: [{ photoRef: "1.jpg", path: "/tmp/photos/1.jpg" }],
+    video: { width: 1080, height: 1920, fps: 30 },
+    maxRounds: 3,
+    maxOcelotRetriesPerRound: 2,
+    ocelotClient: {
+      async generateRenderScript({ revisionNotes }) {
+        calls += 1;
+        seenNotes.push(revisionNotes);
+        if (calls === 1) {
+          throw new OcelotAgentResponseParseError(
+            "render-script semantics invalid: photoRef 1.jpg is not used in scenes",
+          );
+        }
+        return makeScript("ok");
+      },
+    },
+    lynxClient: {
+      async reviewRenderScript() {
+        return { passed: true, issues: [], requiredChanges: [] };
+      },
+    },
+  });
+
+  assert.equal(result.finalPassed, true);
+  assert.equal(calls, 2);
+  assert.deepEqual(seenNotes[0], undefined);
+  assert.ok(Array.isArray(seenNotes[1]));
+  assert.ok((seenNotes[1] ?? []).some((n) => n.includes("Previous attempt failed automated validation")));
+  assert.ok((seenNotes[1] ?? []).some((n) => n.includes("render-script semantics invalid")));
+});

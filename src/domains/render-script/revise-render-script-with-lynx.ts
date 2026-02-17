@@ -12,6 +12,7 @@ export type ReviseRenderScriptWithLynxInput = {
   ocelotClient: OcelotAgentClient;
   lynxClient: LynxAgentClient;
   maxRounds?: number;
+  maxOcelotRetriesPerRound?: number;
 };
 
 export type RenderScriptRevisionRound = {
@@ -26,6 +27,20 @@ export type ReviseRenderScriptWithLynxResult = {
   rounds: RenderScriptRevisionRound[];
 };
 
+export class RenderScriptGenerationFailedError extends Error {
+  public readonly round: number;
+  public readonly attempts: number;
+  public readonly reasons: string[];
+
+  constructor(round: number, attempts: number, reasons: string[]) {
+    super(`RenderScript generation failed in round ${round} after ${attempts} attempts`);
+    this.name = "RenderScriptGenerationFailedError";
+    this.round = round;
+    this.attempts = attempts;
+    this.reasons = reasons;
+  }
+}
+
 export const reviseRenderScriptWithLynx = async ({
   storyBriefRef,
   storyBrief,
@@ -34,18 +49,50 @@ export const reviseRenderScriptWithLynx = async ({
   ocelotClient,
   lynxClient,
   maxRounds = 3,
+  maxOcelotRetriesPerRound = 2,
 }: ReviseRenderScriptWithLynxInput): Promise<ReviseRenderScriptWithLynxResult> => {
   const rounds: RenderScriptRevisionRound[] = [];
   let revisionNotes: string[] | undefined = undefined;
 
+  const generateWithRetries = async (
+    round: number,
+    notes: string[] | undefined,
+  ): Promise<RenderScript> => {
+    const reasons: string[] = [];
+    const maxAttempts = maxOcelotRetriesPerRound + 1;
+    let mergedNotes = notes;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await ocelotClient.generateRenderScript({
+          storyBriefRef,
+          storyBrief,
+          photos,
+          video,
+          revisionNotes: mergedNotes,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        reasons.push(`attempt ${attempt}: ${message}`);
+        if (attempt >= maxAttempts) {
+          throw new RenderScriptGenerationFailedError(round, maxAttempts, reasons);
+        }
+
+        const lastReason = reasons[reasons.length - 1] ?? message;
+        mergedNotes = [
+          ...(notes ?? []),
+          "Previous attempt failed automated validation. Fix all validation errors and return a fully valid RenderScript JSON.",
+          `Validation error: ${lastReason}`,
+          "Reminder: you MUST use every provided photoRef at least once in scenes[].photoRef.",
+        ];
+      }
+    }
+
+    throw new Error("Unexpected: exceeded maxAttempts without returning or throwing");
+  };
+
   for (let round = 1; round <= maxRounds; round += 1) {
-    const renderScript = await ocelotClient.generateRenderScript({
-      storyBriefRef,
-      storyBrief,
-      photos,
-      video,
-      revisionNotes,
-    });
+    const renderScript = await generateWithRetries(round, revisionNotes);
 
     const lynxReview = await lynxClient.reviewRenderScript({
       storyBriefRef,
@@ -80,4 +127,3 @@ export const reviseRenderScriptWithLynx = async ({
     rounds,
   };
 };
-
