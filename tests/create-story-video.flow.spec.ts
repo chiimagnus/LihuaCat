@@ -55,6 +55,9 @@ test("flow asks input then runs workflow", async () => {
         ocelotInputPath: "/tmp/photos/lihuacat-output/run-1/ocelot-input.json",
         ocelotOutputPath: "/tmp/photos/lihuacat-output/run-1/ocelot-output.json",
         ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-1/ocelot-prompt.log",
+        lynxReviewPaths: [],
+        lynxPromptLogPaths: [],
+        ocelotRevisionPaths: [],
       };
     },
   });

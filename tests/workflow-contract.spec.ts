@@ -152,6 +152,9 @@ test("workflow contract: emits ordered core stage events on first-pass template 
           ocelotInputPath: input.ocelotInputPath,
           ocelotOutputPath: input.ocelotOutputPath,
           ocelotPromptLogPath: input.ocelotPromptLogPath,
+          lynxReviewPaths: input.lynxReviewPaths,
+          lynxPromptLogPaths: input.lynxPromptLogPaths,
+          ocelotRevisionPaths: input.ocelotRevisionPaths,
         }),
       },
     );
