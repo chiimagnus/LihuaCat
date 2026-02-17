@@ -50,7 +50,7 @@ export type RunStoryWorkflowV2Input = {
   tabbyTui: TabbySessionTui;
   storyBriefAgentClient: StoryBriefAgentClient;
   ocelotAgentClient: OcelotAgentClient;
-  lynxAgentClient?: LynxAgentClient;
+  lynxAgentClient: LynxAgentClient;
   browserExecutablePath?: string;
   onProgress?: WorkflowProgressReporter;
   now?: Date;
@@ -108,10 +108,6 @@ export const runStoryWorkflowV2 = async (
       runTabbySessionImpl: ports.runTabbySessionImpl,
       generateStoryBriefImpl: ports.generateStoryBriefImpl,
     });
-
-    if (!lynxAgentClient) {
-      throw new Error("lynxAgentClient is required");
-    }
 
     const script = await runScriptStage({
       collected: processed,

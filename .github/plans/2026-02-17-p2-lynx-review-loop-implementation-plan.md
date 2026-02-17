@@ -141,6 +141,11 @@
   - Lynx 调用失败：直接抛错（工作流失败）
 - 返回结构包含：`finalScript`、`rounds`、`reviews[]`（用于落盘/日志）
 
+- **补充（已落地）：Ocelot 自动重试（语义/结构校验失败）**
+  - 背景：Ocelot 输出可能因结构/语义校验失败而被拒绝（例如总时长不为 30s、未使用全部 photoRefs）。
+  - 策略：每个 round 内允许对 Ocelot 进行额外重试（默认每轮 2 次重试，即最多 3 次 attempt），把“校验失败原因”追加进 `revisionNotes`，要求 Ocelot 修复后再返回。
+  - 失败形态：若该 round 的 attempts 全部失败，抛出 `RenderScriptGenerationFailedError(round, attempts, reasons)`，并由 workflow 写入 `error.log`。
+
 **Step 2: 验证**
 - Run: `pnpm test tests/revise-render-script-with-lynx.spec.ts`
 - Expected: PASS（覆盖：首轮通过 / 二轮通过 / 三轮仍不通过但定稿 / Lynx 抛错导致失败）
@@ -150,6 +155,26 @@
 - Run: `git commit -m "feat: task6 - add lynx gated render script revision loop"`
 
 ---
+
+### Task 14（追加，已落地）: Ocelot 校验失败自动重试
+
+> 注：此 Task 不在最初计划中，属于执行过程中的补强（避免因偶发校验失败导致整体失败），已落地后补文档对齐。
+
+**Files:**
+- Modify: `src/domains/render-script/revise-render-script-with-lynx.ts`
+- Modify: `src/prompts/render-script.prompt.ts`
+- (可选) Modify: `src/domains/render-script/ocelot-agent.client.ts`
+- Test: `tests/revise-render-script-with-lynx.spec.ts`
+
+**Step 1: 实现功能**
+- 为每个 round 增加 `maxOcelotRetriesPerRound`，并把“自动校验失败原因”写入 `revisionNotes` 进行重试
+
+**Step 2: 验证**
+- Run: `pnpm test tests/revise-render-script-with-lynx.spec.ts`
+- Expected: PASS
+
+**Step 3: 原子提交（建议）**
+- Run: `git commit -m "fix: task14 - retry ocelot on semantic errors"`
 
 ## P3：接入 workflow（产物落盘 + 事件 + CLI wiring）并更新契约测试
 

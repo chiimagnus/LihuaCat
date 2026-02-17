@@ -52,7 +52,7 @@ export const lynxReviewOutputSchema = {
   additionalProperties: false,
   properties: {
     passed: { type: "boolean" },
-    summary: { type: "string" },
+    summary: { type: "string", minLength: 1 },
     issues: {
       type: "array",
       items: {
@@ -71,10 +71,10 @@ export const lynxReviewOutputSchema = {
             ],
           },
           message: { type: "string", minLength: 1 },
-          evidence: { type: "string" },
-          sceneId: { type: "string" },
-          photoRef: { type: "string" },
-          subtitle: { type: "string" },
+          evidence: { type: "string", minLength: 1 },
+          sceneId: { type: "string", minLength: 1 },
+          photoRef: { type: "string", minLength: 1 },
+          subtitle: { type: "string", minLength: 1 },
         },
       },
     },
@@ -84,4 +84,3 @@ export const lynxReviewOutputSchema = {
     },
   },
 } as const;
-
