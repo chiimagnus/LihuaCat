@@ -7,6 +7,10 @@ export const buildRenderScriptPromptInput = (request: GenerateRenderScriptReques
     "",
     "Output format (STRICT): Return JSON only. Do not wrap with markdown.",
     "",
+    "Key fidelity rules:",
+    "- You MUST obey StoryBrief.intent.avoidance[]. Do NOT use forbidden phrases or vibes.",
+    "- If revisionNotes are provided, you MUST address every item explicitly in the new output.",
+    "",
     "Hard constraints:",
     `- video.width must be ${request.video.width}`,
     `- video.height must be ${request.video.height}`,
@@ -19,6 +23,13 @@ export const buildRenderScriptPromptInput = (request: GenerateRenderScriptReques
     "- ALWAYS include transition.direction as left or right (P1 schema constraint); for non-slide types, pick the best fit",
     "- kenBurns MUST be present on every scene: use null when you don't want ken burns",
     "",
+    ...(request.revisionNotes && request.revisionNotes.length > 0
+      ? [
+          "Revision notes (MUST FIX ALL):",
+          ...request.revisionNotes.map((note) => `- ${note}`),
+          "",
+        ]
+      : []),
     "StoryBrief (JSON):",
     JSON.stringify(request.storyBrief, null, 2),
     "",
