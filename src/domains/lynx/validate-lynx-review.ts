@@ -31,8 +31,8 @@ export const validateLynxReviewStructure = (
     errors.push("passed is required");
   }
 
-  if (input.summary !== undefined && !isNonEmptyString(input.summary)) {
-    errors.push("summary must be a non-empty string when present");
+  if (!isNonEmptyString(input.summary)) {
+    errors.push("summary is required");
   }
 
   if (!Array.isArray(input.issues)) {
@@ -50,18 +50,6 @@ export const validateLynxReviewStructure = (
       }
       if (!isNonEmptyString(issue.message)) {
         errors.push(`issues[${index}].message is required`);
-      }
-      if (issue.evidence !== undefined && !isNonEmptyString(issue.evidence)) {
-        errors.push(`issues[${index}].evidence must be non-empty when present`);
-      }
-      if (issue.sceneId !== undefined && !isNonEmptyString(issue.sceneId)) {
-        errors.push(`issues[${index}].sceneId must be non-empty when present`);
-      }
-      if (issue.photoRef !== undefined && !isNonEmptyString(issue.photoRef)) {
-        errors.push(`issues[${index}].photoRef must be non-empty when present`);
-      }
-      if (issue.subtitle !== undefined && !isNonEmptyString(issue.subtitle)) {
-        errors.push(`issues[${index}].subtitle must be non-empty when present`);
       }
     });
   }

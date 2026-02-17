@@ -8,15 +8,11 @@ export type LynxReviewIssueCategory =
 export type LynxReviewIssue = {
   category: LynxReviewIssueCategory;
   message: string;
-  evidence?: string;
-  sceneId?: string;
-  photoRef?: string;
-  subtitle?: string;
 };
 
 export type LynxReview = {
   passed: boolean;
-  summary?: string;
+  summary: string;
   issues: LynxReviewIssue[];
   requiredChanges: string[];
 };
@@ -25,4 +21,3 @@ export type LynxReviewValidationResult = {
   valid: boolean;
   errors: string[];
 };
-

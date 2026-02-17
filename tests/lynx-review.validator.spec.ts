@@ -6,6 +6,7 @@ import { validateLynxReviewStructure } from "../src/domains/lynx/validate-lynx-r
 test("validateLynxReviewStructure accepts a minimal valid review", () => {
   const result = validateLynxReviewStructure({
     passed: true,
+    summary: "OK",
     issues: [],
     requiredChanges: [],
   });
@@ -22,6 +23,7 @@ test("validateLynxReviewStructure rejects non-object input", () => {
 
 test("validateLynxReviewStructure rejects missing passed", () => {
   const result = validateLynxReviewStructure({
+    summary: "OK",
     issues: [],
     requiredChanges: [],
   });
@@ -32,6 +34,7 @@ test("validateLynxReviewStructure rejects missing passed", () => {
 test("validateLynxReviewStructure rejects invalid issue entries", () => {
   const result = validateLynxReviewStructure({
     passed: false,
+    summary: "Need changes",
     issues: [{ category: "nope", message: "" }],
     requiredChanges: [],
   });
@@ -43,6 +46,7 @@ test("validateLynxReviewStructure rejects invalid issue entries", () => {
 test("validateLynxReviewStructure rejects empty requiredChanges items", () => {
   const result = validateLynxReviewStructure({
     passed: false,
+    summary: "Need changes",
     issues: [],
     requiredChanges: ["", "ok"],
   });
@@ -50,7 +54,7 @@ test("validateLynxReviewStructure rejects empty requiredChanges items", () => {
   assert.ok(result.errors.some((e) => e.includes("requiredChanges[0]")));
 });
 
-test("validateLynxReviewStructure rejects empty summary when present", () => {
+test("validateLynxReviewStructure rejects missing or empty summary", () => {
   const result = validateLynxReviewStructure({
     passed: true,
     summary: " ",
@@ -60,4 +64,3 @@ test("validateLynxReviewStructure rejects empty summary when present", () => {
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((e) => e.includes("summary")));
 });
-

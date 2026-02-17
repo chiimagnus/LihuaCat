@@ -48,16 +48,17 @@ export const buildLynxReviewPromptInput = ({
 
 export const lynxReviewOutputSchema = {
   type: "object",
-  required: ["passed", "issues", "requiredChanges"],
-  additionalProperties: true,
+  required: ["passed", "summary", "issues", "requiredChanges"],
+  additionalProperties: false,
   properties: {
     passed: { type: "boolean" },
+    summary: { type: "string", minLength: 1 },
     issues: {
       type: "array",
       items: {
         type: "object",
         required: ["category", "message"],
-        additionalProperties: true,
+        additionalProperties: false,
         properties: {
           category: {
             type: "string",
