@@ -1,6 +1,17 @@
 import type { GenerateTabbyTurnRequest } from "../domains/tabby/tabby-agent.client.ts";
 
 export const buildTabbyTurnPromptInput = (request: GenerateTabbyTurnRequest) => {
+  const attachImages = request.turn === 1;
+  const recentConversation = request.conversation.slice(-16);
+  const userOptionLabels = request.conversation
+    .filter((event) => event.type === "user" && event.input.kind === "option")
+    .map((event) => (event.type === "user" && event.input.kind === "option" ? event.input.label : ""))
+    .filter((label) => label.trim().length > 0);
+  const userFreeInputs = request.conversation
+    .filter((event) => event.type === "user" && event.input.kind === "free_input")
+    .map((event) => (event.type === "user" && event.input.kind === "free_input" ? event.input.text : ""))
+    .filter((text) => text.trim().length > 0);
+
   const promptLines = [
     "You are Tabby (狸花), the director agent of LihuaCat.",
     "Your job: help the user express the feeling behind their real photos, by asking good questions.",
@@ -25,19 +36,33 @@ export const buildTabbyTurnPromptInput = (request: GenerateTabbyTurnRequest) => 
     `phase: ${request.phase}`,
     `turn: ${request.turn}`,
     "",
-    "Conversation so far (JSON):",
-    JSON.stringify(request.conversation, null, 2),
+    "User signals so far (extracted):",
+    ...(userOptionLabels.length > 0
+      ? ["- selected options:", ...userOptionLabels.slice(-12).map((label) => `  - ${label}`)]
+      : ["- selected options: (none)"]),
+    ...(userFreeInputs.length > 0
+      ? ["- free inputs:", ...userFreeInputs.slice(-6).map((text) => `  - ${text}`)]
+      : ["- free inputs: (none)"]),
+    "",
+    "Recent conversation (last 16 events, JSON):",
+    JSON.stringify(recentConversation, null, 2),
     "",
     "Photos (photoRef -> path):",
     ...request.photos.map((photo) => `- ${photo.photoRef}: ${photo.path}`),
+    "",
+    attachImages
+      ? "Note: You will receive the real photos as images in this first turn."
+      : "Note: Do NOT request the images again. Use the photos you already saw in this thread as context.",
   ];
 
   return [
     { type: "text" as const, text: promptLines.join("\n") },
-    ...request.photos.map((photo) => ({
-      type: "local_image" as const,
-      path: photo.path,
-    })),
+    ...(attachImages
+      ? request.photos.map((photo) => ({
+          type: "local_image" as const,
+          path: photo.path,
+        }))
+      : []),
   ];
 };
 

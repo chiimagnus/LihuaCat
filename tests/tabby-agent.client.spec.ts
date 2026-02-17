@@ -55,6 +55,38 @@ test("calls Codex SDK with model override and validates JSON result", async () =
   assert.ok((calls.runOptions as { outputSchema?: unknown }).outputSchema);
 });
 
+test("attaches images only on the first turn", async () => {
+  const runInputs: unknown[] = [];
+
+  const client = createCodexTabbyAgentClient({
+    codexFactory: () => ({
+      startThread() {
+        return {
+          async run(input) {
+            runInputs.push(input);
+            return { finalResponse: JSON.stringify(buildValidTurn()) };
+          },
+        };
+      },
+    }),
+    assertAuthenticated: async () => {
+      return;
+    },
+  });
+
+  await client.generateTurn(buildRequest({ turn: 1 }));
+  await client.generateTurn(buildRequest({ turn: 2 }));
+
+  assert.deepEqual(
+    (runInputs[0] as Array<{ type: string }>).map((item) => item.type),
+    ["text", "local_image", "local_image"],
+  );
+  assert.deepEqual(
+    (runInputs[1] as Array<{ type: string }>).map((item) => item.type),
+    ["text"],
+  );
+});
+
 test("uses project defaults when no model options are provided", async () => {
   const calls: { threadOptions?: { model?: string; modelReasoningEffort?: string } } = {};
 
@@ -141,7 +173,7 @@ test("propagates auth failure before calling SDK", async () => {
   assert.equal(called, false);
 });
 
-const buildRequest = (): GenerateTabbyTurnRequest => ({
+const buildRequest = (overrides: Partial<GenerateTabbyTurnRequest> = {}): GenerateTabbyTurnRequest => ({
   photos: [
     { photoRef: "1.jpg", path: "/tmp/photos/1.jpg" },
     { photoRef: "2.jpg", path: "/tmp/photos/2.jpg" },
@@ -149,6 +181,7 @@ const buildRequest = (): GenerateTabbyTurnRequest => ({
   conversation: [],
   phase: "start",
   turn: 1,
+  ...overrides,
 });
 
 const buildValidTurn = () => ({
@@ -161,4 +194,3 @@ const buildValidTurn = () => ({
   ],
   internalNotes: "Start by eliciting core emotion.",
 });
-
