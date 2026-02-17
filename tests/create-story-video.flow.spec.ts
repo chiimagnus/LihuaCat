@@ -37,6 +37,11 @@ test("flow asks input then runs workflow", async () => {
         throw new Error("not used in this test");
       },
     },
+    lynxAgentClient: {
+      async reviewRenderScript() {
+        throw new Error("not used in this test");
+      },
+    },
     workflowImpl: async () => {
       return {
         runId: "run-1",

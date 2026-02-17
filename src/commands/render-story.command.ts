@@ -3,6 +3,7 @@ import { listAvailableBrowserExecutables } from "../domains/template-render/brow
 
 import { createStoryVideoFlow } from "../flows/create-story-video/create-story-video.flow.ts";
 import {
+  createCodexLynxAgentClient,
   createCodexOcelotAgentClient,
   createCodexStoryBriefAgentClient,
   createCodexTabbyAgentClient,
@@ -74,6 +75,11 @@ export const runRenderStoryCommand = async ({
     modelReasoningEffort: resolvedReasoningEffort,
     workingDirectory: process.cwd(),
   });
+  const lynxAgentClient = createCodexLynxAgentClient({
+    model,
+    modelReasoningEffort: resolvedReasoningEffort,
+    workingDirectory: process.cwd(),
+  });
 
   ui.intro({
     model,
@@ -101,6 +107,7 @@ export const runRenderStoryCommand = async ({
       },
       storyBriefAgentClient,
       ocelotAgentClient,
+      lynxAgentClient,
       browserExecutablePath,
       onProgress: (event) => ui.onWorkflowProgress(event),
       workflowImpl,
