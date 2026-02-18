@@ -50,6 +50,11 @@ test("workflow contract: emits ordered core stage events on first-pass template 
             };
           },
         },
+        lynxAgentClient: {
+          async reviewRenderScript() {
+            throw new Error("lynx should not be called when lynx-review is disabled");
+          },
+        },
         onProgress: (event) => {
           stages.push(event.stage);
         },
@@ -147,6 +152,9 @@ test("workflow contract: emits ordered core stage events on first-pass template 
           ocelotInputPath: input.ocelotInputPath,
           ocelotOutputPath: input.ocelotOutputPath,
           ocelotPromptLogPath: input.ocelotPromptLogPath,
+          lynxReviewPaths: input.lynxReviewPaths,
+          lynxPromptLogPaths: input.lynxPromptLogPaths,
+          ocelotRevisionPaths: input.ocelotRevisionPaths,
         }),
       },
     );
@@ -158,8 +166,8 @@ test("workflow contract: emits ordered core stage events on first-pass template 
       "compress_images_done",
       "tabby_start",
       "tabby_done",
-      "ocelot_start",
-      "ocelot_done",
+      "script_start",
+      "script_done",
       "render_start",
       "render_success",
       "publish_start",

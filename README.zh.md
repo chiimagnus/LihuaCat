@@ -45,6 +45,7 @@ lihuacat
 - `--browser-executable <path>`：指定浏览器可执行文件路径
 - `--model <name>`：覆盖 Codex 模型名
 - `--model-reasoning-effort <minimal|low|medium|high|xhigh>`：覆盖推理强度
+- `--lynx-review`：开启 Lynx 审稿 + 脚本修改循环（默认关闭）
 
 默认值（不传时）：
 
@@ -70,6 +71,7 @@ lihuacat
 - `tabby-conversation.jsonl`
 - `run.log`（失败时还有 `error.log`）
 - `ocelot-input.json`、`ocelot-output.json`、`ocelot-prompt.log`（调试用）
+- （当启用 `--lynx-review`）`lynx-review-{N}.json`、`ocelot-revision-{N}.json`、`lynx-prompt-{N}.log`
 
 ## 浏览器（手动指定）
 

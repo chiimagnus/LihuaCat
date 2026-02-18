@@ -5,6 +5,7 @@ import type { TabbyAgentClient } from "../domains/tabby/tabby-agent.client.ts";
 import type { TabbySessionTui } from "../domains/tabby/tabby-session.ts";
 import type { StoryBriefAgentClient } from "../domains/story-brief/story-brief-agent.client.ts";
 import type { OcelotAgentClient } from "../domains/render-script/ocelot-agent.client.ts";
+import type { LynxAgentClient } from "../domains/lynx/lynx-agent.client.ts";
 import type { RunSummary } from "../domains/artifact-publish/build-run-summary.ts";
 import type { WorkflowProgressReporter } from "./workflow-events.ts";
 import {
@@ -17,7 +18,7 @@ import { runCompressImagesStage } from "./stages/compress-images.stage.ts";
 import { runRenderStage } from "./stages/render.stage.ts";
 import { runPublishStage } from "./stages/publish.stage.ts";
 import { runTabbyStage } from "./stages/tabby.stage.ts";
-import { runOcelotStage } from "./stages/ocelot.stage.ts";
+import { runScriptStage } from "./stages/script.stage.ts";
 
 export type { WorkflowProgressEvent } from "./workflow-events.ts";
 
@@ -49,6 +50,8 @@ export type RunStoryWorkflowV2Input = {
   tabbyTui: TabbySessionTui;
   storyBriefAgentClient: StoryBriefAgentClient;
   ocelotAgentClient: OcelotAgentClient;
+  lynxAgentClient?: LynxAgentClient;
+  enableLynxReview?: boolean;
   browserExecutablePath?: string;
   onProgress?: WorkflowProgressReporter;
   now?: Date;
@@ -63,6 +66,8 @@ export const runStoryWorkflowV2 = async (
     tabbyTui,
     storyBriefAgentClient,
     ocelotAgentClient,
+    lynxAgentClient,
+    enableLynxReview = false,
     browserExecutablePath,
     onProgress,
     now,
@@ -106,19 +111,21 @@ export const runStoryWorkflowV2 = async (
       generateStoryBriefImpl: ports.generateStoryBriefImpl,
     });
 
-    const ocelot = await runOcelotStage({
+    const script = await runScriptStage({
       collected: processed,
       runtime,
       storyBriefRef: runtime.storyBriefPath,
       storyBrief: tabby.storyBrief,
       ocelotAgentClient,
+      lynxAgentClient,
+      enableLynxReview,
       onProgress,
     });
 
     const rendered = await runRenderStage({
       runtime,
       collected: processed,
-      renderScript: ocelot.renderScript,
+      renderScript: script.renderScript,
       browserExecutablePath,
       onProgress,
       renderByTemplateV2Impl: ports.renderByTemplateV2Impl,

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { tabbyTurnOutputSchema } from "../src/prompts/tabby-turn.prompt.ts";
 import { storyBriefOutputSchema } from "../src/prompts/story-brief.prompt.ts";
 import { renderScriptOutputSchema } from "../src/prompts/render-script.prompt.ts";
+import { lynxReviewOutputSchema } from "../src/prompts/lynx-review.prompt.ts";
 
 test("tabby turn outputSchema keeps strict internalNotes + options bounds", () => {
   assert.deepEqual(tabbyTurnOutputSchema.required, ["say", "options", "done", "internalNotes"]);
@@ -112,4 +113,22 @@ test("render script outputSchema keeps fixed video fields and transition variant
   ]);
   assert.deepEqual(sceneItem?.properties.kenBurns?.type, ["object", "null"]);
   assert.deepEqual(sceneItem?.properties.kenBurns?.required, ["startScale", "endScale", "panDirection"]);
+});
+
+test("lynx review outputSchema stays codex-compatible and strict", () => {
+  assert.equal(lynxReviewOutputSchema.type, "object");
+  assert.equal(lynxReviewOutputSchema.additionalProperties, false);
+  assert.deepEqual(lynxReviewOutputSchema.required, ["passed", "summary", "issues", "requiredChanges"]);
+
+  assert.equal(lynxReviewOutputSchema.properties.passed?.type, "boolean");
+  assert.equal(lynxReviewOutputSchema.properties.summary?.type, "string");
+
+  const issues = lynxReviewOutputSchema.properties.issues;
+  assert.equal(issues?.type, "array");
+  const issueItem = issues?.items;
+  assert.equal(issueItem?.type, "object");
+  assert.equal(issueItem?.additionalProperties, false);
+  assert.deepEqual(issueItem?.required, ["category", "message"]);
+  assert.equal(issueItem?.properties.category?.type, "string");
+  assert.equal(issueItem?.properties.message?.type, "string");
 });

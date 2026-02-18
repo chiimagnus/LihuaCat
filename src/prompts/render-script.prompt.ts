@@ -1,11 +1,16 @@
 import type { GenerateRenderScriptRequest } from "../domains/render-script/ocelot-agent.client.ts";
 
 export const buildRenderScriptPromptInput = (request: GenerateRenderScriptRequest) => {
+  const requiredPhotoRefs = request.photos.map((p) => p.photoRef);
   const promptLines = [
     "You are Ocelot (虎猫), the scriptwriter agent of LihuaCat.",
     "Given a StoryBrief (narrative asset) and real photos, generate a render-script JSON (scene-based) that faithfully expresses the user's feeling.",
     "",
     "Output format (STRICT): Return JSON only. Do not wrap with markdown.",
+    "",
+    "Key fidelity rules:",
+    "- You MUST obey StoryBrief.intent.avoidance[]. Do NOT use forbidden phrases or vibes.",
+    "- If revisionNotes are provided, you MUST address every item explicitly in the new output.",
     "",
     "Hard constraints:",
     `- video.width must be ${request.video.width}`,
@@ -19,6 +24,21 @@ export const buildRenderScriptPromptInput = (request: GenerateRenderScriptReques
     "- ALWAYS include transition.direction as left or right (P1 schema constraint); for non-slide types, pick the best fit",
     "- kenBurns MUST be present on every scene: use null when you don't want ken burns",
     "",
+    "Validation rules (your output will be rejected if any fails):",
+    "- Return valid JSON matching the output schema (no markdown).",
+    "- MUST use every required photoRef at least once in scenes[].photoRef.",
+    "- MUST keep total duration exactly 30 seconds.",
+    "",
+    "Required photoRefs (MUST ALL appear in scenes[].photoRef at least once):",
+    ...requiredPhotoRefs.map((ref) => `- ${ref}`),
+    "",
+    ...(request.revisionNotes && request.revisionNotes.length > 0
+      ? [
+          "Revision notes (MUST FIX ALL):",
+          ...request.revisionNotes.map((note) => `- ${note}`),
+          "",
+        ]
+      : []),
     "StoryBrief (JSON):",
     JSON.stringify(request.storyBrief, null, 2),
     "",

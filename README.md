@@ -43,6 +43,7 @@ Use flags to prefill prompts and skip steps:
 - `--browser-executable <path>`: explicit browser executable path
 - `--model <name>`: override Codex model name
 - `--model-reasoning-effort <minimal|low|medium|high|xhigh>`: override reasoning effort
+- `--lynx-review`: enable Lynx review + revision loop for RenderScript (default: off)
 
 Defaults (when not provided):
 
@@ -68,6 +69,7 @@ Common artifacts:
 - `tabby-conversation.jsonl`
 - `run.log` (and `error.log` on failures)
 - `ocelot-input.json`, `ocelot-output.json`, `ocelot-prompt.log` (debug)
+- (when `--lynx-review` is enabled) `lynx-review-{N}.json`, `ocelot-revision-{N}.json`, `lynx-prompt-{N}.log`
 
 ## Browser (manual override)
 

@@ -54,3 +54,15 @@ export {
   DEFAULT_OCELOT_CODEX_REASONING_EFFORT,
   OcelotAgentResponseParseError,
 } from "./domains/render-script/ocelot-agent.client.ts";
+
+export type {
+  LynxAgentClient,
+  GenerateLynxReviewRequest,
+  CreateCodexLynxAgentClientInput,
+} from "./domains/lynx/lynx-agent.client.ts";
+export {
+  createCodexLynxAgentClient,
+  DEFAULT_LYNX_CODEX_MODEL,
+  DEFAULT_LYNX_CODEX_REASONING_EFFORT,
+  LynxAgentResponseParseError,
+} from "./domains/lynx/lynx-agent.client.ts";

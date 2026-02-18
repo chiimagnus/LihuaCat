@@ -11,6 +11,7 @@ test("flow asks input then runs workflow", async () => {
       return "/tmp/photos";
     },
   };
+  let receivedEnableLynxReview: boolean | undefined = undefined;
 
   const summary = await createStoryVideoFlow({
     prompts,
@@ -37,7 +38,14 @@ test("flow asks input then runs workflow", async () => {
         throw new Error("not used in this test");
       },
     },
-    workflowImpl: async () => {
+    lynxAgentClient: {
+      async reviewRenderScript() {
+        throw new Error("not used in this test");
+      },
+    },
+    enableLynxReview: true,
+    workflowImpl: async (input) => {
+      receivedEnableLynxReview = input.enableLynxReview;
       return {
         runId: "run-1",
         outputDir: "/tmp/photos/lihuacat-output/run-1",
@@ -50,10 +58,14 @@ test("flow asks input then runs workflow", async () => {
         ocelotInputPath: "/tmp/photos/lihuacat-output/run-1/ocelot-input.json",
         ocelotOutputPath: "/tmp/photos/lihuacat-output/run-1/ocelot-output.json",
         ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-1/ocelot-prompt.log",
+        lynxReviewPaths: [],
+        lynxPromptLogPaths: [],
+        ocelotRevisionPaths: [],
       };
     },
   });
 
   assert.deepEqual(steps, ["askSourceDir"]);
   assert.equal(summary.mode, "template");
+  assert.equal(receivedEnableLynxReview, true);
 });

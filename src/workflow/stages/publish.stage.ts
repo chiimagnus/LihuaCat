@@ -34,6 +34,9 @@ export const runPublishStage = async ({
     ocelotInputPath: runtime.ocelotInputPath,
     ocelotOutputPath: runtime.ocelotOutputPath,
     ocelotPromptLogPath: runtime.ocelotPromptLogPath,
+    lynxReviewPaths: runtime.lynxReviewPaths,
+    lynxPromptLogPaths: runtime.lynxPromptLogPaths,
+    ocelotRevisionPaths: runtime.ocelotRevisionPaths,
     runLogs: runtime.runLogs,
     errorLogs: runtime.errorLogs,
   });

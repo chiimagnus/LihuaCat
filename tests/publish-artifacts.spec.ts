@@ -34,6 +34,9 @@ test("publishes artifacts and returns summary with key paths", async () => {
       ocelotInputPath,
       ocelotOutputPath,
       ocelotPromptLogPath,
+      lynxReviewPaths: [],
+      lynxPromptLogPaths: [],
+      ocelotRevisionPaths: [],
       runLogs: ["run started", "run succeeded"],
     });
 

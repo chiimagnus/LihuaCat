@@ -20,6 +20,8 @@
   `pnpm run dev -- --input tests --model gpt-5.1-codex-mini --model-reasoning-effort medium`
 - 快速运行：
   `pnpm run dev -- --input tests --mode template`
+- 启用 Lynx 审稿（默认关闭）：
+  `pnpm run dev -- --input tests --lynx-review`
 - 指定浏览器可执行文件：
   `pnpm run dev -- --input tests --mode template --browser-executable "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`
 
