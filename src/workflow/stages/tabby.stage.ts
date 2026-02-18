@@ -60,6 +60,11 @@ export const runTabbyStage = async ({
     maxReviseRounds: 3,
   });
 
+  await emitProgressAndPersist(runtime, onProgress, {
+    stage: "tabby_progress",
+    message: "已确认「就是这个感觉」，正在生成 StoryBrief...",
+  });
+
   const briefResult = await generateStoryBriefImpl({
     photos,
     conversation: session.conversation,

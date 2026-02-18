@@ -5,7 +5,10 @@ import type { StoryBrief } from "../../contracts/story-brief.types.ts";
 import type { RenderScript } from "../../contracts/render-script.types.ts";
 import type { OcelotAgentClient } from "../../domains/render-script/ocelot-agent.client.ts";
 import type { LynxAgentClient } from "../../domains/lynx/lynx-agent.client.ts";
-import { reviseRenderScriptWithLynx } from "../../domains/render-script/revise-render-script-with-lynx.ts";
+import {
+  reviseRenderScriptWithLynx,
+  type ReviseRenderScriptWithLynxProgressEvent,
+} from "../../domains/render-script/revise-render-script-with-lynx.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
   emitProgressAndPersist,
@@ -77,11 +80,19 @@ export const runScriptStage = async ({
 
     let renderScript: RenderScript | undefined = undefined;
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      await emitProgressAndPersist(runtime, onProgress, {
+        stage: "script_progress",
+        message: `Generating RenderScript... (attempt ${attempt}/${maxAttempts})`,
+      });
       try {
         renderScript = await generateOnce();
         break;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        await emitProgressAndPersist(runtime, onProgress, {
+          stage: "script_progress",
+          message: `RenderScript invalid, retrying... (attempt ${attempt}/${maxAttempts}) · ${truncateForUi(message)}`,
+        });
         reasons.push(`attempt ${attempt}: ${message}`);
         if (attempt >= maxAttempts) {
           throw error;
@@ -129,6 +140,31 @@ export const runScriptStage = async ({
     throw new Error("Lynx review is enabled but lynxAgentClient is not provided.");
   }
 
+  const emitLynxProgress = async (message: string) =>
+    emitProgressAndPersist(runtime, onProgress, {
+      stage: "script_progress",
+      message,
+    });
+
+  const toLynxProgressMessage = (event: ReviseRenderScriptWithLynxProgressEvent): string => {
+    if (event.type === "round_start") {
+      return `Lynx review: round ${event.round}/${event.maxRounds} · generating RenderScript...`;
+    }
+    if (event.type === "ocelot_attempt_start") {
+      return `Round ${event.round} · generating RenderScript (attempt ${event.attempt}/${event.maxAttempts})...`;
+    }
+    if (event.type === "ocelot_attempt_failed") {
+      return `Round ${event.round} · validation failed (attempt ${event.attempt}/${event.maxAttempts}), retrying... · ${truncateForUi(event.errorMessage)}`;
+    }
+    if (event.type === "lynx_review_start") {
+      return `Round ${event.round} · Lynx reviewing...`;
+    }
+    if (event.type === "lynx_review_done") {
+      return `Round ${event.round} · Lynx review ${event.passed ? "passed" : "found issues"}...`;
+    }
+    return "Lynx review: working...";
+  };
+
   const result = await reviseRenderScriptWithLynx({
     storyBriefRef,
     storyBrief,
@@ -158,6 +194,9 @@ export const runScriptStage = async ({
     },
     maxRounds,
     maxOcelotRetriesPerRound: 2,
+    onProgress: async (event) => {
+      await emitLynxProgress(toLynxProgressMessage(event));
+    },
   });
 
   for (const round of result.rounds) {
@@ -202,4 +241,10 @@ export const runScriptStage = async ({
     finalPassed: result.finalPassed,
     rounds: result.rounds.length,
   };
+};
+
+const truncateForUi = (input: string, maxLen = 120): string => {
+  const normalized = input.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLen) return normalized;
+  return `${normalized.slice(0, Math.max(0, maxLen - 1))}…`;
 };

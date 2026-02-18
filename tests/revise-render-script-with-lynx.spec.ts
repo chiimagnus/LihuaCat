@@ -207,3 +207,43 @@ test("retries Ocelot within a round when output fails validation", async () => {
   assert.ok((seenNotes[1] ?? []).some((n) => n.includes("Previous attempt failed automated validation")));
   assert.ok((seenNotes[1] ?? []).some((n) => n.includes("render-script semantics invalid")));
 });
+
+test("emits progress events for round/attempt/review lifecycle", async () => {
+  const events: Array<{ type: string; round: number }> = [];
+  let calls = 0;
+
+  await reviseRenderScriptWithLynx({
+    storyBriefRef: "/tmp/run/story-brief.json",
+    storyBrief: baseStoryBrief as any,
+    photos: [{ photoRef: "1.jpg", path: "/tmp/photos/1.jpg" }],
+    video: { width: 1080, height: 1920, fps: 30 },
+    maxRounds: 3,
+    maxOcelotRetriesPerRound: 1,
+    onProgress: (event) => {
+      events.push({ type: event.type, round: event.round });
+    },
+    ocelotClient: {
+      async generateRenderScript() {
+        calls += 1;
+        if (calls === 1) {
+          throw new OcelotAgentResponseParseError("render-script semantics invalid: missing scenes");
+        }
+        return makeScript("ok");
+      },
+    },
+    lynxClient: {
+      async reviewRenderScript() {
+        return { passed: true, issues: [], requiredChanges: [] };
+      },
+    },
+  });
+
+  assert.deepEqual(events.map((e) => e.type), [
+    "round_start",
+    "ocelot_attempt_start",
+    "ocelot_attempt_failed",
+    "ocelot_attempt_start",
+    "lynx_review_start",
+    "lynx_review_done",
+  ]);
+});

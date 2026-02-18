@@ -207,6 +207,17 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
         return;
       }
 
+      if (event.stage.endsWith("_progress")) {
+        const message = `● ${event.message}`;
+        if (hasActiveSpinner) {
+          status.message(message);
+          return;
+        }
+        status.start(message);
+        hasActiveSpinner = true;
+        return;
+      }
+
       if (event.stage.endsWith("_start")) {
         if (hasActiveSpinner) {
           status.stop();
