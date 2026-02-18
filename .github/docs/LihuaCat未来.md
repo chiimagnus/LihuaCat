@@ -79,7 +79,7 @@ Tabby 是**唯一和用户直接对话的 agent**，也是整个系统的大脑�
     - **交互模式**：每轮给用户 2–4 个建议选项（select），且**必须**带一个「我想自己说…」入口进入自由输入。不做纯开放式提问，降低用户表达门槛
 - **判断**——知道什么时候该继续追问，什么时候信息已经够了，可以收束
 - **确认页**——收束后、调用 Ocelot 之前，向用户展示人话总结（"我理解你想表达的是：…"）。用户可以「确认」或「需要修改」。点「需要修改」回到对话继续聊 1–3 轮，**不做字段级表单**
-- **调度**——决定何时收束进入确认页；确认后由工作流编排调用 StoryBrief 生成与 🐆 Ocelot 编剧（🐈‍⬛ Lynx 审稿为 P2 规划）
+- **调度**——决定何时收束进入确认页；确认后由工作流编排调用 StoryBrief 生成与 🐆 Ocelot 编剧（可选启用 🐈‍⬛ Lynx 审稿，默认关闭）
 
 **核心产出：** `CreativeIntent`（用户到底想表达什么）+ `PhotoNote[]`（每张照片的情感标注）。这两样东西组成 StoryBrief 的核心原料。
 
@@ -93,11 +93,11 @@ Ocelot **不和用户对话**，它只服务于 Tabby。美洲虎猫，丛林里
 
 **权限：** 被调用、无自主权。Tabby 让它写它就写，让它改它就改。
 
-### 🐈‍⬛ Lynx（猞猁）—— 审稿人（工具人，P2 规划）
+### 🐈‍⬛ Lynx（猞猁）—— 审稿人（工具人，可选）
 
 Lynx 也**不和用户对话**，同样只服务于 Tabby。古希腊人认为猞猁能看穿墙壁——锐利的双眼，什么都逃不过。
 
-> 当前版本尚未接入主流程；先把“审稿能力”当作质量门槛的设计预留。
+> Lynx 已接入主流程，但默认关闭；通过 `--lynx-review` 开启审稿 + 修改循环。
 > 
 
 **它在干什么：** 拿着用户的原始意图（CreativeIntent）+ 照片 + Ocelot 写出来的脚本，做质检。它回答一个核心问题：**「这个脚本忠实地表达了用户的感受吗？」**
@@ -118,7 +118,7 @@ flowchart LR
         Confirm{"📋 确认页<br>确认 / 需要修改"}
         BriefGen["🧩 StoryBrief 生成<br>（agent）"]
         Ocelot["🐆 Ocelot<br>编剧"]
-        Lynx["🐈‍⬛ Lynx<br>审稿（P2）"]
+        Lynx["🐈‍⬛ Lynx<br>审稿（可选）"]
         Brief[/"📄 story-brief.json"/]
         RS[/"🎬 render-script.json"/]
     end
@@ -130,10 +130,10 @@ flowchart LR
     BriefGen --> Brief
     Brief --> Ocelot
     Ocelot --> RS
-    RS -.->|"审稿（P2）"| Lynx
-    Brief -.->|"审稿依据（P2）"| Lynx
-    Lynx -.->|"审稿意见（P2）"| Tabby
-    Lynx -.->|"不通过（P2）"| Ocelot
+    RS -.->|"审稿（可选）"| Lynx
+    Brief -.->|"审稿依据（可选）"| Lynx
+    Lynx -.->|"审稿意见（可选）"| Tabby
+    Lynx -.->|"不通过（可选）"| Ocelot
 
     subgraph Render ["🎬 呈现层"]
         direction LR
@@ -154,7 +154,7 @@ StoryBrief 是整个系统的**核心资产**，描述「用户想表达什么�
 
 **产出者：** StoryBrief 生成器（agent，输入为 Tabby 对话 + confirmed summary）
 
-**消费者：** 🐆 Ocelot（读取 StoryBrief 来写渲染脚本）；🐈‍⬛ Lynx（P2，读取 StoryBrief 来审稿）
+**消费者：** 🐆 Ocelot（读取 StoryBrief 来写渲染脚本）；🐈‍⬛ Lynx（可选，读取 StoryBrief 来审稿）
 
 **关键特性：** 即使换掉整个呈现层（从视频换成漫画、AVP），StoryBrief 不需要改动。它是「理解用户」的结晶，和输出形态无关。
 
@@ -357,7 +357,7 @@ flowchart LR
 
 ---
 
-### P2：🐈‍⬛ Lynx 审稿 + 修改循环
+### P2：🐈‍⬛ Lynx 审稿 + 修改循环（已实现，默认关闭）
 
 **目标：** 加入质检环节，Tabby 调度 Ocelot 写 → Lynx 审 → 不通过则 Tabby 指导 Ocelot 重写，直到通过。
 
@@ -378,7 +378,7 @@ flowchart LR
 | --- | --- | --- |
 | `lynx-review-{N}.json` | Lynx 第 N 轮审稿意见（通过/不通过 + 具体问题） | 审阅审稿质量：是否抓到了真正的问题 |
 | `ocelot-revision-{N}.json` | Ocelot 第 N 轮修改后的脚本 | 追踪每轮修改的变化 |
-| `lynx-prompt.log` | 发给 Lynx 的实际 prompt | 调 prompt 用 |
+| `lynx-prompt-{N}.log` | 发给 Lynx 的实际 prompt | 调 prompt 用 |
 
 **验收标准：**
 

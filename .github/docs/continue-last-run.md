@@ -5,7 +5,7 @@
 用户希望在以下场景中可以“继续”而不是从头开始：
 
 - 用户中途退出（例如 Tabby 对话未完成）
-- 运行报错退出（例如 Lynx 审稿失败、渲染失败）
+- 运行报错退出（例如启用了 Lynx 审稿时审稿失败、渲染失败）
 - 需要在同一次 run 中接着跑后续阶段（不更换 `runId` / `outputDir`）
 
 当前 CLI 入口通常通过 `pnpm run start` 启动（本质仍是运行 `src/index.ts` 的同一程序）。
@@ -17,6 +17,7 @@
 - 提供一个“继续上次运行”的能力：在交互式 TUI 中选择历史 run，并根据现有产物动态判断用户停留阶段，从对应阶段继续执行。
 - “继续”默认沿用同一个 `outputDir`（同一 `runId` 目录继续写产物）。
 - 继续逻辑可以在不同失败点恢复：Tabby 对话、StoryBrief 生成、脚本+Lynx 审稿循环、渲染、发布。
+- 注：Lynx 审稿默认关闭；只有在该 run 启用了 `--lynx-review` 时，脚本阶段才包含审稿循环与对应产物。
 
 ---
 
@@ -75,9 +76,9 @@
 - 信号：存在 `render-script.json`，但 `video.mp4` 不存在，或存在 `error.log`/`render-attempts.jsonl` 最后一次失败
 - 继续行为：从渲染阶段开始（使用现有 `render-script.json`）
 
-3) Script（脚本+Lynx 审稿循环）
-- 信号：存在 `story-brief.json` 但 `render-script.json` 不存在；或存在部分 `lynx-review-*.json` / `ocelot-revision-*.json` 但未写出最终 `render-script.json`
-- 继续行为：从脚本+审稿循环开始
+3) Script（RenderScript 生成；可选 Lynx 审稿循环）
+- 信号：存在 `story-brief.json` 但 `render-script.json` 不存在；或（当该 run 启用了 `--lynx-review`）存在部分 `lynx-review-*.json` / `ocelot-revision-*.json` 但未写出最终 `render-script.json`
+- 继续行为：从脚本阶段开始（若该 run 启用了 `--lynx-review`，则继续包含审稿循环）
 
 4) StoryBrief
 - 信号：存在 `tabby-conversation.jsonl`，但 `story-brief.json` 不存在
@@ -130,7 +131,7 @@
 ## 错误处理与门槛约束
 
 - 继续命令仍要求 TTY（与现有 TUI 约束一致）
-- Lynx 审稿失败（非 JSON/schema 不合法/运行异常）仍视为 workflow 失败（不应跳过审稿）
+- 若该 run 启用了 `--lynx-review`：Lynx 审稿失败（非 JSON/schema 不合法/运行异常）仍视为 workflow 失败（不应静默跳过审稿）
 - 如果 run 目录结构不完整或不可读，应给出可读错误（例如“找不到 run-context.json/无法读取 outputDir”）
 
 ---
@@ -175,4 +176,3 @@
   - 从渲染失败继续（不重跑前置阶段）
   - 从 Lynx 审稿失败继续（仍要求 Lynx）
   - 从 Tabby 中途退出继续对话
-

@@ -43,6 +43,7 @@ LihuaCat 是一个本地优先的交互式 CLI：把“一个图片文件夹”�
 - 触发方式：StoryBrief 生成后开始
 - 输入：`story-brief.json` + 图片列表
 - 输出：结构化 `render-script.json`（并落盘 `ocelot-input.json` / `ocelot-output.json` / `ocelot-prompt.log` 供调试）
+- 可选质检：当启用 `--lynx-review` 时，会在脚本生成阶段加入 🐈‍⬛ Lynx 审稿 + 修改循环（默认关闭）
 - 失败方式：生成失败时报错退出，并在产物目录中留下可用于排查的日志文件（含 `error.log`）
 
 ### 能力 E：本地渲染与产物落盘
@@ -163,6 +164,7 @@ flowchart TD
 - `run.log`：本次运行过程日志
 - `error.log`：失败时的错误日志
 - `ocelot-input.json` / `ocelot-output.json` / `ocelot-prompt.log`：Ocelot 调试文件
+- （当启用 `--lynx-review`）`lynx-review-{N}.json` / `ocelot-revision-{N}.json` / `lynx-prompt-{N}.log`：Lynx 审稿与迭代过程文件
 
 ## 7) 术语表（Glossary）
 
