@@ -13,6 +13,7 @@ export type ReviseRenderScriptWithLynxInput = {
   lynxClient: LynxAgentClient;
   maxRounds?: number;
   maxOcelotRetriesPerRound?: number;
+  onProgress?: (event: ReviseRenderScriptWithLynxProgressEvent) => Promise<void> | void;
 };
 
 export type RenderScriptRevisionRound = {
@@ -26,6 +27,37 @@ export type ReviseRenderScriptWithLynxResult = {
   finalPassed: boolean;
   rounds: RenderScriptRevisionRound[];
 };
+
+export type ReviseRenderScriptWithLynxProgressEvent =
+  | {
+      type: "round_start";
+      round: number;
+      maxRounds: number;
+    }
+  | {
+      type: "ocelot_attempt_start";
+      round: number;
+      attempt: number;
+      maxAttempts: number;
+    }
+  | {
+      type: "ocelot_attempt_failed";
+      round: number;
+      attempt: number;
+      maxAttempts: number;
+      errorMessage: string;
+    }
+  | {
+      type: "lynx_review_start";
+      round: number;
+      maxRounds: number;
+    }
+  | {
+      type: "lynx_review_done";
+      round: number;
+      maxRounds: number;
+      passed: boolean;
+    };
 
 export class RenderScriptGenerationFailedError extends Error {
   public readonly round: number;
@@ -50,6 +82,7 @@ export const reviseRenderScriptWithLynx = async ({
   lynxClient,
   maxRounds = 3,
   maxOcelotRetriesPerRound = 2,
+  onProgress,
 }: ReviseRenderScriptWithLynxInput): Promise<ReviseRenderScriptWithLynxResult> => {
   const rounds: RenderScriptRevisionRound[] = [];
   let revisionNotes: string[] | undefined = undefined;
@@ -63,6 +96,7 @@ export const reviseRenderScriptWithLynx = async ({
     let mergedNotes = notes;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      await onProgress?.({ type: "ocelot_attempt_start", round, attempt, maxAttempts });
       try {
         return await ocelotClient.generateRenderScript({
           storyBriefRef,
@@ -73,6 +107,13 @@ export const reviseRenderScriptWithLynx = async ({
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        await onProgress?.({
+          type: "ocelot_attempt_failed",
+          round,
+          attempt,
+          maxAttempts,
+          errorMessage: message,
+        });
         reasons.push(`attempt ${attempt}: ${message}`);
         if (attempt >= maxAttempts) {
           throw new RenderScriptGenerationFailedError(round, maxAttempts, reasons);
@@ -92,8 +133,10 @@ export const reviseRenderScriptWithLynx = async ({
   };
 
   for (let round = 1; round <= maxRounds; round += 1) {
+    await onProgress?.({ type: "round_start", round, maxRounds });
     const renderScript = await generateWithRetries(round, revisionNotes);
 
+    await onProgress?.({ type: "lynx_review_start", round, maxRounds });
     const lynxReview = await lynxClient.reviewRenderScript({
       storyBriefRef,
       storyBrief,
@@ -104,6 +147,13 @@ export const reviseRenderScriptWithLynx = async ({
     });
 
     rounds.push({ round, renderScript, lynxReview });
+
+    await onProgress?.({
+      type: "lynx_review_done",
+      round,
+      maxRounds,
+      passed: lynxReview.passed,
+    });
 
     if (lynxReview.passed) {
       return {

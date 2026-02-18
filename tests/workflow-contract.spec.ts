@@ -159,7 +159,8 @@ test("workflow contract: emits ordered core stage events on first-pass template 
       },
     );
 
-    assert.deepEqual(stages, [
+    const coreStages = stages.filter((stage) => !stage.endsWith("_progress"));
+    assert.deepEqual(coreStages, [
       "collect_images_start",
       "collect_images_done",
       "compress_images_start",
