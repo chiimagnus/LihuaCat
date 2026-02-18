@@ -181,7 +181,10 @@ const parseGlEnv = (
 };
 
 const parseConcurrencyEnv = (raw: string | undefined): number | undefined => {
-  if (!raw) return undefined;
+  // Remotion can render frames with multiple pages concurrently.
+  // In our use case (short story template), the safest default is to disable frame concurrency
+  // to avoid rare black-frame glitches in the produced video.
+  if (!raw) return 1;
   const normalized = raw.trim().toLowerCase();
   if (normalized === "null" || normalized === "default" || normalized === "auto") {
     return undefined;
