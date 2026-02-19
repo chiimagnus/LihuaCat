@@ -1,6 +1,7 @@
 import path from "node:path";
 import { listAvailableBrowserExecutables } from "../domains/template-render/browser-locator.ts";
 
+import { assertCodexCliAuthenticated } from "../domains/codex-auth/codex-auth-guard.ts";
 import { createStoryVideoFlow } from "../flows/create-story-video/create-story-video.flow.ts";
 import {
   createCodexLynxAgentClient,
@@ -61,6 +62,9 @@ export const runRenderStoryCommand = async ({
   }
 
   const ui = tui ?? createClackRenderStoryTui();
+
+  await assertCodexCliAuthenticated();
+
   const tabbyAgentClient = createCodexTabbyAgentClient({
     model,
     modelReasoningEffort: resolvedReasoningEffort,
