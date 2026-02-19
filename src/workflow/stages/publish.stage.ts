@@ -1,5 +1,5 @@
-import type { PublishArtifactsInput } from "../../domains/artifact-publish/publish-artifacts.ts";
-import type { RunSummary } from "../../domains/artifact-publish/build-run-summary.ts";
+import type { PublishArtifactsInput } from "../../tools/artifacts/publish-artifacts.ts";
+import type { RunSummary } from "../../tools/artifacts/run-summary.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
   emitProgressAndPersist,

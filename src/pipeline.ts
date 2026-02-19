@@ -8,7 +8,7 @@ export {
   type WorkflowProgressEvent,
 } from "./workflow/start-story-run.ts";
 
-export type { RunSummary } from "./domains/artifact-publish/build-run-summary.ts";
+export type { RunSummary } from "./tools/artifacts/run-summary.ts";
 export { SourceDirectoryNotFoundError } from "./tools/material-intake/material-intake.errors.ts";
 
 export type {

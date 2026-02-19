@@ -19,3 +19,4 @@ export type RunSummaryInput = {
 export type RunSummary = RunSummaryInput;
 
 export const buildRunSummary = (input: RunSummaryInput): RunSummary => input;
+

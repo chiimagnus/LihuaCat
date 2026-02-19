@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { buildRunSummary, type RunSummary } from "./build-run-summary.ts";
+import { buildRunSummary, type RunSummary } from "./run-summary.ts";
 
 export type PublishArtifactsInput = {
   runId: string;
@@ -64,3 +64,4 @@ export const publishArtifacts = async ({
     ocelotRevisionPaths,
   });
 };
+

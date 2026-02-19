@@ -1,7 +1,7 @@
 import { collectImages } from "../tools/material-intake/collect-images.ts";
 import { compressImagesToRemotionPublicDir } from "../tools/material-intake/compress-images.ts";
 import { renderByTemplateV2 } from "../tools/render/render-by-template.ts";
-import { publishArtifacts } from "../domains/artifact-publish/publish-artifacts.ts";
+import { publishArtifacts } from "../tools/artifacts/publish-artifacts.ts";
 import { runTabbySession } from "../agents/tabby/tabby.session.ts";
 import { generateStoryBrief } from "../subagents/story-brief/generate-story-brief.ts";
 

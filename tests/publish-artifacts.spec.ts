@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { publishArtifacts } from "../src/domains/artifact-publish/publish-artifacts.ts";
+import { publishArtifacts } from "../src/tools/artifacts/publish-artifacts.ts";
 
 test("publishes artifacts and returns summary with key paths", async () => {
   await withTempDir(async (outputDir) => {
