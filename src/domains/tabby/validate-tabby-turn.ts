@@ -54,25 +54,12 @@ export const validateTabbyTurnOutput = (
         .filter((option): option is { id: string; label: string } => isRecord(option))
         .map((option) => ({ id: String(option.id), label: String(option.label) }));
 
-      const expected = [
-        { id: "confirm", label: "就是这个感觉" },
-        { id: "revise", label: "需要修改" },
-      ] as const;
-      const [expectedConfirm, expectedRevise] = expected;
-
       if (normalized.length !== 2) {
         errors.push("options must be exactly 2 items when done=true");
       } else {
-        const [first, second] = normalized;
-        if (!first || !second) {
-          errors.push("options must be exactly 2 items when done=true");
-        } else if (
-          first.id !== expectedConfirm.id ||
-          first.label !== expectedConfirm.label ||
-          second.id !== expectedRevise.id ||
-          second.label !== expectedRevise.label
-        ) {
-          errors.push("options must be confirm/revise fixed pair when done=true");
+        const ids = new Set(normalized.map((option) => option.id));
+        if (!(ids.has("confirm") && ids.has("revise") && ids.size === 2)) {
+          errors.push('options must contain exactly ids "confirm" and "revise" when done=true');
         }
       }
 
