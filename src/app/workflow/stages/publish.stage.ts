@@ -1,5 +1,5 @@
-import type { PublishArtifactsInput } from "../../tools/artifacts/publish-artifacts.ts";
-import type { RunSummary } from "../../tools/artifacts/run-summary.ts";
+import type { PublishArtifactsInput } from "../../../tools/artifacts/publish-artifacts.ts";
+import type { RunSummary } from "../../../tools/artifacts/run-summary.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
   emitProgressAndPersist,
@@ -15,9 +15,7 @@ export const runPublishStage = async ({
   runtime: WorkflowRuntimeArtifacts;
   videoPath: string;
   onProgress?: WorkflowProgressReporter;
-  publishArtifactsImpl: (
-    input: PublishArtifactsInput,
-  ) => Promise<RunSummary>;
+  publishArtifactsImpl: (input: PublishArtifactsInput) => Promise<RunSummary>;
 }): Promise<RunSummary> => {
   await emitProgressAndPersist(runtime, onProgress, {
     stage: "publish_start",
@@ -48,3 +46,4 @@ export const runPublishStage = async ({
 
   return summary;
 };
+

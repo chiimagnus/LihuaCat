@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { reviseRenderScriptWithLynx } from "../src/domains/render-script/revise-render-script-with-lynx.ts";
+import { reviseRenderScriptWithLynx } from "../src/app/workflow/revise-render-script-with-lynx.ts";
 import type { RenderScript } from "../src/contracts/render-script.types.ts";
 import { OcelotAgentResponseParseError } from "../src/agents/ocelot/ocelot.client.ts";
 

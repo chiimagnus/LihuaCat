@@ -11,7 +11,7 @@ import type {
   RenderStoryTui,
   RenderStoryTuiIntroInput,
 } from "../src/commands/tui/render-story.tui.ts";
-import type { WorkflowProgressEvent } from "../src/workflow/workflow-events.ts";
+import type { WorkflowProgressEvent } from "../src/app/workflow/workflow-events.ts";
 
 type MockTuiState = {
   introInput?: RenderStoryTuiIntroInput;

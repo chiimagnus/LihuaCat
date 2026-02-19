@@ -1,9 +1,9 @@
-import { collectImages } from "../tools/material-intake/collect-images.ts";
-import { compressImagesToRemotionPublicDir } from "../tools/material-intake/compress-images.ts";
-import { renderByTemplateV2 } from "../tools/render/render-by-template.ts";
-import { publishArtifacts } from "../tools/artifacts/publish-artifacts.ts";
-import { runTabbySession } from "../agents/tabby/tabby.session.ts";
-import { generateStoryBrief } from "../subagents/story-brief/generate-story-brief.ts";
+import { collectImages } from "../../tools/material-intake/collect-images.ts";
+import { compressImagesToRemotionPublicDir } from "../../tools/material-intake/compress-images.ts";
+import { renderByTemplateV2 } from "../../tools/render/render-by-template.ts";
+import { publishArtifacts } from "../../tools/artifacts/publish-artifacts.ts";
+import { runTabbySession } from "../../agents/tabby/tabby.session.ts";
+import { generateStoryBrief } from "../../subagents/story-brief/generate-story-brief.ts";
 
 export type WorkflowPorts = {
   collectImagesImpl: typeof collectImages;
@@ -26,3 +26,4 @@ export const resolveWorkflowPorts = (
     publishArtifactsImpl: overrides.publishArtifactsImpl ?? publishArtifacts,
   };
 };
+

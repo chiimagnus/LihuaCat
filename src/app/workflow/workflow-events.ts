@@ -21,3 +21,4 @@ export type WorkflowProgressEvent = {
 export type WorkflowProgressReporter = (
   event: WorkflowProgressEvent,
 ) => Promise<void> | void;
+

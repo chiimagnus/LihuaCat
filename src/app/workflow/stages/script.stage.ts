@@ -1,14 +1,10 @@
 import fs from "node:fs/promises";
 
-import type { collectImages } from "../../tools/material-intake/collect-images.ts";
-import type { StoryBrief } from "../../contracts/story-brief.types.ts";
-import type { RenderScript } from "../../contracts/render-script.types.ts";
-import type { OcelotAgentClient } from "../../agents/ocelot/ocelot.client.ts";
-import type { LynxAgentClient } from "../../agents/lynx/lynx.client.ts";
-import {
-  reviseRenderScriptWithLynx,
-  type ReviseRenderScriptWithLynxProgressEvent,
-} from "../../domains/render-script/revise-render-script-with-lynx.ts";
+import type { collectImages } from "../../../tools/material-intake/collect-images.ts";
+import type { OcelotAgentClient } from "../../../agents/ocelot/ocelot.client.ts";
+import type { LynxAgentClient } from "../../../agents/lynx/lynx.client.ts";
+import type { StoryBrief } from "../../../contracts/story-brief.types.ts";
+import type { RenderScript } from "../../../contracts/render-script.types.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
   emitProgressAndPersist,
@@ -17,11 +13,14 @@ import {
   writeStageArtifact,
   type WorkflowRuntimeArtifacts,
 } from "../workflow-runtime.ts";
+import {
+  reviseRenderScriptWithLynx,
+  type ReviseRenderScriptWithLynxProgressEvent,
+} from "../revise-render-script-with-lynx.ts";
 
-export type ScriptStageResult = {
-  renderScript: RenderScript;
-  finalPassed: boolean;
-  rounds: number;
+const truncateForUi = (value: string): string => {
+  if (value.length <= 120) return value;
+  return `${value.slice(0, 120)}...`;
 };
 
 export const runScriptStage = async ({
@@ -31,9 +30,8 @@ export const runScriptStage = async ({
   storyBrief,
   ocelotAgentClient,
   lynxAgentClient,
-  enableLynxReview = false,
+  enableLynxReview,
   onProgress,
-  maxRounds = 3,
 }: {
   collected: Awaited<ReturnType<typeof collectImages>>;
   runtime: WorkflowRuntimeArtifacts;
@@ -43,13 +41,10 @@ export const runScriptStage = async ({
   lynxAgentClient?: LynxAgentClient;
   enableLynxReview?: boolean;
   onProgress?: WorkflowProgressReporter;
-  maxRounds?: number;
-}): Promise<ScriptStageResult> => {
+}): Promise<{ renderScript: RenderScript; finalPassed: boolean; rounds: number }> => {
   await emitProgressAndPersist(runtime, onProgress, {
     stage: "script_start",
-    message: enableLynxReview
-      ? "Generating RenderScript with Lynx review loop..."
-      : "Generating RenderScript...",
+    message: "Generating RenderScript...",
   });
 
   const photos = collected.images.map((image) => ({
@@ -108,7 +103,9 @@ export const runScriptStage = async ({
     }
 
     if (!renderScript) {
-      throw new Error(`Unexpected: failed to generate renderScript. Reasons: ${reasons.join(" | ")}`);
+      throw new Error(
+        `Unexpected: failed to generate renderScript. Reasons: ${reasons.join(" | ")}`,
+      );
     }
 
     await pushRunLog(runtime, "lynxReviewEnabled=false");
@@ -192,7 +189,7 @@ export const runScriptStage = async ({
         });
       },
     },
-    maxRounds,
+    maxRounds: 3,
     maxOcelotRetriesPerRound: 2,
     onProgress: async (event) => {
       await emitLynxProgress(toLynxProgressMessage(event));
@@ -202,19 +199,11 @@ export const runScriptStage = async ({
   for (const round of result.rounds) {
     const ocelotRevisionPath = runtime.getOcelotRevisionPath(round.round);
     runtime.ocelotRevisionPaths.push(ocelotRevisionPath);
-    await fs.writeFile(
-      ocelotRevisionPath,
-      JSON.stringify(round.renderScript, null, 2),
-      "utf8",
-    );
+    await fs.writeFile(ocelotRevisionPath, JSON.stringify(round.renderScript, null, 2), "utf8");
 
     const lynxReviewPath = runtime.getLynxReviewPath(round.round);
     runtime.lynxReviewPaths.push(lynxReviewPath);
-    await fs.writeFile(
-      lynxReviewPath,
-      JSON.stringify(round.lynxReview, null, 2),
-      "utf8",
-    );
+    await fs.writeFile(lynxReviewPath, JSON.stringify(round.lynxReview, null, 2), "utf8");
   }
 
   await pushRunLog(runtime, `renderScriptGeneratedInAttempts=${result.rounds.length}`);
@@ -241,10 +230,4 @@ export const runScriptStage = async ({
     finalPassed: result.finalPassed,
     rounds: result.rounds.length,
   };
-};
-
-const truncateForUi = (input: string, maxLen = 120): string => {
-  const normalized = input.replace(/\s+/g, " ").trim();
-  if (normalized.length <= maxLen) return normalized;
-  return `${normalized.slice(0, Math.max(0, maxLen - 1))}…`;
 };

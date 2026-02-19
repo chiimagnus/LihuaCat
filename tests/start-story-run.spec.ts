@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { startStoryRun } from "../src/workflow/start-story-run.ts";
+import { startStoryRun } from "../src/app/workflow/start-story-run.ts";
 
 test("startStoryRun returns runId and outputDir", () => {
   const result = startStoryRun({

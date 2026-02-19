@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { StoryBrief } from "../contracts/story-brief.types.ts";
-import type { RenderScript } from "../contracts/render-script.types.ts";
+import type { StoryBrief } from "../../contracts/story-brief.types.ts";
+import type { RenderScript } from "../../contracts/render-script.types.ts";
 import type {
   WorkflowProgressEvent,
   WorkflowProgressReporter,
@@ -103,18 +103,12 @@ export const emitProgressAndPersist = async (
   });
 };
 
-export const pushRunLog = async (
-  runtime: WorkflowRuntimeArtifacts,
-  line: string,
-) => {
+export const pushRunLog = async (runtime: WorkflowRuntimeArtifacts, line: string) => {
   runtime.runLogs.push(line);
   await fs.appendFile(runtime.runLogPath, `${line}\n`, "utf8");
 };
 
-export const pushErrorLog = async (
-  runtime: WorkflowRuntimeArtifacts,
-  line: string,
-) => {
+export const pushErrorLog = async (runtime: WorkflowRuntimeArtifacts, line: string) => {
   runtime.errorLogs.push(line);
   await fs.appendFile(runtime.errorLogPath, `${line}\n`, "utf8");
 };
@@ -123,22 +117,14 @@ export const writeStoryBriefArtifact = async (
   runtime: WorkflowRuntimeArtifacts,
   storyBrief: StoryBrief,
 ) => {
-  await fs.writeFile(
-    runtime.storyBriefPath,
-    JSON.stringify(storyBrief, null, 2),
-    "utf8",
-  );
+  await fs.writeFile(runtime.storyBriefPath, JSON.stringify(storyBrief, null, 2), "utf8");
 };
 
 export const writeRenderScriptArtifact = async (
   runtime: WorkflowRuntimeArtifacts,
   renderScript: RenderScript,
 ) => {
-  await fs.writeFile(
-    runtime.renderScriptPath,
-    JSON.stringify(renderScript, null, 2),
-    "utf8",
-  );
+  await fs.writeFile(runtime.renderScriptPath, JSON.stringify(renderScript, null, 2), "utf8");
 };
 
 export const writeStageArtifact = async (
@@ -163,3 +149,4 @@ export const appendRenderAttempt = async (
 const appendJsonLine = async (filePath: string, data: Record<string, unknown>) => {
   await fs.appendFile(filePath, `${JSON.stringify(data)}\n`, "utf8");
 };
+

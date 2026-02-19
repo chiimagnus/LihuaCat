@@ -1,4 +1,4 @@
-import type { collectImages } from "../../tools/material-intake/collect-images.ts";
+import type { collectImages } from "../../../tools/material-intake/collect-images.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
   emitProgressAndPersist,
@@ -20,20 +20,13 @@ export const runCollectImagesStage = async ({
 }) => {
   await emitProgressAndPersist(runtime, onProgress, {
     stage: "collect_images_start",
-    message: "Collecting images from input directory...",
+    message: "Collecting images...",
   });
 
-  const collected = await collectImagesImpl({
-    sourceDir,
-    maxImages: 20,
-  });
-
+  const collected = await collectImagesImpl({ sourceDir });
   await pushRunLog(runtime, `collectedImages=${collected.images.length}`);
-  await writeStageArtifact(runtime, "material-intake.json", {
-    sourceDir,
-    imageCount: collected.images.length,
-    images: collected.images,
-  });
+  await writeStageArtifact(runtime, "material-intake.json", collected);
+
   await emitProgressAndPersist(runtime, onProgress, {
     stage: "collect_images_done",
     message: `Collected ${collected.images.length} images.`,
