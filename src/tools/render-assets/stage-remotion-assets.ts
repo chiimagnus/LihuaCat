@@ -96,3 +96,4 @@ const isInsideDir = (filePath: string, dirPath: string): boolean => {
   if (path.isAbsolute(relative)) return false;
   return true;
 };
+

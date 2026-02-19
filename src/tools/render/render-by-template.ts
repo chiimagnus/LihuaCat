@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { RenderScript } from "../../contracts/render-script.types.ts";
-import { stageRemotionAssets } from "../../domains/render-assets/stage-remotion-assets.ts";
+import { stageRemotionAssets } from "../../tools/render-assets/stage-remotion-assets.ts";
 import {
   validateRenderScriptSemantics,
   validateRenderScriptStructure,
@@ -133,4 +133,3 @@ const templateEntryPointPath = fileURLToPath(
     import.meta.url,
   ),
 );
-
