@@ -1,4 +1,4 @@
-import type { collectImages } from "../../domains/material-intake/collect-images.ts";
+import type { collectImages } from "../../tools/material-intake/collect-images.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
   emitProgressAndPersist,

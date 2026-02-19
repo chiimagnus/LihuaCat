@@ -9,7 +9,7 @@ export {
 } from "./workflow/start-story-run.ts";
 
 export type { RunSummary } from "./domains/artifact-publish/build-run-summary.ts";
-export { SourceDirectoryNotFoundError } from "./domains/material-intake/material-intake.errors.ts";
+export { SourceDirectoryNotFoundError } from "./tools/material-intake/material-intake.errors.ts";
 
 export type {
   TabbyAgentClient,

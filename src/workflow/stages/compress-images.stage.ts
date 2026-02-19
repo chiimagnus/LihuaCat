@@ -1,5 +1,5 @@
-import type { collectImages } from "../../domains/material-intake/collect-images.ts";
-import type { compressImagesToRemotionPublicDir } from "../../domains/material-intake/compress-images.ts";
+import type { collectImages } from "../../tools/material-intake/collect-images.ts";
+import type { compressImagesToRemotionPublicDir } from "../../tools/material-intake/compress-images.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
   emitProgressAndPersist,
@@ -53,4 +53,3 @@ export const runCompressImagesStage = async ({
     images: result.images,
   };
 };
-

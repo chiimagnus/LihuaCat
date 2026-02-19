@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 
-import type { collectImages } from "../../domains/material-intake/collect-images.ts";
+import type { collectImages } from "../../tools/material-intake/collect-images.ts";
 import type { StoryBrief } from "../../contracts/story-brief.types.ts";
 import type { RenderScript } from "../../contracts/render-script.types.ts";
 import type { OcelotAgentClient } from "../../agents/ocelot/ocelot.client.ts";

@@ -1,5 +1,5 @@
-import { collectImages } from "../domains/material-intake/collect-images.ts";
-import { compressImagesToRemotionPublicDir } from "../domains/material-intake/compress-images.ts";
+import { collectImages } from "../tools/material-intake/collect-images.ts";
+import { compressImagesToRemotionPublicDir } from "../tools/material-intake/compress-images.ts";
 import { renderByTemplateV2 } from "../domains/template-render/render-by-template.ts";
 import { publishArtifacts } from "../domains/artifact-publish/publish-artifacts.ts";
 import { runTabbySession } from "../agents/tabby/tabby.session.ts";

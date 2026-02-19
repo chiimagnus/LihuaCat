@@ -1,4 +1,4 @@
-import type { collectImages } from "../../domains/material-intake/collect-images.ts";
+import type { collectImages } from "../../tools/material-intake/collect-images.ts";
 import type { TabbyAgentClient } from "../../agents/tabby/tabby.client.ts";
 import type { TabbySessionTui } from "../../agents/tabby/tabby.session.ts";
 import type { runTabbySession } from "../../agents/tabby/tabby.session.ts";
