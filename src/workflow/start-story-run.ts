@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 
 import type { TabbyAgentClient } from "../domains/tabby/tabby-agent.client.ts";
 import type { TabbySessionTui } from "../domains/tabby/tabby-session.ts";
-import type { StoryBriefAgentClient } from "../domains/story-brief/story-brief-agent.client.ts";
+import type { StoryBriefAgentClient } from "../subagents/story-brief/story-brief.client.ts";
 import type { OcelotAgentClient } from "../domains/render-script/ocelot-agent.client.ts";
 import type { LynxAgentClient } from "../domains/lynx/lynx-agent.client.ts";
 import type { RunSummary } from "../domains/artifact-publish/build-run-summary.ts";

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { buildTabbyTurnPromptInput } from "../src/prompts/tabby-turn.prompt.ts";
-import { buildStoryBriefPromptInput } from "../src/prompts/story-brief.prompt.ts";
+import { buildStoryBriefPromptInput } from "../src/subagents/story-brief/story-brief.prompt.ts";
 import { buildRenderScriptPromptInput } from "../src/prompts/render-script.prompt.ts";
 import { buildLynxReviewPromptInput } from "../src/prompts/lynx-review.prompt.ts";
 
@@ -73,4 +73,3 @@ test("agent prompts are Chinese and include language rules", () => {
   assert.match(lynx[0]!.text, /语言规则/);
   assert.doesNotMatch(lynx[0]!.text, /You are Lynx/);
 });
-

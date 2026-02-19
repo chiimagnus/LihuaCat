@@ -3,7 +3,7 @@ import { compressImagesToRemotionPublicDir } from "../domains/material-intake/co
 import { renderByTemplateV2 } from "../domains/template-render/render-by-template.ts";
 import { publishArtifacts } from "../domains/artifact-publish/publish-artifacts.ts";
 import { runTabbySession } from "../domains/tabby/tabby-session.ts";
-import { generateStoryBrief } from "../domains/story-brief/generate-story-brief.ts";
+import { generateStoryBrief } from "../subagents/story-brief/generate-story-brief.ts";
 
 export type WorkflowPorts = {
   collectImagesImpl: typeof collectImages;

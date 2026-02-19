@@ -2,8 +2,8 @@ import type { collectImages } from "../../domains/material-intake/collect-images
 import type { TabbyAgentClient } from "../../domains/tabby/tabby-agent.client.ts";
 import type { TabbySessionTui } from "../../domains/tabby/tabby-session.ts";
 import type { runTabbySession } from "../../domains/tabby/tabby-session.ts";
-import type { StoryBriefAgentClient } from "../../domains/story-brief/story-brief-agent.client.ts";
-import type { generateStoryBrief } from "../../domains/story-brief/generate-story-brief.ts";
+import type { StoryBriefAgentClient } from "../../subagents/story-brief/story-brief.client.ts";
+import type { generateStoryBrief } from "../../subagents/story-brief/generate-story-brief.ts";
 import type { StoryBrief } from "../../contracts/story-brief.types.ts";
 import type { TabbyConversationEvent } from "../../contracts/tabby-conversation.types.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";

@@ -32,16 +32,16 @@ export type {
   StoryBriefAgentClient,
   GenerateStoryBriefRequest,
   CreateCodexStoryBriefAgentClientInput,
-} from "./domains/story-brief/story-brief-agent.client.ts";
+} from "./subagents/story-brief/story-brief.client.ts";
 export {
   createCodexStoryBriefAgentClient,
   DEFAULT_STORY_BRIEF_CODEX_MODEL,
   DEFAULT_STORY_BRIEF_CODEX_REASONING_EFFORT,
   StoryBriefAgentResponseParseError,
-} from "./domains/story-brief/story-brief-agent.client.ts";
+} from "./subagents/story-brief/story-brief.client.ts";
 export {
   StoryBriefGenerationFailedError,
-} from "./domains/story-brief/generate-story-brief.ts";
+} from "./subagents/story-brief/generate-story-brief.ts";
 
 export type {
   OcelotAgentClient,
