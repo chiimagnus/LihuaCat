@@ -1,7 +1,7 @@
 import path from "node:path";
-import { listAvailableBrowserExecutables } from "../tools/render/browser-locator.ts";
+import { listAvailableBrowserExecutables } from "../../tools/render/browser-locator.ts";
 
-import { assertCodexCliAuthenticated } from "../tools/auth/codex-auth-guard.ts";
+import { assertCodexCliAuthenticated } from "../../tools/auth/codex-auth-guard.ts";
 import {
   createCodexLynxAgentClient,
   createCodexOcelotAgentClient,
@@ -12,13 +12,13 @@ import {
   runStoryWorkflowV2,
   SourceDirectoryNotFoundError,
   StoryBriefGenerationFailedError,
-} from "../pipeline.ts";
+} from "../../pipeline.ts";
 import { buildRenderFailureOutput } from "./render-story.error-mapper.ts";
 import {
   createClackRenderStoryTui,
   type RenderStoryTui,
   TuiCancelledError,
-} from "./tui/render-story.tui.ts";
+} from "./render-story.tui.ts";
 
 type LogWriter = {
   write: (chunk: string) => void;

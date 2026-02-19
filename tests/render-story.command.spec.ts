@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { runRenderStoryCommand } from "../src/commands/render-story.command.ts";
+import { runRenderStoryCommand } from "../src/app/tui/render-story.command.ts";
 import {
   type RunSummary,
   SourceDirectoryNotFoundError,
@@ -10,7 +10,7 @@ import {
 import type {
   RenderStoryTui,
   RenderStoryTuiIntroInput,
-} from "../src/commands/tui/render-story.tui.ts";
+} from "../src/app/tui/render-story.tui.ts";
 import type { WorkflowProgressEvent } from "../src/app/workflow/workflow-events.ts";
 
 type MockTuiState = {

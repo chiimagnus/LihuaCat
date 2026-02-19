@@ -156,7 +156,7 @@
 ## 实现落点（未来实现建议）
 
 ### 入口与参数解析
-- 在 `src/commands/render-story.command.ts` 新增 `--continue` 参数
+- 在 `src/app/tui/render-story.command.ts` 新增 `--continue` 参数
 - 若 `--continue`：
   - 要求 `--input` 或通过 TUI 询问 inputDir
   - 扫描 `lihuacat-output`，展示 run 列表让用户选择
