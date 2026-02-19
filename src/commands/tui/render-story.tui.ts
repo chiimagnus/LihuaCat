@@ -15,7 +15,7 @@ import type {
   WorkflowProgressEvent,
 } from "../../pipeline.ts";
 import type { TabbyOption } from "../../contracts/tabby-turn.types.ts";
-import type { BrowserCandidate } from "../../domains/template-render/browser-locator.ts";
+import type { BrowserCandidate } from "../../tools/render/browser-locator.ts";
 
 export type RenderStoryTuiIntroInput = {
   model: string;

@@ -2,7 +2,11 @@ import React from "react";
 import { AbsoluteFill, Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 
 import type { StoryTemplateProps } from "./StoryComposition.schema.ts";
-import { buildSceneWindows, computeKenBurnsTransform, computeSceneLayers } from "./StoryComposition.logic.ts";
+import {
+  buildSceneWindows,
+  computeKenBurnsTransform,
+  computeSceneLayers,
+} from "./StoryComposition.logic.ts";
 
 export const StoryComposition: React.FC<StoryTemplateProps> = (props) => {
   const { fps } = useVideoConfig();
@@ -13,10 +17,7 @@ export const StoryComposition: React.FC<StoryTemplateProps> = (props) => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#0f172a" }}>
       {layers.map((layer) => (
-        <SceneLayerView
-          key={layer.sceneId}
-          layer={layer}
-        />
+        <SceneLayerView key={layer.sceneId} layer={layer} />
       ))}
     </AbsoluteFill>
   );
@@ -125,3 +126,4 @@ const subtitlePositionToBackgroundStyle = (
       "linear-gradient(180deg, rgba(15,23,42,0) 50%, rgba(15,23,42,0.82) 100%)",
   };
 };
+

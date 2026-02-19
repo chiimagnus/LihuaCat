@@ -7,7 +7,7 @@ import {
   type WorkflowRuntimeArtifacts,
 } from "../workflow-runtime.ts";
 import type { RenderScript } from "../../contracts/render-script.types.ts";
-import type { renderByTemplateV2 } from "../../domains/template-render/render-by-template.ts";
+import type { renderByTemplateV2 } from "../../tools/render/render-by-template.ts";
 
 export type RenderStageResult = {
   mode: "template";

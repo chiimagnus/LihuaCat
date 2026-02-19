@@ -110,3 +110,4 @@ const buildKnownCandidates = (): BrowserCandidate[] => {
   }
   return candidates;
 };
+

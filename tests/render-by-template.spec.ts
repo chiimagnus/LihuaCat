@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { renderByTemplateV2, TemplateRenderError } from "../src/domains/template-render/render-by-template.ts";
+import { renderByTemplateV2, TemplateRenderError } from "../src/tools/render/render-by-template.ts";
 import type { RenderScript } from "../src/contracts/render-script.types.ts";
 
 test("template render consumes render-script and produces video file", async () => {

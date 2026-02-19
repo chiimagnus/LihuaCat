@@ -116,7 +116,8 @@ export const computeSceneLayers = (
     ];
   }
 
-  const t = transitionFrames === 0 ? 1 : clamp01((clampedFrame - transitionStart) / transitionFrames);
+  const t =
+    transitionFrames === 0 ? 1 : clamp01((clampedFrame - transitionStart) / transitionFrames);
   const nextDurationFrames = Math.max(1, next.endFrame - next.startFrame);
   const nextProgress = clamp01((clampedFrame - next.startFrame) / nextDurationFrames);
 
@@ -261,7 +262,12 @@ export const computeKenBurnsTransform = (
         ? maxY * t
         : 0;
 
-  return { scale, translateX: panX, translateY: panY };
+  return {
+    scale,
+    translateX: panX,
+    translateY: panY,
+  };
 };
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
+
