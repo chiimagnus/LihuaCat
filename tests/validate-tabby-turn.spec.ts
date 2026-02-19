@@ -26,18 +26,18 @@ test("done=false requires free_input option", () => {
   assert.ok(result.errors.some((error) => error.includes("free_input")));
 });
 
-test("done=true requires fixed confirm/revise pair", () => {
+test("done=true requires confirm/revise ids", () => {
   const result = validateTabbyTurnOutput({
     say: "我理解你想表达的是……",
     done: true,
     options: [
       { id: "confirm", label: "确认" },
-      { id: "revise", label: "需要修改" },
+      { id: "free_input", label: "我想自己说…" },
     ],
     internalNotes: "confirm summary",
   });
   assert.equal(result.valid, false);
-  assert.ok(result.errors.some((error) => error.includes("fixed pair")));
+  assert.ok(result.errors.some((error) => error.includes("confirm") && error.includes("revise")));
 });
 
 test("valid done=false turn passes validation", () => {
@@ -61,6 +61,19 @@ test("valid done=true confirm page passes validation", () => {
     options: [
       { id: "confirm", label: "就是这个感觉" },
       { id: "revise", label: "需要修改" },
+    ],
+    internalNotes: "ready to confirm",
+  });
+  assert.equal(result.valid, true);
+});
+
+test("valid done=true confirm page supports English labels", () => {
+  const result = validateTabbyTurnOutput({
+    say: "I think what you want to convey is: …",
+    done: true,
+    options: [
+      { id: "confirm", label: "That's it" },
+      { id: "revise", label: "Needs changes" },
     ],
     internalNotes: "ready to confirm",
   });
