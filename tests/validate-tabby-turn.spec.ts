@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { validateTabbyTurnOutput } from "../src/domains/tabby/validate-tabby-turn.ts";
+import { validateTabbyTurnOutput } from "../src/agents/tabby/tabby.validate.ts";
 
 test("tabby-turn validation fails when required fields are missing", () => {
   const result = validateTabbyTurnOutput({});

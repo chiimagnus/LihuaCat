@@ -15,18 +15,18 @@ export type {
   TabbyAgentClient,
   GenerateTabbyTurnRequest,
   CreateCodexTabbyAgentClientInput,
-} from "./domains/tabby/tabby-agent.client.ts";
+} from "./agents/tabby/tabby.client.ts";
 export {
   createCodexTabbyAgentClient,
   DEFAULT_TABBY_CODEX_MODEL,
   DEFAULT_TABBY_CODEX_REASONING_EFFORT,
   TabbyAgentResponseParseError,
-} from "./domains/tabby/tabby-agent.client.ts";
+} from "./agents/tabby/tabby.client.ts";
 
 export {
   DEFAULT_TABBY_CODEX_MODEL as DEFAULT_CODEX_MODEL,
   DEFAULT_TABBY_CODEX_REASONING_EFFORT as DEFAULT_CODEX_REASONING_EFFORT,
-} from "./domains/tabby/tabby-agent.client.ts";
+} from "./agents/tabby/tabby.client.ts";
 
 export type {
   StoryBriefAgentClient,

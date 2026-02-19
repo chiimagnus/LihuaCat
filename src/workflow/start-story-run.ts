@@ -1,8 +1,8 @@
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
-import type { TabbyAgentClient } from "../domains/tabby/tabby-agent.client.ts";
-import type { TabbySessionTui } from "../domains/tabby/tabby-session.ts";
+import type { TabbyAgentClient } from "../agents/tabby/tabby.client.ts";
+import type { TabbySessionTui } from "../agents/tabby/tabby.session.ts";
 import type { StoryBriefAgentClient } from "../subagents/story-brief/story-brief.client.ts";
 import type { OcelotAgentClient } from "../domains/render-script/ocelot-agent.client.ts";
 import type { LynxAgentClient } from "../domains/lynx/lynx-agent.client.ts";

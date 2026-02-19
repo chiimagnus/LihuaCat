@@ -9,7 +9,7 @@ import type {
 import {
   runStoryWorkflowV2,
 } from "../../pipeline.ts";
-import type { TabbySessionTui } from "../../domains/tabby/tabby-session.ts";
+import type { TabbySessionTui } from "../../agents/tabby/tabby.session.ts";
 
 export type CreateStoryVideoPromptAdapter = {
   askSourceDir: () => Promise<string>;

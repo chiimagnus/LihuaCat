@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildTabbyTurnPromptInput } from "../src/prompts/tabby-turn.prompt.ts";
+import { buildTabbyTurnPromptInput } from "../src/agents/tabby/tabby.prompt.ts";
 import { buildStoryBriefPromptInput } from "../src/subagents/story-brief/story-brief.prompt.ts";
 import { buildRenderScriptPromptInput } from "../src/prompts/render-script.prompt.ts";
 import { buildLynxReviewPromptInput } from "../src/prompts/lynx-review.prompt.ts";
