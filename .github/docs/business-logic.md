@@ -196,6 +196,5 @@ flowchart TD
 
 - `src/index.ts`：CLI 入口与交互起点
 - `src/commands/render-story.command.ts`：命令入口（鉴权、参数与 TUI 驱动）
-- `src/app/flows/create-story-video/create-story-video.flow.ts`：端到端用户流程编排入口（向 workflow 提供依赖）
 - `src/app/workflow/start-story-run.ts`：核心工作流编排（stages + 进度事件 + 产物落盘）
 - `src/pipeline.ts`：对外门面（主流程入口）

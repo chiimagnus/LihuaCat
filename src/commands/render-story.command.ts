@@ -2,7 +2,6 @@ import path from "node:path";
 import { listAvailableBrowserExecutables } from "../tools/render/browser-locator.ts";
 
 import { assertCodexCliAuthenticated } from "../tools/auth/codex-auth-guard.ts";
-import { createStoryVideoFlow } from "../app/flows/create-story-video/create-story-video.flow.ts";
 import {
   createCodexLynxAgentClient,
   createCodexOcelotAgentClient,
@@ -100,11 +99,9 @@ export const runRenderStoryCommand = async ({
   }
 
   try {
-    const summary = await createStoryVideoFlow({
-      prompts: {
-        askSourceDir: async () =>
-          resolveInputPath(sourceDirInitial ?? (await ui.askSourceDir())),
-      },
+    const sourceDir = resolveInputPath(sourceDirInitial ?? (await ui.askSourceDir()));
+    const summary = await workflowImpl({
+      sourceDir,
       tabbyAgentClient,
       tabbyTui: {
         onTurnStart: ui.tabbyOnTurnStart,
@@ -118,7 +115,6 @@ export const runRenderStoryCommand = async ({
       enableLynxReview,
       browserExecutablePath,
       onProgress: (event) => ui.onWorkflowProgress(event),
-      workflowImpl,
     });
 
     ui.complete(summary);
