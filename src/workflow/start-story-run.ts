@@ -5,7 +5,7 @@ import type { TabbyAgentClient } from "../agents/tabby/tabby.client.ts";
 import type { TabbySessionTui } from "../agents/tabby/tabby.session.ts";
 import type { StoryBriefAgentClient } from "../subagents/story-brief/story-brief.client.ts";
 import type { OcelotAgentClient } from "../agents/ocelot/ocelot.client.ts";
-import type { LynxAgentClient } from "../domains/lynx/lynx-agent.client.ts";
+import type { LynxAgentClient } from "../agents/lynx/lynx.client.ts";
 import type { RunSummary } from "../domains/artifact-publish/build-run-summary.ts";
 import type { WorkflowProgressReporter } from "./workflow-events.ts";
 import {

@@ -4,7 +4,7 @@ import type { collectImages } from "../../domains/material-intake/collect-images
 import type { StoryBrief } from "../../contracts/story-brief.types.ts";
 import type { RenderScript } from "../../contracts/render-script.types.ts";
 import type { OcelotAgentClient } from "../../agents/ocelot/ocelot.client.ts";
-import type { LynxAgentClient } from "../../domains/lynx/lynx-agent.client.ts";
+import type { LynxAgentClient } from "../../agents/lynx/lynx.client.ts";
 import {
   reviseRenderScriptWithLynx,
   type ReviseRenderScriptWithLynxProgressEvent,

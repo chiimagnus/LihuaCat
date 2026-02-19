@@ -2,7 +2,7 @@ import type { StoryBrief } from "../../contracts/story-brief.types.ts";
 import type { RenderScript } from "../../contracts/render-script.types.ts";
 import type { LynxReview } from "../../contracts/lynx-review.types.ts";
 import type { OcelotAgentClient } from "../../agents/ocelot/ocelot.client.ts";
-import type { LynxAgentClient } from "../lynx/lynx-agent.client.ts";
+import type { LynxAgentClient } from "../../agents/lynx/lynx.client.ts";
 
 export type ReviseRenderScriptWithLynxInput = {
   storyBriefRef: string;
