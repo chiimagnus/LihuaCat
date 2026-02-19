@@ -5,11 +5,11 @@ import type {
   OcelotAgentClient,
   LynxAgentClient,
   WorkflowProgressEvent,
-} from "../../pipeline.ts";
+} from "../../../pipeline.ts";
 import {
   runStoryWorkflowV2,
-} from "../../pipeline.ts";
-import type { TabbySessionTui } from "../../agents/tabby/tabby.session.ts";
+} from "../../../pipeline.ts";
+import type { TabbySessionTui } from "../../../agents/tabby/tabby.session.ts";
 
 export type CreateStoryVideoPromptAdapter = {
   askSourceDir: () => Promise<string>;

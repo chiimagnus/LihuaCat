@@ -1,4 +1,4 @@
-import type { compressImagesToRemotionPublicDir } from "../../../tools/material-intake/compress-images.ts";
+import type { collectImages } from "../../../tools/material-intake/collect-images.ts";
 import type { RenderScript } from "../../../contracts/render-script.types.ts";
 import type { renderByTemplateV2 } from "../../../tools/render/render-by-template.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
@@ -17,7 +17,7 @@ export const runRenderStage = async ({
   renderByTemplateV2Impl,
 }: {
   runtime: WorkflowRuntimeArtifacts;
-  collected: Awaited<ReturnType<typeof compressImagesToRemotionPublicDir>>;
+  collected: Awaited<ReturnType<typeof collectImages>>;
   renderScript: RenderScript;
   browserExecutablePath?: string;
   onProgress?: WorkflowProgressReporter;
@@ -60,4 +60,3 @@ export const runRenderStage = async ({
     throw error;
   }
 };
-

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createStoryVideoFlow } from "../src/flows/create-story-video/create-story-video.flow.ts";
+import { createStoryVideoFlow } from "../src/app/flows/create-story-video/create-story-video.flow.ts";
 
 test("flow asks input then runs workflow", async () => {
   const steps: string[] = [];

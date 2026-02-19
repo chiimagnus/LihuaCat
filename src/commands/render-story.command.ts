@@ -2,7 +2,7 @@ import path from "node:path";
 import { listAvailableBrowserExecutables } from "../tools/render/browser-locator.ts";
 
 import { assertCodexCliAuthenticated } from "../tools/auth/codex-auth-guard.ts";
-import { createStoryVideoFlow } from "../flows/create-story-video/create-story-video.flow.ts";
+import { createStoryVideoFlow } from "../app/flows/create-story-video/create-story-video.flow.ts";
 import {
   createCodexLynxAgentClient,
   createCodexOcelotAgentClient,
