@@ -7,7 +7,7 @@ import { stageRemotionAssets } from "../render-assets/stage-remotion-assets.ts";
 import {
   validateRenderScriptSemantics,
   validateRenderScriptStructure,
-} from "../render-script/validate-render-script.ts";
+} from "../../agents/ocelot/ocelot.validate.ts";
 import { locateBrowserExecutable } from "./browser-locator.ts";
 import {
   bundleRemotionEntry,

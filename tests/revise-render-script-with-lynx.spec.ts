@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { reviseRenderScriptWithLynx } from "../src/domains/render-script/revise-render-script-with-lynx.ts";
 import type { RenderScript } from "../src/contracts/render-script.types.ts";
-import { OcelotAgentResponseParseError } from "../src/domains/render-script/ocelot-agent.client.ts";
+import { OcelotAgentResponseParseError } from "../src/agents/ocelot/ocelot.client.ts";
 
 const baseStoryBrief = {
   intent: {

@@ -47,13 +47,13 @@ export type {
   OcelotAgentClient,
   GenerateRenderScriptRequest,
   CreateCodexOcelotAgentClientInput,
-} from "./domains/render-script/ocelot-agent.client.ts";
+} from "./agents/ocelot/ocelot.client.ts";
 export {
   createCodexOcelotAgentClient,
   DEFAULT_OCELOT_CODEX_MODEL,
   DEFAULT_OCELOT_CODEX_REASONING_EFFORT,
   OcelotAgentResponseParseError,
-} from "./domains/render-script/ocelot-agent.client.ts";
+} from "./agents/ocelot/ocelot.client.ts";
 
 export type {
   LynxAgentClient,

@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import type { collectImages } from "../../domains/material-intake/collect-images.ts";
 import type { StoryBrief } from "../../contracts/story-brief.types.ts";
 import type { RenderScript } from "../../contracts/render-script.types.ts";
-import type { OcelotAgentClient } from "../../domains/render-script/ocelot-agent.client.ts";
+import type { OcelotAgentClient } from "../../agents/ocelot/ocelot.client.ts";
 import type { LynxAgentClient } from "../../domains/lynx/lynx-agent.client.ts";
 import {
   reviseRenderScriptWithLynx,
