@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { getLihuaCatRemotionRenderTuning } from "../src/domains/template-render/remotion-renderer.ts";
+import { getLihuaCatRemotionRenderTuning } from "../src/tools/render/remotion-renderer.ts";
 
 test("remotion tuning defaults to png frames", () => {
   const tuning = getLihuaCatRemotionRenderTuning({});

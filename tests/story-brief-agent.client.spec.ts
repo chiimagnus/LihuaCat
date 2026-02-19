@@ -5,7 +5,7 @@ import {
   createCodexStoryBriefAgentClient,
   StoryBriefAgentResponseParseError,
   type GenerateStoryBriefRequest,
-} from "../src/domains/story-brief/story-brief-agent.client.ts";
+} from "../src/subagents/story-brief/story-brief.client.ts";
 
 test("calls Codex SDK with model override and parses JSON result", async () => {
   const calls: {
@@ -134,4 +134,3 @@ const buildValidBrief = () => ({
     ],
   },
 });
-

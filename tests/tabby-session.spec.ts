@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { runTabbySession } from "../src/domains/tabby/tabby-session.ts";
+import { runTabbySession } from "../src/agents/tabby/tabby.session.ts";
 import type { TabbyTurnOutput } from "../src/contracts/tabby-turn.types.ts";
 
 test("tabby session logs conversation and ends on confirm", async () => {

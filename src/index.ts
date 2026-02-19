@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { runRenderStoryCommand } from "./commands/render-story.command.ts";
+import { runRenderStoryCommand } from "./app/tui/render-story.command.ts";
 
 const main = async () => {
   const exitCode = await runRenderStoryCommand({

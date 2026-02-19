@@ -5,7 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
 
-import { stageRemotionAssets } from "../src/domains/render-assets/stage-remotion-assets.ts";
+import { stageRemotionAssets } from "../src/tools/render-assets/stage-remotion-assets.ts";
 
 test("stages local assets into remotion public directory", async () => {
   await withTempDir(async (dir) => {

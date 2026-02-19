@@ -5,7 +5,7 @@ import {
   createCodexOcelotAgentClient,
   OcelotAgentResponseParseError,
   type GenerateRenderScriptRequest,
-} from "../src/domains/render-script/ocelot-agent.client.ts";
+} from "../src/agents/ocelot/ocelot.client.ts";
 
 test("calls Codex SDK with model override and returns validated render-script", async () => {
   const calls: {

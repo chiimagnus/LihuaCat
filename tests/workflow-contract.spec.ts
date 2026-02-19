@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { runStoryWorkflowV2 } from "../src/workflow/start-story-run.ts";
+import { runStoryWorkflowV2 } from "../src/app/workflow/start-story-run.ts";
 
 test("workflow contract: emits ordered core stage events on first-pass template success", async () => {
   await withTempDir(async (sourceDir) => {

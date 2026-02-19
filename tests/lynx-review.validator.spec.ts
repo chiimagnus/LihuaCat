@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { validateLynxReviewStructure } from "../src/domains/lynx/validate-lynx-review.ts";
+import { validateLynxReviewStructure } from "../src/agents/lynx/lynx.validate.ts";
 
 test("validateLynxReviewStructure accepts a minimal valid review", () => {
   const result = validateLynxReviewStructure({

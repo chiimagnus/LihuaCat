@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { compressImagesToRemotionPublicDir } from "../src/domains/material-intake/compress-images.ts";
+import { compressImagesToRemotionPublicDir } from "../src/tools/material-intake/compress-images.ts";
 
 test("compresses images into remotion public directory (jpeg) and returns staged absolute paths", async () => {
   await withTempDir(async (dir) => {
@@ -44,4 +44,3 @@ const withTempDir = async (run: (dir: string) => Promise<void>) => {
     await fs.rm(dir, { recursive: true, force: true });
   }
 };
-

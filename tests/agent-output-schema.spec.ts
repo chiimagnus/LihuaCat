@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { tabbyTurnOutputSchema } from "../src/prompts/tabby-turn.prompt.ts";
-import { storyBriefOutputSchema } from "../src/prompts/story-brief.prompt.ts";
-import { renderScriptOutputSchema } from "../src/prompts/render-script.prompt.ts";
-import { lynxReviewOutputSchema } from "../src/prompts/lynx-review.prompt.ts";
+import { tabbyTurnOutputSchema } from "../src/agents/tabby/tabby.schema.ts";
+import { storyBriefOutputSchema } from "../src/subagents/story-brief/story-brief.schema.ts";
+import { renderScriptOutputSchema } from "../src/agents/ocelot/ocelot.schema.ts";
+import { lynxReviewOutputSchema } from "../src/agents/lynx/lynx.schema.ts";
 
 test("tabby turn outputSchema keeps strict internalNotes + options bounds", () => {
   assert.deepEqual(tabbyTurnOutputSchema.required, ["say", "options", "done", "internalNotes"]);

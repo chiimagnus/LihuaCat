@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   generateStoryBrief,
   StoryBriefGenerationFailedError,
-} from "../src/domains/story-brief/generate-story-brief.ts";
+} from "../src/subagents/story-brief/generate-story-brief.ts";
 
 test("generateStoryBrief retries and succeeds when structure validation passes", async () => {
   const calls: Array<{ attempt: number; previousErrors: string[] }> = [];

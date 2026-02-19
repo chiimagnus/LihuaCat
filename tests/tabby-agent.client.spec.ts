@@ -5,7 +5,7 @@ import {
   createCodexTabbyAgentClient,
   TabbyAgentResponseParseError,
   type GenerateTabbyTurnRequest,
-} from "../src/domains/tabby/tabby-agent.client.ts";
+} from "../src/agents/tabby/tabby.client.ts";
 
 test("calls Codex SDK with model override and validates JSON result", async () => {
   const calls: {

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { validateStoryBriefStructure } from "../src/domains/story-brief/validate-story-brief.ts";
+import { validateStoryBriefStructure } from "../src/subagents/story-brief/validate-story-brief.ts";
 
 test("story-brief structure validation fails when required fields are missing", () => {
   const result = validateStoryBriefStructure({});
@@ -56,4 +56,3 @@ const buildValidBrief = () => ({
     ],
   },
 });
-

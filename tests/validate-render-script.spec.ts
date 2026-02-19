@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   validateRenderScriptSemantics,
   validateRenderScriptStructure,
-} from "../src/domains/render-script/validate-render-script.ts";
+} from "../src/agents/ocelot/ocelot.validate.ts";
 import type { RenderScript } from "../src/contracts/render-script.types.ts";
 
 test("render-script structure validation fails when required fields are missing", () => {
