@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { Codex } from "@openai/codex-sdk";
 import type { Thread } from "@openai/codex-sdk";
 
-import { assertCodexCliAuthenticated } from "../codex-auth/codex-auth-guard.ts";
+import { assertCodexCliAuthenticated } from "../../tools/auth/codex-auth-guard.ts";
 import type { StoryBrief } from "../../contracts/story-brief.types.ts";
 import type { RenderScript } from "../../contracts/render-script.types.ts";
 import {

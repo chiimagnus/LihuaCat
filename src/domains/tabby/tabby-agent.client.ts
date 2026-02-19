@@ -1,7 +1,7 @@
 import { Codex } from "@openai/codex-sdk";
 import type { Thread } from "@openai/codex-sdk";
 
-import { assertCodexCliAuthenticated } from "../codex-auth/codex-auth-guard.ts";
+import { assertCodexCliAuthenticated } from "../../tools/auth/codex-auth-guard.ts";
 import {
   buildTabbyTurnPromptInput,
   tabbyTurnOutputSchema,
