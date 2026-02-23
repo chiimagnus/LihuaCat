@@ -1,5 +1,9 @@
 import type { CodexPromptInput } from "../../tools/llm/llm.types.ts";
-import type { GenerateRenderScriptRequest } from "./ocelot.client.ts";
+import type {
+  GenerateCreativePlanRequest,
+  GenerateRenderScriptRequest,
+  ReviewCreativeAssetsRequest,
+} from "./ocelot.client.ts";
 
 export const buildRenderScriptPromptInput = (
   request: GenerateRenderScriptRequest,
@@ -59,3 +63,74 @@ export const buildRenderScriptPromptInput = (
   ];
 };
 
+export const buildCreativePlanPromptInput = (
+  request: GenerateCreativePlanRequest,
+): CodexPromptInput => {
+  const promptLines = [
+    "你是 Ocelot（虎猫），LihuaCat 的创意总监。",
+    "你需要先基于 StoryBrief 产出 CreativePlan，供 Kitten 与 Cub 执行。",
+    "",
+    "语言规则（非常重要）：",
+    "- 所有自然语言字段必须与用户语言一致。",
+    "- 无法判断时默认中文；明显为英文则输出英文。",
+    "",
+    "输出格式（严格）：只返回 JSON，不要用 markdown 包裹。",
+    "",
+    "核心要求：",
+    "- narrativeArc 必须能解释开篇→发展→高潮→收束。",
+    "- visualDirection 要明确 style/pacing/transitionTone/subtitleStyle。",
+    "- musicIntent 必须包含 moodKeywords、bpmTrend、keyMoments、durationMs。",
+    "- alignmentPoints 要给出视觉与音乐的对齐时刻。",
+    "",
+    ...(request.revisionNotes && request.revisionNotes.length > 0
+      ? [
+          "修订说明（必须全部修复）：",
+          ...request.revisionNotes.map((note) => `- ${note}`),
+          "",
+        ]
+      : []),
+    "StoryBrief（JSON）：",
+    JSON.stringify(request.storyBrief, null, 2),
+    "",
+    "可用图片 photoRefs：",
+    ...request.photos.map((photo) => `- ${photo.photoRef}`),
+  ];
+
+  return [{ type: "text" as const, text: promptLines.join("\n") }];
+};
+
+export const buildCreativeReviewPromptInput = (
+  request: ReviewCreativeAssetsRequest,
+): CodexPromptInput => {
+  const promptLines = [
+    "你是 Ocelot（虎猫），LihuaCat 的创意总监兼审稿人。",
+    "你将审查 CreativePlan、VisualScript、MIDI JSON 是否与 StoryBrief 一致，输出是否通过以及可执行改稿指令。",
+    "",
+    "语言规则（非常重要）：",
+    "- summary / issues[].message / requiredChanges[].instructions 必须与用户语言一致。",
+    "- 无法判断时默认中文；明显为英文则输出英文。",
+    "",
+    "输出格式（严格）：只返回 JSON，不要用 markdown 包裹。",
+    "",
+    "评审标准：",
+    "- 忠实表达 StoryBrief.intent。",
+    "- 视觉与音乐在关键时刻一致。",
+    "- requiredChanges 需明确指向 kitten 或 cub，且每条可直接执行。",
+    "",
+    `Round: ${request.round}/${request.maxRounds}`,
+    "",
+    "StoryBrief（JSON）：",
+    JSON.stringify(request.storyBrief, null, 2),
+    "",
+    "CreativePlan（JSON）：",
+    JSON.stringify(request.creativePlan, null, 2),
+    "",
+    "VisualScript（JSON）：",
+    JSON.stringify(request.visualScript, null, 2),
+    "",
+    "MIDI JSON（JSON）：",
+    JSON.stringify(request.midi, null, 2),
+  ];
+
+  return [{ type: "text" as const, text: promptLines.join("\n") }];
+};

@@ -5,6 +5,8 @@ import type {
   RenderScriptValidationResult,
   SlideDirection,
 } from "../../contracts/render-script.types.ts";
+import type { CreativePlan } from "../../contracts/creative-plan.types.ts";
+import { validateCreativePlan } from "../../contracts/creative-plan.types.ts";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -33,6 +35,23 @@ export type RenderScriptSemanticRules = {
   expectedPhotoRefs?: string[];
   requireAllPhotosUsed?: boolean;
   allowedSlideDirections?: SlideDirection[];
+};
+
+export type OcelotCreativeReviewIssue = {
+  target: "kitten" | "cub";
+  message: string;
+};
+
+export type OcelotCreativeReviewChange = {
+  target: "kitten" | "cub";
+  instructions: string[];
+};
+
+export type OcelotCreativeReview = {
+  passed: boolean;
+  summary: string;
+  issues: OcelotCreativeReviewIssue[];
+  requiredChanges: OcelotCreativeReviewChange[];
 };
 
 export const validateRenderScriptStructure = (
@@ -191,6 +210,12 @@ export const validateRenderScriptSemantics = (
   return { valid: errors.length === 0, errors };
 };
 
+export const validateOcelotCreativePlan = (
+  input: unknown,
+): { valid: boolean; errors: string[]; plan?: CreativePlan } => {
+  return validateCreativePlan(input);
+};
+
 const validateAudioTrack = (
   input: unknown,
 ): RenderScriptValidationResult & { audioTrack?: RenderAudioTrack } => {
@@ -222,4 +247,72 @@ const validateAudioTrack = (
   }
 
   return { valid: true, errors: [], audioTrack: input as RenderAudioTrack };
+};
+
+export const validateOcelotCreativeReview = (
+  input: unknown,
+): { valid: boolean; errors: string[]; review?: OcelotCreativeReview } => {
+  const errors: string[] = [];
+  if (!isRecord(input)) {
+    return { valid: false, errors: ["ocelot creative review must be an object"] };
+  }
+
+  if (typeof input.passed !== "boolean") {
+    errors.push("passed is required");
+  }
+  if (!isNonEmptyString(input.summary)) {
+    errors.push("summary is required");
+  }
+
+  if (!Array.isArray(input.issues)) {
+    errors.push("issues is required");
+  } else {
+    input.issues.forEach((issue, index) => {
+      if (!isRecord(issue)) {
+        errors.push(`issues[${index}] must be an object`);
+        return;
+      }
+      if (!isNonEmptyString(issue.target)) {
+        errors.push(`issues[${index}].target is required`);
+      } else if (issue.target !== "kitten" && issue.target !== "cub") {
+        errors.push(`issues[${index}].target must be kitten|cub`);
+      }
+      if (!isNonEmptyString(issue.message)) {
+        errors.push(`issues[${index}].message is required`);
+      }
+    });
+  }
+
+  if (!Array.isArray(input.requiredChanges)) {
+    errors.push("requiredChanges is required");
+  } else {
+    input.requiredChanges.forEach((change, index) => {
+      if (!isRecord(change)) {
+        errors.push(`requiredChanges[${index}] must be an object`);
+        return;
+      }
+      if (!isNonEmptyString(change.target)) {
+        errors.push(`requiredChanges[${index}].target is required`);
+      } else if (change.target !== "kitten" && change.target !== "cub") {
+        errors.push(`requiredChanges[${index}].target must be kitten|cub`);
+      }
+      if (!Array.isArray(change.instructions) || change.instructions.length === 0) {
+        errors.push(`requiredChanges[${index}].instructions must be a non-empty array`);
+      } else {
+        change.instructions.forEach((instruction, instructionIndex) => {
+          if (!isNonEmptyString(instruction)) {
+            errors.push(
+              `requiredChanges[${index}].instructions[${instructionIndex}] must be a non-empty string`,
+            );
+          }
+        });
+      }
+    });
+  }
+
+  if (errors.length > 0) {
+    return { valid: false, errors };
+  }
+
+  return { valid: true, errors: [], review: input as OcelotCreativeReview };
 };

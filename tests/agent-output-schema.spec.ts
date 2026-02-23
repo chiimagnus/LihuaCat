@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 
 import { tabbyTurnOutputSchema } from "../src/agents/tabby/tabby.schema.ts";
 import { storyBriefOutputSchema } from "../src/subagents/story-brief/story-brief.schema.ts";
-import { renderScriptOutputSchema } from "../src/agents/ocelot/ocelot.schema.ts";
+import {
+  ocelotCreativeReviewOutputSchema,
+  renderScriptOutputSchema,
+} from "../src/agents/ocelot/ocelot.schema.ts";
 import { lynxReviewOutputSchema } from "../src/agents/lynx/lynx.schema.ts";
 import { creativePlanOutputSchema } from "../src/contracts/creative-plan.types.ts";
 import { visualScriptOutputSchema } from "../src/contracts/visual-script.types.ts";
@@ -134,6 +137,25 @@ test("lynx review outputSchema stays codex-compatible and strict", () => {
   assert.deepEqual(issueItem?.required, ["category", "message"]);
   assert.equal(issueItem?.properties.category?.type, "string");
   assert.equal(issueItem?.properties.message?.type, "string");
+});
+
+test("ocelot creative review outputSchema stays strict", () => {
+  assert.equal(ocelotCreativeReviewOutputSchema.type, "object");
+  assert.equal(ocelotCreativeReviewOutputSchema.additionalProperties, false);
+  assert.deepEqual(ocelotCreativeReviewOutputSchema.required, [
+    "passed",
+    "summary",
+    "issues",
+    "requiredChanges",
+  ]);
+  assert.deepEqual(ocelotCreativeReviewOutputSchema.properties.issues.items.required, [
+    "target",
+    "message",
+  ]);
+  assert.deepEqual(
+    ocelotCreativeReviewOutputSchema.properties.requiredChanges.items.required,
+    ["target", "instructions"],
+  );
 });
 
 test("creative plan / visual script / midi schemas stay strict and complete", () => {
