@@ -41,6 +41,93 @@ export type CreativePlanValidationResult = {
   errors: string[];
 };
 
+export const creativePlanOutputSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "storyBriefRef",
+    "narrativeArc",
+    "visualDirection",
+    "musicIntent",
+    "alignmentPoints",
+  ],
+  properties: {
+    storyBriefRef: { type: "string", minLength: 1 },
+    narrativeArc: {
+      type: "object",
+      additionalProperties: false,
+      required: ["opening", "development", "climax", "resolution"],
+      properties: {
+        opening: { type: "string", minLength: 1 },
+        development: { type: "string", minLength: 1 },
+        climax: { type: "string", minLength: 1 },
+        resolution: { type: "string", minLength: 1 },
+      },
+    },
+    visualDirection: {
+      type: "object",
+      additionalProperties: false,
+      required: ["style", "pacing", "transitionTone", "subtitleStyle"],
+      properties: {
+        style: { type: "string", minLength: 1 },
+        pacing: { type: "string", enum: ["slow", "medium", "fast", "dynamic"] },
+        transitionTone: { type: "string", minLength: 1 },
+        subtitleStyle: { type: "string", minLength: 1 },
+      },
+    },
+    musicIntent: {
+      type: "object",
+      additionalProperties: false,
+      required: [
+        "moodKeywords",
+        "bpmTrend",
+        "keyMoments",
+        "instrumentationHints",
+        "durationMs",
+      ],
+      properties: {
+        moodKeywords: {
+          type: "array",
+          minItems: 1,
+          items: { type: "string", minLength: 1 },
+        },
+        bpmTrend: { type: "string", enum: ["up", "down", "steady", "arc"] },
+        keyMoments: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["label", "timeMs"],
+            properties: {
+              label: { type: "string", minLength: 1 },
+              timeMs: { type: "integer", minimum: 0 },
+            },
+          },
+        },
+        instrumentationHints: {
+          type: "array",
+          items: { type: "string", minLength: 1 },
+        },
+        durationMs: { type: "integer", minimum: 1 },
+      },
+    },
+    alignmentPoints: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["timeMs", "visualCue", "musicCue"],
+        properties: {
+          timeMs: { type: "integer", minimum: 0 },
+          visualCue: { type: "string", minLength: 1 },
+          musicCue: { type: "string", minLength: 1 },
+        },
+      },
+    },
+  },
+} as const;
+
 const PACING_VALUES = new Set<CreativePlanPacing>(["slow", "medium", "fast", "dynamic"]);
 const BPM_TREND_VALUES = new Set<CreativePlanBpmTrend>(["up", "down", "steady", "arc"]);
 
@@ -182,4 +269,3 @@ export const validateCreativePlan = (
 
   return { valid: true, errors: [], plan: input as CreativePlan };
 };
-

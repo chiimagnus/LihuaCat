@@ -5,6 +5,9 @@ import { tabbyTurnOutputSchema } from "../src/agents/tabby/tabby.schema.ts";
 import { storyBriefOutputSchema } from "../src/subagents/story-brief/story-brief.schema.ts";
 import { renderScriptOutputSchema } from "../src/agents/ocelot/ocelot.schema.ts";
 import { lynxReviewOutputSchema } from "../src/agents/lynx/lynx.schema.ts";
+import { creativePlanOutputSchema } from "../src/contracts/creative-plan.types.ts";
+import { visualScriptOutputSchema } from "../src/contracts/visual-script.types.ts";
+import { midiOutputSchema } from "../src/contracts/midi.types.ts";
 
 test("tabby turn outputSchema keeps strict internalNotes + options bounds", () => {
   assert.deepEqual(tabbyTurnOutputSchema.required, ["say", "options", "done", "internalNotes"]);
@@ -131,4 +134,43 @@ test("lynx review outputSchema stays codex-compatible and strict", () => {
   assert.deepEqual(issueItem?.required, ["category", "message"]);
   assert.equal(issueItem?.properties.category?.type, "string");
   assert.equal(issueItem?.properties.message?.type, "string");
+});
+
+test("creative plan / visual script / midi schemas stay strict and complete", () => {
+  assert.equal(creativePlanOutputSchema.type, "object");
+  assert.equal(creativePlanOutputSchema.additionalProperties, false);
+  assert.deepEqual(creativePlanOutputSchema.required, [
+    "storyBriefRef",
+    "narrativeArc",
+    "visualDirection",
+    "musicIntent",
+    "alignmentPoints",
+  ]);
+  assert.deepEqual(creativePlanOutputSchema.properties.musicIntent.properties.bpmTrend.enum, [
+    "up",
+    "down",
+    "steady",
+    "arc",
+  ]);
+
+  assert.equal(visualScriptOutputSchema.type, "object");
+  assert.equal(visualScriptOutputSchema.additionalProperties, false);
+  assert.deepEqual(visualScriptOutputSchema.required, ["creativePlanRef", "video", "scenes"]);
+  assert.equal(visualScriptOutputSchema.properties.scenes.minItems, 1);
+  assert.deepEqual(
+    visualScriptOutputSchema.properties.scenes.items.properties.transition.properties.type.enum,
+    ["cut", "fade", "dissolve", "slide"],
+  );
+
+  assert.equal(midiOutputSchema.type, "object");
+  assert.equal(midiOutputSchema.additionalProperties, false);
+  assert.deepEqual(midiOutputSchema.required, ["bpm", "timeSignature", "durationMs", "tracks"]);
+  assert.equal(midiOutputSchema.properties.tracks.minItems, 4);
+  assert.equal(midiOutputSchema.properties.tracks.maxItems, 4);
+  assert.deepEqual(midiOutputSchema.properties.tracks.items.properties.name.enum, [
+    "Piano",
+    "Strings",
+    "Bass",
+    "Drums",
+  ]);
 });

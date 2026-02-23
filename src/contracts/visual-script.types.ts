@@ -26,6 +26,72 @@ export type VisualScriptValidationResult = {
   errors: string[];
 };
 
+export const visualScriptOutputSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["creativePlanRef", "video", "scenes"],
+  properties: {
+    creativePlanRef: { type: "string", minLength: 1 },
+    video: {
+      type: "object",
+      additionalProperties: false,
+      required: ["width", "height", "fps"],
+      properties: {
+        width: { type: "integer", minimum: 1 },
+        height: { type: "integer", minimum: 1 },
+        fps: { type: "integer", minimum: 1 },
+      },
+    },
+    scenes: {
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "sceneId",
+          "photoRef",
+          "subtitle",
+          "subtitlePosition",
+          "durationSec",
+          "transition",
+          "kenBurns",
+        ],
+        properties: {
+          sceneId: { type: "string", minLength: 1 },
+          photoRef: { type: "string", minLength: 1 },
+          subtitle: { type: "string", minLength: 1 },
+          subtitlePosition: { type: "string", enum: ["bottom", "top", "center"] },
+          durationSec: { type: "number", exclusiveMinimum: 0 },
+          transition: {
+            type: "object",
+            additionalProperties: false,
+            required: ["type", "durationMs", "direction"],
+            properties: {
+              type: { type: "string", enum: ["cut", "fade", "dissolve", "slide"] },
+              durationMs: { type: "number", minimum: 0 },
+              direction: { type: "string", enum: ["left", "right", "up", "down"] },
+            },
+          },
+          kenBurns: {
+            type: ["object", "null"],
+            additionalProperties: false,
+            required: ["startScale", "endScale", "panDirection"],
+            properties: {
+              startScale: { type: "number", exclusiveMinimum: 0 },
+              endScale: { type: "number", exclusiveMinimum: 0 },
+              panDirection: {
+                type: "string",
+                enum: ["left", "right", "up", "down", "center"],
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
 const SUBTITLE_POSITIONS = new Set<SubtitlePosition>(["bottom", "top", "center"]);
 const TRANSITION_TYPES = new Set(["cut", "fade", "dissolve", "slide"]);
 const SLIDE_DIRECTIONS = new Set(["left", "right", "up", "down"]);
@@ -134,4 +200,3 @@ export const validateVisualScript = (
   }
   return { valid: true, errors: [], script: input as VisualScript };
 };
-

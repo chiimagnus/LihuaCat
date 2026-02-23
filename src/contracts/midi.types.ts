@@ -26,6 +26,46 @@ export type MidiValidationResult = {
   errors: string[];
 };
 
+export const midiOutputSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["bpm", "timeSignature", "durationMs", "tracks"],
+  properties: {
+    bpm: { type: "integer", minimum: 40, maximum: 240 },
+    timeSignature: { type: "string", enum: ["4/4"] },
+    durationMs: { type: "integer", minimum: 1 },
+    tracks: {
+      type: "array",
+      minItems: 4,
+      maxItems: 4,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["name", "channel", "program", "notes"],
+        properties: {
+          name: { type: "string", enum: ["Piano", "Strings", "Bass", "Drums"] },
+          channel: { type: "integer", minimum: 0, maximum: 15 },
+          program: { type: "integer", minimum: 0, maximum: 127 },
+          notes: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["pitch", "startMs", "durationMs", "velocity"],
+              properties: {
+                pitch: { type: "integer", minimum: 0, maximum: 127 },
+                startMs: { type: "integer", minimum: 0 },
+                durationMs: { type: "integer", minimum: 1 },
+                velocity: { type: "integer", minimum: 1, maximum: 127 },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
 export const CANONICAL_MIDI_TRACKS: ReadonlyArray<{
   name: MidiTrackName;
   channel: number;
@@ -142,4 +182,3 @@ export const validateMidiComposition = (
 
   return { valid: true, errors: [], midi: input as MidiComposition };
 };
-
