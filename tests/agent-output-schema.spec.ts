@@ -7,7 +7,6 @@ import {
   ocelotCreativeReviewOutputSchema,
   renderScriptOutputSchema,
 } from "../src/agents/ocelot/ocelot.schema.ts";
-import { lynxReviewOutputSchema } from "../src/agents/lynx/lynx.schema.ts";
 import { creativePlanOutputSchema } from "../src/contracts/creative-plan.types.ts";
 import { visualScriptOutputSchema } from "../src/contracts/visual-script.types.ts";
 import { midiOutputSchema } from "../src/contracts/midi.types.ts";
@@ -119,24 +118,6 @@ test("render script outputSchema keeps fixed video fields and transition variant
   ]);
   assert.deepEqual(sceneItem?.properties.kenBurns?.type, ["object", "null"]);
   assert.deepEqual(sceneItem?.properties.kenBurns?.required, ["startScale", "endScale", "panDirection"]);
-});
-
-test("lynx review outputSchema stays codex-compatible and strict", () => {
-  assert.equal(lynxReviewOutputSchema.type, "object");
-  assert.equal(lynxReviewOutputSchema.additionalProperties, false);
-  assert.deepEqual(lynxReviewOutputSchema.required, ["passed", "summary", "issues", "requiredChanges"]);
-
-  assert.equal(lynxReviewOutputSchema.properties.passed?.type, "boolean");
-  assert.equal(lynxReviewOutputSchema.properties.summary?.type, "string");
-
-  const issues = lynxReviewOutputSchema.properties.issues;
-  assert.equal(issues?.type, "array");
-  const issueItem = issues?.items;
-  assert.equal(issueItem?.type, "object");
-  assert.equal(issueItem?.additionalProperties, false);
-  assert.deepEqual(issueItem?.required, ["category", "message"]);
-  assert.equal(issueItem?.properties.category?.type, "string");
-  assert.equal(issueItem?.properties.message?.type, "string");
 });
 
 test("ocelot creative review outputSchema stays strict", () => {

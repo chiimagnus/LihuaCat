@@ -31,12 +31,8 @@ export type WorkflowRuntimeArtifacts = {
   ocelotInputPath: string;
   ocelotOutputPath: string;
   ocelotPromptLogPath: string;
-  lynxReviewPaths: string[];
   ocelotRevisionPaths: string[];
-  lynxPromptLogPaths: string[];
-  getLynxReviewPath: (round: number) => string;
   getOcelotRevisionPath: (round: number) => string;
-  getLynxPromptLogPath: (round: number) => string;
   progressEventsPath: string;
   renderAttemptsPath: string;
   runLogs: string[];
@@ -53,12 +49,8 @@ export const initializeWorkflowRuntime = async ({
   outputDir: string;
 }): Promise<WorkflowRuntimeArtifacts> => {
   const stageDir = path.join(outputDir, "stages");
-  const getLynxReviewPath = (round: number) =>
-    path.join(outputDir, `lynx-review-${String(round)}.json`);
   const getOcelotRevisionPath = (round: number) =>
     path.join(outputDir, `ocelot-revision-${String(round)}.json`);
-  const getLynxPromptLogPath = (round: number) =>
-    path.join(outputDir, `lynx-prompt-${String(round)}.log`);
 
   const runtime: WorkflowRuntimeArtifacts = {
     runId,
@@ -79,12 +71,8 @@ export const initializeWorkflowRuntime = async ({
     ocelotInputPath: path.join(outputDir, "ocelot-input.json"),
     ocelotOutputPath: path.join(outputDir, "ocelot-output.json"),
     ocelotPromptLogPath: path.join(outputDir, "ocelot-prompt.log"),
-    lynxReviewPaths: [],
     ocelotRevisionPaths: [],
-    lynxPromptLogPaths: [],
-    getLynxReviewPath,
     getOcelotRevisionPath,
-    getLynxPromptLogPath,
     progressEventsPath: path.join(stageDir, "progress-events.jsonl"),
     renderAttemptsPath: path.join(stageDir, "render-attempts.jsonl"),
     runLogs: [],

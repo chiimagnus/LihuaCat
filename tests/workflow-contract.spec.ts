@@ -119,11 +119,6 @@ test("workflow contract: emits ordered core stage events on first-pass template 
             };
           },
         },
-        lynxAgentClient: {
-          async reviewRenderScript() {
-            throw new Error("lynx should not be called when lynx-review is disabled");
-          },
-        },
         onProgress: (event) => {
           stages.push(event.stage);
         },
@@ -227,8 +222,6 @@ test("workflow contract: emits ordered core stage events on first-pass template 
           ocelotInputPath: input.ocelotInputPath,
           ocelotOutputPath: input.ocelotOutputPath,
           ocelotPromptLogPath: input.ocelotPromptLogPath,
-          lynxReviewPaths: input.lynxReviewPaths,
-          lynxPromptLogPaths: input.lynxPromptLogPaths,
           ocelotRevisionPaths: input.ocelotRevisionPaths,
         }),
       },

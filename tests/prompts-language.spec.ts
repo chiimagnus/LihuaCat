@@ -4,7 +4,6 @@ import assert from "node:assert/strict";
 import { buildTabbyTurnPromptInput } from "../src/agents/tabby/tabby.prompt.ts";
 import { buildStoryBriefPromptInput } from "../src/subagents/story-brief/story-brief.prompt.ts";
 import { buildRenderScriptPromptInput } from "../src/agents/ocelot/ocelot.prompt.ts";
-import { buildLynxReviewPromptInput } from "../src/agents/lynx/lynx.prompt.ts";
 import { buildKittenPromptInput } from "../src/agents/kitten/kitten.prompt.ts";
 import { buildCubPromptInput } from "../src/agents/cub/cub.prompt.ts";
 
@@ -49,31 +48,6 @@ test("agent prompts are Chinese and include language rules", () => {
   assert.equal(renderScript[0]?.type, "text");
   assert.match(renderScript[0]!.text, /语言规则/);
   assert.doesNotMatch(renderScript[0]!.text, /You are Ocelot/);
-
-  const lynx = buildLynxReviewPromptInput({
-    storyBrief: {
-      intent: {
-        coreEmotion: "relief",
-        tone: "restrained",
-        narrativeArc: "arc",
-        audienceNote: null,
-        avoidance: [],
-        rawUserWords: "words",
-      },
-      photos: [],
-      narrative: { arc: "arc", beats: [] },
-    },
-    renderScript: {
-      storyBriefRef: "ref",
-      video: { width: 1080, height: 1920, fps: 30 },
-      scenes: [],
-    },
-    round: 1,
-    maxRounds: 3,
-  });
-  assert.equal(lynx[0]?.type, "text");
-  assert.match(lynx[0]!.text, /语言规则/);
-  assert.doesNotMatch(lynx[0]!.text, /You are Lynx/);
 
   const kitten = buildKittenPromptInput({
     creativePlan: {

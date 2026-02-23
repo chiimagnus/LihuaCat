@@ -17,8 +17,6 @@ export type RunSummaryInput = {
   ocelotInputPath: string;
   ocelotOutputPath: string;
   ocelotPromptLogPath: string;
-  lynxReviewPaths: string[];
-  lynxPromptLogPaths: string[];
   ocelotRevisionPaths: string[];
 };
 

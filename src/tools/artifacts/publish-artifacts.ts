@@ -19,8 +19,6 @@ export type PublishArtifactsInput = {
   ocelotInputPath: string;
   ocelotOutputPath: string;
   ocelotPromptLogPath: string;
-  lynxReviewPaths: string[];
-  lynxPromptLogPaths: string[];
   ocelotRevisionPaths: string[];
   runLogs: string[];
   errorLogs?: string[];
@@ -42,8 +40,6 @@ export const publishArtifacts = async ({
   ocelotInputPath,
   ocelotOutputPath,
   ocelotPromptLogPath,
-  lynxReviewPaths,
-  lynxPromptLogPaths,
   ocelotRevisionPaths,
   runLogs,
   errorLogs = [],
@@ -77,8 +73,6 @@ export const publishArtifacts = async ({
     ocelotInputPath,
     ocelotOutputPath,
     ocelotPromptLogPath,
-    lynxReviewPaths,
-    lynxPromptLogPaths,
     ocelotRevisionPaths,
   });
 };

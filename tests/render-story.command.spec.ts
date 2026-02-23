@@ -38,8 +38,6 @@ test("prints key artifact paths on success", async () => {
       ocelotInputPath: "/tmp/photos/lihuacat-output/run-1/ocelot-input.json",
       ocelotOutputPath: "/tmp/photos/lihuacat-output/run-1/ocelot-output.json",
       ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-1/ocelot-prompt.log",
-      lynxReviewPaths: [],
-      lynxPromptLogPaths: [],
       ocelotRevisionPaths: [],
     }),
   });
@@ -79,8 +77,6 @@ test("prints selected Codex model info", async () => {
       ocelotInputPath: "/tmp/photos/lihuacat-output/run-model-info/ocelot-input.json",
       ocelotOutputPath: "/tmp/photos/lihuacat-output/run-model-info/ocelot-output.json",
       ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-model-info/ocelot-prompt.log",
-      lynxReviewPaths: [],
-      lynxPromptLogPaths: [],
       ocelotRevisionPaths: [],
     }),
   });
@@ -115,8 +111,6 @@ test("accepts xhigh reasoning effort and prints it in model info", async () => {
       ocelotInputPath: "/tmp/photos/lihuacat-output/run-model-xhigh/ocelot-input.json",
       ocelotOutputPath: "/tmp/photos/lihuacat-output/run-model-xhigh/ocelot-output.json",
       ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-model-xhigh/ocelot-prompt.log",
-      lynxReviewPaths: [],
-      lynxPromptLogPaths: [],
       ocelotRevisionPaths: [],
     }),
   });
@@ -156,8 +150,6 @@ test("detects browsers at startup and passes selected executable to workflow", a
         ocelotInputPath: "/tmp/photos/lihuacat-output/run-browser/ocelot-input.json",
         ocelotOutputPath: "/tmp/photos/lihuacat-output/run-browser/ocelot-output.json",
         ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-browser/ocelot-prompt.log",
-        lynxReviewPaths: [],
-        lynxPromptLogPaths: [],
         ocelotRevisionPaths: [],
       };
     },
@@ -247,8 +239,6 @@ test("forwards workflow progress events to tui layer", async () => {
         ocelotInputPath: "/tmp/photos/lihuacat-output/run-2/ocelot-input.json",
         ocelotOutputPath: "/tmp/photos/lihuacat-output/run-2/ocelot-output.json",
         ocelotPromptLogPath: "/tmp/photos/lihuacat-output/run-2/ocelot-prompt.log",
-        lynxReviewPaths: [],
-        lynxPromptLogPaths: [],
         ocelotRevisionPaths: [],
       };
     },
