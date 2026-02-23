@@ -35,6 +35,7 @@ export type RenderAudioTrack = {
   format: "wav" | "mp3";
   startMs?: number;
   gain?: number;
+  durationSec?: number;
 };
 
 export type RenderScript = {

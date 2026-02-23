@@ -4,6 +4,10 @@ export const secondsToFrames = (seconds: number, fps: number): number => {
   return Math.max(1, Math.round(seconds * fps));
 };
 
+export const msToFrames = (ms: number, fps: number): number => {
+  return Math.max(0, Math.round(ms / 1000 * fps));
+};
+
 export type SceneWindow = {
   sceneId: string;
   startFrame: number;
@@ -59,6 +63,20 @@ export const buildSceneWindows = (
       kenBurns: scene.kenBurns,
     };
   });
+};
+
+export const computeStoryDurationInFrames = (
+  props: StoryTemplateProps,
+  fps: number,
+): number => {
+  const windows = buildSceneWindows(props, fps);
+  const visualEnd = windows.length > 0 ? windows[windows.length - 1]!.endFrame : 0;
+  const audioTrack = props.audioTrack;
+  const audioEnd =
+    audioTrack && typeof audioTrack.durationSec === "number"
+      ? msToFrames(audioTrack.startMs ?? 0, fps) + secondsToFrames(audioTrack.durationSec, fps)
+      : 0;
+  return Math.max(1, visualEnd, audioEnd);
 };
 
 export const computeSceneLayers = (
@@ -270,4 +288,3 @@ export const computeKenBurnsTransform = (
 };
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
-

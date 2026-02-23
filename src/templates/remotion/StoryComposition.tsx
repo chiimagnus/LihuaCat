@@ -1,11 +1,20 @@
 import React from "react";
-import { AbsoluteFill, Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import {
+  AbsoluteFill,
+  Audio,
+  Img,
+  Sequence,
+  staticFile,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 
 import type { StoryTemplateProps } from "./StoryComposition.schema.ts";
 import {
   buildSceneWindows,
   computeKenBurnsTransform,
   computeSceneLayers,
+  msToFrames,
 } from "./StoryComposition.logic.ts";
 
 export const StoryComposition: React.FC<StoryTemplateProps> = (props) => {
@@ -13,9 +22,18 @@ export const StoryComposition: React.FC<StoryTemplateProps> = (props) => {
   const frame = useCurrentFrame();
   const windows = buildSceneWindows(props, fps);
   const layers = computeSceneLayers(windows, frame, fps);
+  const audioStartFrame = msToFrames(props.audioTrack?.startMs ?? 0, fps);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#0f172a" }}>
+      {props.audioTrack ? (
+        <Sequence from={audioStartFrame}>
+          <Audio
+            src={toRenderableAssetSrc(props.audioTrack.path)}
+            volume={props.audioTrack.gain ?? 1}
+          />
+        </Sequence>
+      ) : null}
       {layers.map((layer) => (
         <SceneLayerView key={layer.sceneId} layer={layer} />
       ))}
@@ -126,4 +144,3 @@ const subtitlePositionToBackgroundStyle = (
       "linear-gradient(180deg, rgba(15,23,42,0) 50%, rgba(15,23,42,0.82) 100%)",
   };
 };
-

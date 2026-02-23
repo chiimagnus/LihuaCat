@@ -4,8 +4,10 @@ import assert from "node:assert/strict";
 import { createDefaultStoryTemplateProps } from "../src/templates/remotion/StoryComposition.schema.ts";
 import {
   buildSceneWindows,
+  computeStoryDurationInFrames,
   computeKenBurnsTransform,
   computeSceneLayers,
+  msToFrames,
   secondsToFrames,
 } from "../src/templates/remotion/StoryComposition.logic.ts";
 
@@ -105,4 +107,28 @@ test("computeKenBurnsTransform pans left while scaling up", () => {
   assert.equal(result.scale, 1.2);
   assert.ok(result.translateX < 0);
   assert.equal(result.translateY, 0);
+});
+
+test("computeStoryDurationInFrames uses max(video, audio) length", () => {
+  const props = createDefaultStoryTemplateProps();
+  props.assets = [{ photoRef: "1.jpg", path: "/tmp/1.jpg" }];
+  props.scenes = [
+    {
+      sceneId: "scene_001",
+      photoRef: "1.jpg",
+      subtitle: "first",
+      subtitlePosition: "bottom",
+      durationSec: 20,
+      transition: { type: "cut", durationMs: 0 },
+    },
+  ];
+  props.audioTrack = {
+    path: "/tmp/music.wav",
+    format: "wav",
+    startMs: 5000,
+    durationSec: 30,
+  };
+
+  const duration = computeStoryDurationInFrames(props, 30);
+  assert.equal(duration, msToFrames(5000, 30) + secondsToFrames(30, 30));
 });

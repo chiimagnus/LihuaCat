@@ -242,6 +242,12 @@ const validateAudioTrack = (
     errors.push("audioTrack.gain must be a finite number");
   }
 
+  if (input.durationSec !== undefined) {
+    if (!isFiniteNumber(input.durationSec) || input.durationSec <= 0) {
+      errors.push("audioTrack.durationSec must be a positive number");
+    }
+  }
+
   if (errors.length > 0) {
     return { valid: false, errors };
   }
