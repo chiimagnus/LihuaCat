@@ -3,7 +3,7 @@ import type { OcelotAgentClient } from "../../../agents/ocelot/ocelot.client.ts"
 import type { KittenAgentClient } from "../../../agents/kitten/kitten.client.ts";
 import type { CubAgentClient } from "../../../agents/cub/cub.client.ts";
 import type { StoryBrief } from "../../../contracts/story-brief.types.ts";
-import type { RenderScript } from "../../../contracts/render-script.types.ts";
+import type { RenderAudioTrack, RenderScript } from "../../../contracts/render-script.types.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
   emitProgressAndPersist,
@@ -21,6 +21,7 @@ import {
   type ReviseCreativeAssetsWithOcelotProgressEvent,
 } from "../revise-creative-assets-with-ocelot.ts";
 import { mergeCreativeAssets } from "../../../tools/render/merge-creative-assets.ts";
+import type { runAudioPipeline } from "../../../tools/audio/audio-pipeline.ts";
 
 const truncateForUi = (value: string): string => {
   if (value.length <= 120) return value;
@@ -35,6 +36,7 @@ export const runScriptStage = async ({
   ocelotAgentClient,
   kittenAgentClient,
   cubAgentClient,
+  runAudioPipelineImpl,
   onProgress,
 }: {
   collected: Awaited<ReturnType<typeof collectImages>>;
@@ -44,6 +46,7 @@ export const runScriptStage = async ({
   ocelotAgentClient: OcelotAgentClient;
   kittenAgentClient?: KittenAgentClient;
   cubAgentClient?: CubAgentClient;
+  runAudioPipelineImpl: typeof runAudioPipeline;
   onProgress?: WorkflowProgressReporter;
 }): Promise<{ renderScript: RenderScript; finalPassed: boolean; rounds: number }> => {
   await emitProgressAndPersist(runtime, onProgress, {
@@ -99,9 +102,26 @@ export const runScriptStage = async ({
       },
     });
 
+    let audioTrack: RenderAudioTrack | undefined = undefined;
+    if (creative.audioAvailable) {
+      const audio = await runAudioPipelineImpl({
+        midiJson: creative.midi,
+        outputDir: runtime.outputDir,
+      });
+      audioTrack = {
+        path: audio.wavPath,
+        format: "wav",
+        startMs: 0,
+        durationSec: creative.midi.durationMs / 1000,
+      };
+      await pushRunLog(runtime, `musicMidPath=${audio.midiPath}`);
+      await pushRunLog(runtime, `musicWavPath=${audio.wavPath}`);
+    }
+
     const renderScript = mergeCreativeAssets({
       storyBriefRef,
       visualScript: creative.visualScript,
+      audioTrack,
     });
 
     await writeCreativePlanArtifact(runtime, creative.creativePlan);

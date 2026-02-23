@@ -19,6 +19,7 @@ export type ReviseCreativeAssetsWithOcelotResult = {
   creativePlan: CreativePlan;
   visualScript: VisualScript;
   midi: MidiComposition;
+  audioAvailable: boolean;
   finalPassed: boolean;
   warning?: string;
   rounds: CreativeRevisionRound[];
@@ -111,6 +112,7 @@ export const reviseCreativeAssetsWithOcelot = async ({
         creativePlan,
         visualScript,
         midi: fallbackRound.midi,
+        audioAvailable: false,
         finalPassed: false,
         warning,
         rounds: fallbackRounds,
@@ -148,6 +150,7 @@ export const reviseCreativeAssetsWithOcelot = async ({
         creativePlan,
         visualScript,
         midi,
+        audioAvailable: true,
         finalPassed: true,
         rounds,
         reviewLog: toReviewLog({ rounds, maxRounds, finalPassed: true }),
@@ -172,6 +175,7 @@ export const reviseCreativeAssetsWithOcelot = async ({
     creativePlan,
     visualScript: lastRound.visualScript,
     midi: lastRound.midi,
+    audioAvailable: true,
     finalPassed: false,
     warning,
     rounds,

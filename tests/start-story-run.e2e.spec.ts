@@ -394,7 +394,15 @@ test("workflow publishes creative artifacts when kitten/cub path is enabled", as
           brief: createStoryBrief(["1.jpg", "2.jpg"]),
           attempts: 1,
         }),
-        renderByTemplateV2Impl: async ({ outputDir }) => {
+        runAudioPipelineImpl: async ({ outputDir }) => {
+          const midiPath = path.join(outputDir, "music.mid");
+          const wavPath = path.join(outputDir, "music.wav");
+          await fs.writeFile(midiPath, "mid", "utf8");
+          await fs.writeFile(wavPath, "wav", "utf8");
+          return { midiPath, wavPath };
+        },
+        renderByTemplateV2Impl: async ({ outputDir, renderScript }) => {
+          assert.ok(renderScript.audioTrack?.path.includes("music.wav"));
           const videoPath = path.join(outputDir, "video.mp4");
           await fs.mkdir(outputDir, { recursive: true });
           await fs.writeFile(videoPath, "template-video");
@@ -427,6 +435,8 @@ test("workflow publishes creative artifacts when kitten/cub path is enabled", as
     await assert.doesNotReject(fs.access(summary.visualScriptPath!));
     await assert.doesNotReject(fs.access(summary.reviewLogPath!));
     await assert.doesNotReject(fs.access(summary.midiJsonPath!));
+    await assert.doesNotReject(fs.access(summary.musicMidPath!));
+    await assert.doesNotReject(fs.access(summary.musicWavPath!));
   });
 });
 
@@ -533,6 +543,9 @@ test("workflow falls back to no-music render when cub generation fails", async (
           brief: createStoryBrief(["1.jpg"]),
           attempts: 1,
         }),
+        runAudioPipelineImpl: async () => {
+          throw new Error("audio pipeline should not run when cub fallback is used");
+        },
         renderByTemplateV2Impl: async ({ outputDir, renderScript }) => {
           assert.equal(renderScript.audioTrack, undefined);
           const videoPath = path.join(outputDir, "video.mp4");
@@ -564,6 +577,8 @@ test("workflow falls back to no-music render when cub generation fails", async (
     );
 
     assert.equal(reviewCalled, false);
+    assert.equal(summary.musicMidPath, undefined);
+    assert.equal(summary.musicWavPath, undefined);
     const reviewLogRaw = await fs.readFile(summary.reviewLogPath!, "utf8");
     assert.match(reviewLogRaw, /Cub generation failed/);
   });

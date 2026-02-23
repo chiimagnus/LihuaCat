@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+
 import type { PublishArtifactsInput } from "../../../tools/artifacts/publish-artifacts.ts";
 import type { RunSummary } from "../../../tools/artifacts/run-summary.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
@@ -22,6 +24,9 @@ export const runPublishStage = async ({
     message: "Publishing artifacts...",
   });
 
+  const musicMidPath = await resolveOptionalArtifactPath(runtime.musicMidPath);
+  const musicWavPath = await resolveOptionalArtifactPath(runtime.musicWavPath);
+
   const summary = await publishArtifactsImpl({
     runId: runtime.runId,
     outputDir: runtime.outputDir,
@@ -31,8 +36,8 @@ export const runPublishStage = async ({
     visualScriptPath: runtime.visualScriptPath,
     reviewLogPath: runtime.reviewLogPath,
     midiJsonPath: runtime.midiJsonPath,
-    musicMidPath: runtime.musicMidPath,
-    musicWavPath: runtime.musicWavPath,
+    musicMidPath,
+    musicWavPath,
     renderScriptPath: runtime.renderScriptPath,
     tabbyConversationPath: runtime.tabbyConversationPath,
     ocelotInputPath: runtime.ocelotInputPath,
@@ -49,4 +54,15 @@ export const runPublishStage = async ({
   });
 
   return summary;
+};
+
+const resolveOptionalArtifactPath = async (
+  targetPath: string,
+): Promise<string | undefined> => {
+  try {
+    await fs.access(targetPath);
+    return targetPath;
+  } catch {
+    return undefined;
+  }
 };

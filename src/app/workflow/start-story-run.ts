@@ -117,6 +117,7 @@ export const runStoryWorkflowV2 = async (
       ocelotAgentClient,
       kittenAgentClient,
       cubAgentClient,
+      runAudioPipelineImpl: ports.runAudioPipelineImpl,
       onProgress,
     });
 

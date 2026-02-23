@@ -195,6 +195,14 @@ test("workflow contract: emits ordered core stage events on first-pass template 
           },
           attempts: 1,
         }),
+        runAudioPipelineImpl: async ({ outputDir }) => {
+          const midiPath = path.join(outputDir, "music.mid");
+          const wavPath = path.join(outputDir, "music.wav");
+          await fs.mkdir(outputDir, { recursive: true });
+          await fs.writeFile(midiPath, "mid");
+          await fs.writeFile(wavPath, "wav");
+          return { midiPath, wavPath };
+        },
         renderByTemplateV2Impl: async ({ outputDir }) => {
           const videoPath = path.join(outputDir, "video.mp4");
           await fs.mkdir(outputDir, { recursive: true });

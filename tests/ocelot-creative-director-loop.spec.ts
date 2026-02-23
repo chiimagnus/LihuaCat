@@ -198,8 +198,16 @@ test("ocelot creative director loop converges on second round", async () => {
           brief: createStoryBrief(),
           attempts: 1,
         }),
+        runAudioPipelineImpl: async ({ outputDir }) => {
+          const midiPath = path.join(outputDir, "music.mid");
+          const wavPath = path.join(outputDir, "music.wav");
+          await fs.writeFile(midiPath, "mid", "utf8");
+          await fs.writeFile(wavPath, "wav", "utf8");
+          return { midiPath, wavPath };
+        },
         renderByTemplateV2Impl: async ({ outputDir, renderScript }) => {
           assert.equal(renderScript.scenes[0]?.subtitle, "v2-fixed");
+          assert.ok(renderScript.audioTrack?.path.includes("music.wav"));
           const videoPath = path.join(outputDir, "video.mp4");
           await fs.mkdir(outputDir, { recursive: true });
           await fs.writeFile(videoPath, "template-video");
@@ -235,6 +243,8 @@ test("ocelot creative director loop converges on second round", async () => {
     const reviewLog = JSON.parse(await fs.readFile(summary.reviewLogPath!, "utf8"));
     assert.equal(reviewLog.finalPassed, true);
     assert.equal(reviewLog.rounds.length, 2);
+    await assert.doesNotReject(fs.access(summary.musicMidPath!));
+    await assert.doesNotReject(fs.access(summary.musicWavPath!));
   });
 });
 
@@ -324,8 +334,16 @@ test("ocelot creative director loop reaches max rounds and continues render", as
           brief: createStoryBrief(),
           attempts: 1,
         }),
+        runAudioPipelineImpl: async ({ outputDir }) => {
+          const midiPath = path.join(outputDir, "music.mid");
+          const wavPath = path.join(outputDir, "music.wav");
+          await fs.writeFile(midiPath, "mid", "utf8");
+          await fs.writeFile(wavPath, "wav", "utf8");
+          return { midiPath, wavPath };
+        },
         renderByTemplateV2Impl: async ({ outputDir, renderScript }) => {
           assert.equal(renderScript.scenes[0]?.subtitle, "round-3");
+          assert.ok(renderScript.audioTrack?.path.includes("music.wav"));
           const videoPath = path.join(outputDir, "video.mp4");
           await fs.mkdir(outputDir, { recursive: true });
           await fs.writeFile(videoPath, "template-video");
@@ -360,6 +378,8 @@ test("ocelot creative director loop reaches max rounds and continues render", as
     assert.equal(reviewLog.finalPassed, false);
     assert.equal(reviewLog.rounds.length, 3);
     assert.match(String(reviewLog.warning), /maxRounds=3/);
+    await assert.doesNotReject(fs.access(summary.musicMidPath!));
+    await assert.doesNotReject(fs.access(summary.musicWavPath!));
   });
 });
 
