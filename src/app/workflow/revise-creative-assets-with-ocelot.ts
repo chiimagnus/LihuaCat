@@ -1,0 +1,177 @@
+import type { StoryBrief } from "../../contracts/story-brief.types.ts";
+import type { CreativePlan } from "../../contracts/creative-plan.types.ts";
+import type { VisualScript } from "../../contracts/visual-script.types.ts";
+import type { MidiComposition } from "../../contracts/midi.types.ts";
+import type { ReviewLog } from "../../contracts/review-log.types.ts";
+import type { OcelotAgentClient } from "../../agents/ocelot/ocelot.client.ts";
+import type { KittenAgentClient } from "../../agents/kitten/kitten.client.ts";
+import type { CubAgentClient } from "../../agents/cub/cub.client.ts";
+import type { OcelotCreativeReview } from "../../agents/ocelot/ocelot.validate.ts";
+
+export type CreativeRevisionRound = {
+  round: number;
+  visualScript: VisualScript;
+  midi: MidiComposition;
+  review: OcelotCreativeReview;
+};
+
+export type ReviseCreativeAssetsWithOcelotResult = {
+  creativePlan: CreativePlan;
+  visualScript: VisualScript;
+  midi: MidiComposition;
+  finalPassed: boolean;
+  warning?: string;
+  rounds: CreativeRevisionRound[];
+  reviewLog: ReviewLog;
+};
+
+export type ReviseCreativeAssetsWithOcelotProgressEvent =
+  | { type: "round_start"; round: number; maxRounds: number }
+  | { type: "kitten_generate_start"; round: number; maxRounds: number }
+  | { type: "kitten_generate_done"; round: number; maxRounds: number }
+  | { type: "cub_generate_start"; round: number; maxRounds: number }
+  | { type: "cub_generate_done"; round: number; maxRounds: number }
+  | { type: "ocelot_review_start"; round: number; maxRounds: number }
+  | { type: "ocelot_review_done"; round: number; maxRounds: number; passed: boolean };
+
+export const reviseCreativeAssetsWithOcelot = async ({
+  storyBriefRef,
+  storyBrief,
+  photos,
+  ocelotClient,
+  kittenClient,
+  cubClient,
+  maxRounds = 3,
+  onProgress,
+}: {
+  storyBriefRef: string;
+  storyBrief: StoryBrief;
+  photos: Array<{ photoRef: string; path: string }>;
+  ocelotClient: OcelotAgentClient;
+  kittenClient: KittenAgentClient;
+  cubClient: CubAgentClient;
+  maxRounds?: number;
+  onProgress?: (event: ReviseCreativeAssetsWithOcelotProgressEvent) => Promise<void> | void;
+}): Promise<ReviseCreativeAssetsWithOcelotResult> => {
+  const creativePlan = await ocelotClient.generateCreativePlan({
+    storyBriefRef,
+    storyBrief,
+    photos,
+  });
+
+  const rounds: CreativeRevisionRound[] = [];
+  let kittenRevisionNotes: string[] | undefined = undefined;
+  let cubRevisionNotes: string[] | undefined = undefined;
+
+  for (let round = 1; round <= maxRounds; round += 1) {
+    await onProgress?.({ type: "round_start", round, maxRounds });
+
+    await onProgress?.({ type: "kitten_generate_start", round, maxRounds });
+    const visualScript = await kittenClient.generateVisualScript({
+      creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
+      creativePlan,
+      photos,
+      revisionNotes: kittenRevisionNotes,
+    });
+    await onProgress?.({ type: "kitten_generate_done", round, maxRounds });
+
+    await onProgress?.({ type: "cub_generate_start", round, maxRounds });
+    const midi = await cubClient.generateMidiJson({
+      creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
+      creativePlan,
+      revisionNotes: cubRevisionNotes,
+    });
+    await onProgress?.({ type: "cub_generate_done", round, maxRounds });
+
+    await onProgress?.({ type: "ocelot_review_start", round, maxRounds });
+    const review = await ocelotClient.reviewCreativeAssets({
+      storyBriefRef,
+      storyBrief,
+      creativePlan,
+      visualScript,
+      midi,
+      round,
+      maxRounds,
+    });
+    await onProgress?.({ type: "ocelot_review_done", round, maxRounds, passed: review.passed });
+
+    rounds.push({
+      round,
+      visualScript,
+      midi,
+      review,
+    });
+
+    if (review.passed) {
+      return {
+        creativePlan,
+        visualScript,
+        midi,
+        finalPassed: true,
+        rounds,
+        reviewLog: toReviewLog({ rounds, maxRounds, finalPassed: true }),
+      };
+    }
+
+    kittenRevisionNotes = review.requiredChanges
+      .filter((change) => change.target === "kitten")
+      .flatMap((change) => change.instructions);
+    cubRevisionNotes = review.requiredChanges
+      .filter((change) => change.target === "cub")
+      .flatMap((change) => change.instructions);
+  }
+
+  const lastRound = rounds[rounds.length - 1];
+  if (!lastRound) {
+    throw new Error("Unexpected: no creative revision rounds executed");
+  }
+
+  const warning = `Ocelot review reached maxRounds=${maxRounds}; continue with latest creative assets.`;
+  return {
+    creativePlan,
+    visualScript: lastRound.visualScript,
+    midi: lastRound.midi,
+    finalPassed: false,
+    warning,
+    rounds,
+    reviewLog: toReviewLog({
+      rounds,
+      maxRounds,
+      finalPassed: false,
+      warning,
+    }),
+  };
+};
+
+const toReviewLog = ({
+  rounds,
+  maxRounds,
+  finalPassed,
+  warning,
+}: {
+  rounds: CreativeRevisionRound[];
+  maxRounds: number;
+  finalPassed: boolean;
+  warning?: string;
+}): ReviewLog => {
+  return {
+    reviewer: "ocelot",
+    maxRounds,
+    finalPassed,
+    ...(warning ? { warning } : {}),
+    rounds: rounds.map((round) => ({
+      round: round.round,
+      passed: round.review.passed,
+      summary: round.review.summary,
+      issues: round.review.issues.map((issue) => ({
+        target: issue.target,
+        message: issue.message,
+      })),
+      requiredChanges: round.review.requiredChanges.map((change) => ({
+        target: change.target,
+        instructions: [...change.instructions],
+      })),
+    })),
+  };
+};
+
