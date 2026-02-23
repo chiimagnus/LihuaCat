@@ -1,9 +1,26 @@
 import { createCodexJsonRunner, type CodexLike, type ModelReasoningEffort, writeLlmDebugArtifacts } from "../../tools/llm/index.ts";
 import type { StoryBrief } from "../../contracts/story-brief.types.ts";
 import type { RenderScript } from "../../contracts/render-script.types.ts";
-import { buildRenderScriptPromptInput } from "./ocelot.prompt.ts";
-import { renderScriptOutputSchema } from "./ocelot.schema.ts";
-import { validateRenderScriptSemantics, validateRenderScriptStructure } from "./ocelot.validate.ts";
+import type { CreativePlan } from "../../contracts/creative-plan.types.ts";
+import type { VisualScript } from "../../contracts/visual-script.types.ts";
+import type { MidiComposition } from "../../contracts/midi.types.ts";
+import {
+  buildCreativePlanPromptInput,
+  buildCreativeReviewPromptInput,
+  buildRenderScriptPromptInput,
+} from "./ocelot.prompt.ts";
+import {
+  ocelotCreativePlanOutputSchema,
+  ocelotCreativeReviewOutputSchema,
+  renderScriptOutputSchema,
+} from "./ocelot.schema.ts";
+import {
+  validateOcelotCreativePlan,
+  validateOcelotCreativeReview,
+  validateRenderScriptSemantics,
+  validateRenderScriptStructure,
+  type OcelotCreativeReview,
+} from "./ocelot.validate.ts";
 
 export type GenerateRenderScriptRequest = {
   storyBriefRef: string;
@@ -18,7 +35,34 @@ export type GenerateRenderScriptRequest = {
   };
 };
 
+export type GenerateCreativePlanRequest = {
+  storyBriefRef: string;
+  storyBrief: StoryBrief;
+  photos: Array<{ photoRef: string; path: string }>;
+  revisionNotes?: string[];
+  debug?: {
+    inputPath?: string;
+    outputPath?: string;
+    promptLogPath?: string;
+  };
+};
+
+export type ReviewCreativeAssetsRequest = {
+  storyBriefRef: string;
+  storyBrief: StoryBrief;
+  creativePlan: CreativePlan;
+  visualScript: VisualScript;
+  midi: MidiComposition;
+  round: number;
+  maxRounds: number;
+  debug?: {
+    promptLogPath?: string;
+  };
+};
+
 export interface OcelotAgentClient {
+  generateCreativePlan?(request: GenerateCreativePlanRequest): Promise<CreativePlan>;
+  reviewCreativeAssets?(request: ReviewCreativeAssetsRequest): Promise<OcelotCreativeReview>;
   generateRenderScript(request: GenerateRenderScriptRequest): Promise<RenderScript>;
 }
 
@@ -57,6 +101,84 @@ export const createCodexOcelotAgentClient = ({
   });
 
   return {
+    async generateCreativePlan(request: GenerateCreativePlanRequest): Promise<CreativePlan> {
+      await assertAuthenticated();
+
+      const inputSnapshot = {
+        storyBriefRef: request.storyBriefRef,
+        storyBrief: request.storyBrief,
+        revisionNotes: request.revisionNotes ?? [],
+      };
+      const promptInput = buildCreativePlanPromptInput(request);
+
+      await writeLlmDebugArtifacts({
+        debug: request.debug,
+        promptInput,
+        inputSnapshot,
+      });
+
+      let parsed: unknown;
+      try {
+        parsed = await runner.runJson(promptInput, {
+          outputSchema: ocelotCreativePlanOutputSchema,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new OcelotAgentResponseParseError(message);
+      }
+
+      const validation = validateOcelotCreativePlan(parsed);
+      if (!validation.valid || !validation.plan) {
+        await writeLlmDebugArtifacts({
+          debug: request.debug,
+          promptInput,
+          outputSnapshot: parsed,
+        });
+        throw new OcelotAgentResponseParseError(
+          `creative-plan structure invalid: ${validation.errors.join("; ")}`,
+        );
+      }
+
+      await writeLlmDebugArtifacts({
+        debug: request.debug,
+        promptInput,
+        outputSnapshot: validation.plan,
+      });
+
+      return validation.plan;
+    },
+
+    async reviewCreativeAssets(
+      request: ReviewCreativeAssetsRequest,
+    ): Promise<OcelotCreativeReview> {
+      await assertAuthenticated();
+
+      const promptInput = buildCreativeReviewPromptInput(request);
+      await writeLlmDebugArtifacts({
+        debug: request.debug,
+        promptInput,
+      });
+
+      let parsed: unknown;
+      try {
+        parsed = await runner.runJson(promptInput, {
+          outputSchema: ocelotCreativeReviewOutputSchema,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new OcelotAgentResponseParseError(message);
+      }
+
+      const validation = validateOcelotCreativeReview(parsed);
+      if (!validation.valid || !validation.review) {
+        throw new OcelotAgentResponseParseError(
+          `creative review structure invalid: ${validation.errors.join("; ")}`,
+        );
+      }
+
+      return validation.review;
+    },
+
     async generateRenderScript(request: GenerateRenderScriptRequest): Promise<RenderScript> {
       await assertAuthenticated();
 
@@ -158,4 +280,3 @@ const normalizeRenderScriptCandidate = (input: unknown): unknown => {
 
   return script;
 };
-

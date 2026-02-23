@@ -31,6 +31,8 @@ export const runRenderStage = async ({
   await appendRenderAttempt(runtime, {
     attempt: 1,
     mode: "template",
+    hasAudioTrack: Boolean(renderScript.audioTrack?.path),
+    audioTrackPath: renderScript.audioTrack?.path,
     createdAt: new Date().toISOString(),
   });
 

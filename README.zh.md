@@ -4,12 +4,16 @@
 
 本地优先的 CLI 工具：把一个图片文件夹生成一段“故事短视频”。你只需要在终端里按交互提示操作，它会使用 Remotion 在本机渲染出 `video.mp4`。
 
+当前架构一句话：`Tabby -> StoryBrief -> Ocelot（创意总监）-> Kitten/Cub -> Remotion`。
+
 > 说明：当前 CLI 交互文案为英文（项目整体以英文为主），本文件仅提供中文使用说明。
 
 ## 环境要求
 
 - Node.js >= 20
 - Chromium 内核浏览器（Chrome / Edge / Arc / Brave）
+- `PATH` 中可用的 `fluidsynth` 命令（用于 MIDI -> WAV 合成）
+- 可用的 SoundFont（`.sf2`）文件；若系统默认路径不可用，请设置 `LIHUACAT_SOUNDFONT_PATH`
 
 ## 仓库开发说明
 
@@ -45,7 +49,6 @@ lihuacat
 - `--browser-executable <path>`：指定浏览器可执行文件路径
 - `--model <name>`：覆盖 Codex 模型名
 - `--model-reasoning-effort <minimal|low|medium|high|xhigh>`：覆盖推理强度
-- `--lynx-review`：开启 Lynx 审稿 + 脚本修改循环（默认关闭）
 
 默认值（不传时）：
 
@@ -67,11 +70,23 @@ lihuacat
 
 - `video.mp4`
 - `story-brief.json`
+- `creative-plan.json`
+- `visual-script.json`
+- `review-log.json`
+- `music-json.json`
+- `music.mid`
+- `music.wav`
 - `render-script.json`
 - `tabby-conversation.jsonl`
 - `run.log`（失败时还有 `error.log`）
 - `ocelot-input.json`、`ocelot-output.json`、`ocelot-prompt.log`（调试用）
-- （当启用 `--lynx-review`）`lynx-review-{N}.json`、`ocelot-revision-{N}.json`、`lynx-prompt-{N}.log`
+- `ocelot-revision-{N}.json`（创意审稿发生多轮时）
+
+## 失败策略
+
+- Ocelot 创意审稿循环最多 3 轮；超限会记录 warning 并继续渲染最新版本。
+- Cub 失败会降级为无配乐渲染，并在 `review-log.json` 记录降级原因。
+- FluidSynth 合成失败会直接报错退出；`music.mid` 会保留用于排查或重试。
 
 ## 浏览器（手动指定）
 

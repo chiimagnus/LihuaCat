@@ -55,6 +55,23 @@ test("stages photoRef assets into remotion public directory", async () => {
   });
 });
 
+test("stages audio assets and keeps original extension", async () => {
+  await withTempDir(async (dir) => {
+    const sourceFile = path.join(dir, "music.wav");
+    await fs.writeFile(sourceFile, "wav-data");
+
+    const result = await stageRemotionAssets({
+      outputDir: dir,
+      assets: [{ id: "audio_track", path: sourceFile }],
+    });
+
+    assert.equal(result.assets[0]?.path, "lihuacat-assets/001-audio_track.wav");
+    await assert.doesNotReject(
+      fs.access(path.join(result.publicDir, "lihuacat-assets", "001-audio_track.wav")),
+    );
+  });
+});
+
 test("keeps remote asset URL unchanged", async () => {
   await withTempDir(async (dir) => {
     const remoteUrl = "https://example.com/a.jpg";

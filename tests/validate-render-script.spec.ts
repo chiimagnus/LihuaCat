@@ -105,6 +105,31 @@ test("valid render-script passes both structure and semantic checks", () => {
   assert.equal(semantic.valid, true);
 });
 
+test("render-script structure accepts optional audioTrack", () => {
+  const script = buildValidRenderScript();
+  script.audioTrack = {
+    path: "/tmp/run/music.wav",
+    format: "wav",
+    startMs: 0,
+    gain: 0.9,
+  };
+  const structure = validateRenderScriptStructure(script);
+  assert.equal(structure.valid, true);
+});
+
+test("render-script structure rejects invalid audioTrack fields", () => {
+  const script = buildValidRenderScript();
+  script.audioTrack = {
+    path: "/tmp/run/music.ogg",
+    format: "ogg" as never,
+    startMs: -1,
+  };
+  const structure = validateRenderScriptStructure(script);
+  assert.equal(structure.valid, false);
+  assert.ok(structure.errors.some((error) => error.includes("audioTrack.format")));
+  assert.ok(structure.errors.some((error) => error.includes("audioTrack.startMs")));
+});
+
 const buildValidRenderScript = (): RenderScript => ({
   storyBriefRef: "/tmp/run/story-brief.json",
   video: { width: 1080, height: 1920, fps: 30 },

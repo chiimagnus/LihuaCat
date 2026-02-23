@@ -30,14 +30,22 @@ export type RenderScene = {
   kenBurns?: KenBurnsEffect;
 };
 
+export type RenderAudioTrack = {
+  path: string;
+  format: "wav" | "mp3";
+  startMs?: number;
+  gain?: number;
+  durationSec?: number;
+};
+
 export type RenderScript = {
   storyBriefRef: string;
   video: VideoSpec;
   scenes: RenderScene[];
+  audioTrack?: RenderAudioTrack;
 };
 
 export type RenderScriptValidationResult = {
   valid: boolean;
   errors: string[];
 };
-

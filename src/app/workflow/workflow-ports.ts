@@ -4,12 +4,14 @@ import { renderByTemplateV2 } from "../../tools/render/render-by-template.ts";
 import { publishArtifacts } from "../../tools/artifacts/publish-artifacts.ts";
 import { runTabbySession } from "../../agents/tabby/tabby.session.ts";
 import { generateStoryBrief } from "../../subagents/story-brief/generate-story-brief.ts";
+import { runAudioPipeline } from "../../tools/audio/audio-pipeline.ts";
 
 export type WorkflowPorts = {
   collectImagesImpl: typeof collectImages;
   compressImagesImpl: typeof compressImagesToRemotionPublicDir;
   runTabbySessionImpl: typeof runTabbySession;
   generateStoryBriefImpl: typeof generateStoryBrief;
+  runAudioPipelineImpl: typeof runAudioPipeline;
   renderByTemplateV2Impl: typeof renderByTemplateV2;
   publishArtifactsImpl: typeof publishArtifacts;
 };
@@ -22,8 +24,8 @@ export const resolveWorkflowPorts = (
     compressImagesImpl: overrides.compressImagesImpl ?? compressImagesToRemotionPublicDir,
     runTabbySessionImpl: overrides.runTabbySessionImpl ?? runTabbySession,
     generateStoryBriefImpl: overrides.generateStoryBriefImpl ?? generateStoryBrief,
+    runAudioPipelineImpl: overrides.runAudioPipelineImpl ?? runAudioPipeline,
     renderByTemplateV2Impl: overrides.renderByTemplateV2Impl ?? renderByTemplateV2,
     publishArtifactsImpl: overrides.publishArtifactsImpl ?? publishArtifacts,
   };
 };
-

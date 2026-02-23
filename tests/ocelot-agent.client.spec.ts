@@ -72,6 +72,75 @@ test("throws parse error when SDK returns non-JSON content", async () => {
   await assert.rejects(client.generateRenderScript(buildRequest()), OcelotAgentResponseParseError);
 });
 
+test("generates creative plan with strict schema validation", async () => {
+  const client = createCodexOcelotAgentClient({
+    codexFactory: () => ({
+      startThread() {
+        return {
+          async run() {
+            return { finalResponse: JSON.stringify(buildValidCreativePlan()) };
+          },
+        };
+      },
+    }),
+    assertAuthenticated: async () => {
+      return;
+    },
+  });
+
+  const creativePlan = await client.generateCreativePlan({
+    storyBriefRef: "/tmp/run/story-brief.json",
+    storyBrief: buildRequest().storyBrief,
+    photos: buildRequest().photos,
+  });
+
+  assert.equal(creativePlan.musicIntent.durationMs, 30000);
+  assert.equal(creativePlan.visualDirection.pacing, "medium");
+});
+
+test("reviews creative assets and returns executable change instructions", async () => {
+  const client = createCodexOcelotAgentClient({
+    codexFactory: () => ({
+      startThread() {
+        return {
+          async run() {
+            return {
+              finalResponse: JSON.stringify({
+                passed: false,
+                summary: "视觉和音乐在高潮处不同步",
+                issues: [{ target: "cub", message: "鼓点提前进入高潮" }],
+                requiredChanges: [
+                  {
+                    target: "cub",
+                    instructions: ["将高潮鼓点延后到 18s", "前半段改为更轻的律动"],
+                  },
+                ],
+              }),
+            };
+          },
+        };
+      },
+    }),
+    assertAuthenticated: async () => {
+      return;
+    },
+  });
+
+  const review = await client.reviewCreativeAssets({
+    storyBriefRef: "/tmp/run/story-brief.json",
+    storyBrief: buildRequest().storyBrief,
+    creativePlan: buildValidCreativePlan(),
+    visualScript: buildValidVisualScript(),
+    midi: buildValidMidi(),
+    round: 1,
+    maxRounds: 3,
+  });
+
+  assert.equal(review.passed, false);
+  assert.equal(review.requiredChanges[0]?.target, "cub");
+  assert.ok(review.requiredChanges[0]?.instructions.length);
+});
+
 test("throws parse error when render-script violates semantic rules", async () => {
   const client = createCodexOcelotAgentClient({
     codexFactory: () => ({
@@ -184,5 +253,64 @@ const buildValidRenderScript = () => ({
       durationSec: 15,
       transition: { type: "cut", durationMs: 0 },
     },
+  ],
+});
+
+const buildValidCreativePlan = () => ({
+  storyBriefRef: "/tmp/run/story-brief.json",
+  narrativeArc: {
+    opening: "温暖开场",
+    development: "情绪推进",
+    climax: "情绪抬升",
+    resolution: "平静收束",
+  },
+  visualDirection: {
+    style: "电影感",
+    pacing: "medium" as const,
+    transitionTone: "克制",
+    subtitleStyle: "短句",
+  },
+  musicIntent: {
+    moodKeywords: ["温暖", "怀旧"],
+    bpmTrend: "arc" as const,
+    keyMoments: [{ label: "climax", timeMs: 18000 }],
+    instrumentationHints: ["钢琴", "弦乐"],
+    durationMs: 30000,
+  },
+  alignmentPoints: [{ timeMs: 18000, visualCue: "近景", musicCue: "鼓点增强" }],
+});
+
+const buildValidVisualScript = () => ({
+  creativePlanRef: "/tmp/run/creative-plan.json",
+  video: { width: 1080, height: 1920, fps: 30 },
+  scenes: [
+    {
+      sceneId: "scene_001",
+      photoRef: "1.jpg",
+      subtitle: "first",
+      subtitlePosition: "bottom" as const,
+      durationSec: 15,
+      transition: { type: "cut" as const, durationMs: 0 },
+    },
+    {
+      sceneId: "scene_002",
+      photoRef: "2.jpg",
+      subtitle: "second",
+      subtitlePosition: "bottom" as const,
+      durationSec: 15,
+      transition: { type: "fade" as const, durationMs: 300 },
+    },
+  ],
+});
+
+const buildValidMidi = () => ({
+  bpm: 96,
+  timeSignature: "4/4" as const,
+  durationMs: 30000,
+  tracks: [
+    { name: "Piano" as const, channel: 0, program: 0, notes: [] },
+    { name: "Strings" as const, channel: 1, program: 48, notes: [] },
+    { name: "Bass" as const, channel: 2, program: 33, notes: [] },
+    { name: "Drums" as const, channel: 9, program: 0, notes: [] },
   ],
 });

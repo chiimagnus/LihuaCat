@@ -5,6 +5,9 @@ import os from "node:os";
 import path from "node:path";
 
 import { runStoryWorkflowV2 } from "../src/app/workflow/start-story-run.ts";
+import { validateCreativePlan } from "../src/contracts/creative-plan.types.ts";
+import { validateVisualScript } from "../src/contracts/visual-script.types.ts";
+import { validateMidiComposition } from "../src/contracts/midi.types.ts";
 
 test("workflow contract: emits ordered core stage events on first-pass template success", async () => {
   await withTempDir(async (sourceDir) => {
@@ -33,6 +36,39 @@ test("workflow contract: emits ordered core stage events on first-pass template 
           },
         },
         ocelotAgentClient: {
+          async generateCreativePlan() {
+            return {
+              storyBriefRef: "/tmp/run/story-brief.json",
+              narrativeArc: {
+                opening: "warm",
+                development: "lift",
+                climax: "peak",
+                resolution: "calm",
+              },
+              visualDirection: {
+                style: "film",
+                pacing: "medium" as const,
+                transitionTone: "restrained",
+                subtitleStyle: "short",
+              },
+              musicIntent: {
+                moodKeywords: ["warm"],
+                bpmTrend: "arc" as const,
+                keyMoments: [{ label: "peak", timeMs: 15000 }],
+                instrumentationHints: ["piano"],
+                durationMs: 30000,
+              },
+              alignmentPoints: [{ timeMs: 15000, visualCue: "close-up", musicCue: "lift" }],
+            };
+          },
+          async reviewCreativeAssets() {
+            return {
+              passed: true,
+              summary: "ok",
+              issues: [],
+              requiredChanges: [],
+            };
+          },
           async generateRenderScript() {
             return {
               storyBriefRef: "/tmp/run/story-brief.json",
@@ -50,9 +86,37 @@ test("workflow contract: emits ordered core stage events on first-pass template 
             };
           },
         },
-        lynxAgentClient: {
-          async reviewRenderScript() {
-            throw new Error("lynx should not be called when lynx-review is disabled");
+        kittenAgentClient: {
+          async generateVisualScript() {
+            return {
+              creativePlanRef: "/tmp/run/creative-plan.json",
+              video: { width: 1080, height: 1920, fps: 30 },
+              scenes: [
+                {
+                  sceneId: "scene_001",
+                  photoRef: "1.jpg",
+                  subtitle: "hello",
+                  subtitlePosition: "bottom",
+                  durationSec: 30,
+                  transition: { type: "cut", durationMs: 0 },
+                },
+              ],
+            };
+          },
+        },
+        cubAgentClient: {
+          async generateMidiJson() {
+            return {
+              bpm: 96,
+              timeSignature: "4/4",
+              durationMs: 30000,
+              tracks: [
+                { name: "Piano", channel: 0, program: 0, notes: [] },
+                { name: "Strings", channel: 1, program: 48, notes: [] },
+                { name: "Bass", channel: 2, program: 33, notes: [] },
+                { name: "Drums", channel: 9, program: 0, notes: [] },
+              ],
+            };
           },
         },
         onProgress: (event) => {
@@ -131,6 +195,14 @@ test("workflow contract: emits ordered core stage events on first-pass template 
           },
           attempts: 1,
         }),
+        runAudioPipelineImpl: async ({ outputDir }) => {
+          const midiPath = path.join(outputDir, "music.mid");
+          const wavPath = path.join(outputDir, "music.wav");
+          await fs.mkdir(outputDir, { recursive: true });
+          await fs.writeFile(midiPath, "mid");
+          await fs.writeFile(wavPath, "wav");
+          return { midiPath, wavPath };
+        },
         renderByTemplateV2Impl: async ({ outputDir }) => {
           const videoPath = path.join(outputDir, "video.mp4");
           await fs.mkdir(outputDir, { recursive: true });
@@ -146,14 +218,18 @@ test("workflow contract: emits ordered core stage events on first-pass template 
           mode: "template",
           videoPath: input.videoPath,
           storyBriefPath: input.storyBriefPath,
+          creativePlanPath: input.creativePlanPath,
+          visualScriptPath: input.visualScriptPath,
+          reviewLogPath: input.reviewLogPath,
+          midiJsonPath: input.midiJsonPath,
+          musicMidPath: input.musicMidPath,
+          musicWavPath: input.musicWavPath,
           renderScriptPath: input.renderScriptPath,
           tabbyConversationPath: input.tabbyConversationPath,
           runLogPath: path.join(input.outputDir, "run.log"),
           ocelotInputPath: input.ocelotInputPath,
           ocelotOutputPath: input.ocelotOutputPath,
           ocelotPromptLogPath: input.ocelotPromptLogPath,
-          lynxReviewPaths: input.lynxReviewPaths,
-          lynxPromptLogPaths: input.lynxPromptLogPaths,
           ocelotRevisionPaths: input.ocelotRevisionPaths,
         }),
       },
@@ -176,6 +252,10 @@ test("workflow contract: emits ordered core stage events on first-pass template 
     ]);
     assert.equal(summary.mode, "template");
     assert.match(summary.videoPath, /video\.mp4$/);
+    assert.ok(summary.creativePlanPath?.endsWith("creative-plan.json"));
+    assert.ok(summary.visualScriptPath?.endsWith("visual-script.json"));
+    assert.ok(summary.reviewLogPath?.endsWith("review-log.json"));
+    assert.ok(summary.midiJsonPath?.endsWith("music-json.json"));
   });
 });
 
@@ -187,3 +267,66 @@ const withTempDir = async (run: (sourceDir: string) => Promise<void>) => {
     await fs.rm(sourceDir, { recursive: true, force: true });
   }
 };
+
+test("workflow contract: new creative contracts stay JSON serializable", () => {
+  const creativePlan = {
+    storyBriefRef: "/tmp/run/story-brief.json",
+    narrativeArc: {
+      opening: "warm",
+      development: "rise",
+      climax: "peak",
+      resolution: "calm",
+    },
+    visualDirection: {
+      style: "cinematic",
+      pacing: "medium" as const,
+      transitionTone: "restrained",
+      subtitleStyle: "short",
+    },
+    musicIntent: {
+      moodKeywords: ["warm"],
+      bpmTrend: "arc" as const,
+      keyMoments: [{ label: "peak", timeMs: 15000 }],
+      instrumentationHints: ["piano"],
+      durationMs: 30000,
+    },
+    alignmentPoints: [{ timeMs: 15000, visualCue: "close-up", musicCue: "drum lift" }],
+  };
+  const visualScript = {
+    creativePlanRef: "/tmp/run/creative-plan.json",
+    video: { width: 1080, height: 1920, fps: 30 },
+    scenes: [
+      {
+        sceneId: "scene_001",
+        photoRef: "1.jpg",
+        subtitle: "hello",
+        subtitlePosition: "bottom" as const,
+        durationSec: 30,
+        transition: { type: "cut" as const, durationMs: 0 },
+      },
+    ],
+  };
+  const midiJson = {
+    bpm: 96,
+    timeSignature: "4/4" as const,
+    durationMs: 30000,
+    tracks: [
+      { name: "Piano" as const, channel: 0, program: 0, notes: [] },
+      { name: "Strings" as const, channel: 1, program: 48, notes: [] },
+      { name: "Bass" as const, channel: 2, program: 33, notes: [] },
+      { name: "Drums" as const, channel: 9, program: 0, notes: [] },
+    ],
+  };
+
+  const creativeRoundtrip = JSON.parse(JSON.stringify(creativePlan));
+  const visualRoundtrip = JSON.parse(JSON.stringify(visualScript));
+  const midiRoundtrip = JSON.parse(JSON.stringify(midiJson));
+
+  const creativeResult = validateCreativePlan(creativeRoundtrip);
+  const visualResult = validateVisualScript(visualRoundtrip);
+  const midiResult = validateMidiComposition(midiRoundtrip);
+
+  assert.equal(creativeResult.valid, true);
+  assert.equal(visualResult.valid, true);
+  assert.equal(midiResult.valid, true);
+});

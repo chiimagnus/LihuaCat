@@ -4,7 +4,8 @@ import assert from "node:assert/strict";
 import { buildTabbyTurnPromptInput } from "../src/agents/tabby/tabby.prompt.ts";
 import { buildStoryBriefPromptInput } from "../src/subagents/story-brief/story-brief.prompt.ts";
 import { buildRenderScriptPromptInput } from "../src/agents/ocelot/ocelot.prompt.ts";
-import { buildLynxReviewPromptInput } from "../src/agents/lynx/lynx.prompt.ts";
+import { buildKittenPromptInput } from "../src/subagents/kitten/kitten.prompt.ts";
+import { buildCubPromptInput } from "../src/subagents/cub/cub.prompt.ts";
 
 test("agent prompts are Chinese and include language rules", () => {
   const tabby = buildTabbyTurnPromptInput({
@@ -48,28 +49,64 @@ test("agent prompts are Chinese and include language rules", () => {
   assert.match(renderScript[0]!.text, /语言规则/);
   assert.doesNotMatch(renderScript[0]!.text, /You are Ocelot/);
 
-  const lynx = buildLynxReviewPromptInput({
-    storyBrief: {
-      intent: {
-        coreEmotion: "relief",
-        tone: "restrained",
-        narrativeArc: "arc",
-        audienceNote: null,
-        avoidance: [],
-        rawUserWords: "words",
-      },
-      photos: [],
-      narrative: { arc: "arc", beats: [] },
-    },
-    renderScript: {
+  const kitten = buildKittenPromptInput({
+    creativePlan: {
       storyBriefRef: "ref",
-      video: { width: 1080, height: 1920, fps: 30 },
-      scenes: [],
+      narrativeArc: {
+        opening: "a",
+        development: "b",
+        climax: "c",
+        resolution: "d",
+      },
+      visualDirection: {
+        style: "film",
+        pacing: "medium",
+        transitionTone: "restrained",
+        subtitleStyle: "short",
+      },
+      musicIntent: {
+        moodKeywords: ["warm"],
+        bpmTrend: "arc",
+        keyMoments: [{ label: "k", timeMs: 1000 }],
+        instrumentationHints: ["piano"],
+        durationMs: 30000,
+      },
+      alignmentPoints: [],
     },
-    round: 1,
-    maxRounds: 3,
+    photos: [{ photoRef: "1.jpg", path: "/tmp/1.jpg" }],
+    revisionNotes: [],
   });
-  assert.equal(lynx[0]?.type, "text");
-  assert.match(lynx[0]!.text, /语言规则/);
-  assert.doesNotMatch(lynx[0]!.text, /You are Lynx/);
+  assert.equal(kitten[0]?.type, "text");
+  assert.match(kitten[0]!.text, /语言规则/);
+  assert.doesNotMatch(kitten[0]!.text, /You are Kitten/);
+
+  const cub = buildCubPromptInput({
+    creativePlan: {
+      storyBriefRef: "ref",
+      narrativeArc: {
+        opening: "a",
+        development: "b",
+        climax: "c",
+        resolution: "d",
+      },
+      visualDirection: {
+        style: "film",
+        pacing: "medium",
+        transitionTone: "restrained",
+        subtitleStyle: "short",
+      },
+      musicIntent: {
+        moodKeywords: ["warm"],
+        bpmTrend: "arc",
+        keyMoments: [{ label: "k", timeMs: 1000 }],
+        instrumentationHints: ["piano"],
+        durationMs: 30000,
+      },
+      alignmentPoints: [],
+    },
+    revisionNotes: [],
+  });
+  assert.equal(cub[0]?.type, "text");
+  assert.match(cub[0]!.text, /语言规则/);
+  assert.doesNotMatch(cub[0]!.text, /You are Cub/);
 });

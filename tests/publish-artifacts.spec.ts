@@ -12,12 +12,24 @@ test("publishes artifacts and returns summary with key paths", async () => {
     await fs.writeFile(videoPath, "video");
 
     const storyBriefPath = path.join(outputDir, "story-brief.json");
+    const creativePlanPath = path.join(outputDir, "creative-plan.json");
+    const visualScriptPath = path.join(outputDir, "visual-script.json");
+    const reviewLogPath = path.join(outputDir, "review-log.json");
+    const midiJsonPath = path.join(outputDir, "music-json.json");
+    const musicMidPath = path.join(outputDir, "music.mid");
+    const musicWavPath = path.join(outputDir, "music.wav");
     const renderScriptPath = path.join(outputDir, "render-script.json");
     const tabbyConversationPath = path.join(outputDir, "tabby-conversation.jsonl");
     const ocelotInputPath = path.join(outputDir, "ocelot-input.json");
     const ocelotOutputPath = path.join(outputDir, "ocelot-output.json");
     const ocelotPromptLogPath = path.join(outputDir, "ocelot-prompt.log");
     await fs.writeFile(storyBriefPath, JSON.stringify({ ok: true }), "utf8");
+    await fs.writeFile(creativePlanPath, JSON.stringify({ ok: true }), "utf8");
+    await fs.writeFile(visualScriptPath, JSON.stringify({ ok: true }), "utf8");
+    await fs.writeFile(reviewLogPath, JSON.stringify({ ok: true }), "utf8");
+    await fs.writeFile(midiJsonPath, JSON.stringify({ ok: true }), "utf8");
+    await fs.writeFile(musicMidPath, "mid", "utf8");
+    await fs.writeFile(musicWavPath, "wav", "utf8");
     await fs.writeFile(renderScriptPath, JSON.stringify({ ok: true }), "utf8");
     await fs.writeFile(tabbyConversationPath, "", "utf8");
     await fs.writeFile(ocelotInputPath, "{}", "utf8");
@@ -29,19 +41,28 @@ test("publishes artifacts and returns summary with key paths", async () => {
       outputDir,
       videoPath,
       storyBriefPath,
+      creativePlanPath,
+      visualScriptPath,
+      reviewLogPath,
+      midiJsonPath,
+      musicMidPath,
+      musicWavPath,
       renderScriptPath,
       tabbyConversationPath,
       ocelotInputPath,
       ocelotOutputPath,
       ocelotPromptLogPath,
-      lynxReviewPaths: [],
-      lynxPromptLogPaths: [],
       ocelotRevisionPaths: [],
       runLogs: ["run started", "run succeeded"],
     });
 
     assert.equal(summary.videoPath, videoPath);
     assert.ok(summary.storyBriefPath.endsWith("story-brief.json"));
+    assert.ok(summary.creativePlanPath?.endsWith("creative-plan.json"));
+    assert.ok(summary.visualScriptPath?.endsWith("visual-script.json"));
+    assert.ok(summary.reviewLogPath?.endsWith("review-log.json"));
+    assert.ok(summary.musicMidPath?.endsWith("music.mid"));
+    assert.ok(summary.musicWavPath?.endsWith("music.wav"));
     assert.ok(summary.renderScriptPath.endsWith("render-script.json"));
     assert.ok(summary.tabbyConversationPath.endsWith("tabby-conversation.jsonl"));
     assert.ok(summary.runLogPath.endsWith("run.log"));

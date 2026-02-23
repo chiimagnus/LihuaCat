@@ -1,22 +1,27 @@
-import fs from "node:fs/promises";
-
 import type { collectImages } from "../../../tools/material-intake/collect-images.ts";
 import type { OcelotAgentClient } from "../../../agents/ocelot/ocelot.client.ts";
-import type { LynxAgentClient } from "../../../agents/lynx/lynx.client.ts";
+import type { KittenAgentClient } from "../../../subagents/kitten/kitten.client.ts";
+import type { CubAgentClient } from "../../../subagents/cub/cub.client.ts";
 import type { StoryBrief } from "../../../contracts/story-brief.types.ts";
-import type { RenderScript } from "../../../contracts/render-script.types.ts";
+import type { RenderAudioTrack, RenderScript } from "../../../contracts/render-script.types.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
   emitProgressAndPersist,
   pushRunLog,
+  writeCreativePlanArtifact,
+  writeMidiJsonArtifact,
   writeRenderScriptArtifact,
+  writeReviewLogArtifact,
   writeStageArtifact,
+  writeVisualScriptArtifact,
   type WorkflowRuntimeArtifacts,
 } from "../workflow-runtime.ts";
 import {
-  reviseRenderScriptWithLynx,
-  type ReviseRenderScriptWithLynxProgressEvent,
-} from "../revise-render-script-with-lynx.ts";
+  reviseCreativeAssetsWithOcelot,
+  type ReviseCreativeAssetsWithOcelotProgressEvent,
+} from "../revise-creative-assets-with-ocelot.ts";
+import { mergeCreativeAssets } from "../../../tools/render/merge-creative-assets.ts";
+import type { runAudioPipeline } from "../../../tools/audio/audio-pipeline.ts";
 
 const truncateForUi = (value: string): string => {
   if (value.length <= 120) return value;
@@ -29,8 +34,9 @@ export const runScriptStage = async ({
   storyBriefRef,
   storyBrief,
   ocelotAgentClient,
-  lynxAgentClient,
-  enableLynxReview,
+  kittenAgentClient,
+  cubAgentClient,
+  runAudioPipelineImpl,
   onProgress,
 }: {
   collected: Awaited<ReturnType<typeof collectImages>>;
@@ -38,8 +44,9 @@ export const runScriptStage = async ({
   storyBriefRef: string;
   storyBrief: StoryBrief;
   ocelotAgentClient: OcelotAgentClient;
-  lynxAgentClient?: LynxAgentClient;
-  enableLynxReview?: boolean;
+  kittenAgentClient?: KittenAgentClient;
+  cubAgentClient?: CubAgentClient;
+  runAudioPipelineImpl: typeof runAudioPipeline;
   onProgress?: WorkflowProgressReporter;
 }): Promise<{ renderScript: RenderScript; finalPassed: boolean; rounds: number }> => {
   await emitProgressAndPersist(runtime, onProgress, {
@@ -54,180 +61,183 @@ export const runScriptStage = async ({
 
   const video = { width: 1080, height: 1920, fps: 30 };
 
-  if (!enableLynxReview) {
-    const reasons: string[] = [];
-    const maxAttempts = 3;
-    let revisionNotes: string[] | undefined = undefined;
+  if (kittenAgentClient && cubAgentClient) {
+    const toCreativeProgressMessage = (
+      event: ReviseCreativeAssetsWithOcelotProgressEvent,
+    ): string => {
+      if (event.type === "round_start") {
+        return `Ocelot creative review: round ${event.round}/${event.maxRounds}`;
+      }
+      if (event.type === "kitten_generate_start") {
+        return `Round ${event.round} · Kitten generating visual script...`;
+      }
+      if (event.type === "kitten_generate_done") {
+        return `Round ${event.round} · Kitten visual script ready`;
+      }
+      if (event.type === "cub_generate_start") {
+        return `Round ${event.round} · Cub generating MIDI JSON...`;
+      }
+      if (event.type === "cub_generate_done") {
+        return `Round ${event.round} · Cub MIDI JSON ready`;
+      }
+      if (event.type === "ocelot_review_start") {
+        return `Round ${event.round} · Ocelot reviewing creative assets...`;
+      }
+      return `Round ${event.round} · Ocelot review ${event.passed ? "passed" : "needs changes"}`;
+    };
 
-    const generateOnce = async () =>
-      ocelotAgentClient.generateRenderScript({
-        storyBriefRef,
-        storyBrief,
-        photos,
-        video,
-        revisionNotes,
-        debug: {
-          inputPath: runtime.ocelotInputPath,
-          outputPath: runtime.ocelotOutputPath,
-          promptLogPath: runtime.ocelotPromptLogPath,
-        },
-      });
-
-    let renderScript: RenderScript | undefined = undefined;
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      await emitProgressAndPersist(runtime, onProgress, {
-        stage: "script_progress",
-        message: `Generating RenderScript... (attempt ${attempt}/${maxAttempts})`,
-      });
-      try {
-        renderScript = await generateOnce();
-        break;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+    const creative = await reviseCreativeAssetsWithOcelot({
+      storyBriefRef,
+      storyBrief,
+      photos,
+      ocelotClient: ocelotAgentClient,
+      kittenClient: kittenAgentClient,
+      cubClient: cubAgentClient,
+      maxRounds: 3,
+      onProgress: async (event) => {
         await emitProgressAndPersist(runtime, onProgress, {
           stage: "script_progress",
-          message: `RenderScript invalid, retrying... (attempt ${attempt}/${maxAttempts}) · ${truncateForUi(message)}`,
+          message: toCreativeProgressMessage(event),
         });
-        reasons.push(`attempt ${attempt}: ${message}`);
-        if (attempt >= maxAttempts) {
-          throw error;
-        }
+      },
+    });
 
-        revisionNotes = [
-          ...(revisionNotes ?? []),
-          "Previous attempt failed automated validation. Fix all validation errors and return a fully valid RenderScript JSON.",
-          `Validation error: ${message}`,
-          "Reminder: you MUST use every provided photoRef at least once in scenes[].photoRef.",
-        ];
-      }
+    let audioTrack: RenderAudioTrack | undefined = undefined;
+    if (creative.audioAvailable) {
+      const audio = await runAudioPipelineImpl({
+        midiJson: creative.midi,
+        outputDir: runtime.outputDir,
+      });
+      audioTrack = {
+        path: audio.wavPath,
+        format: "wav",
+        startMs: 0,
+        durationSec: creative.midi.durationMs / 1000,
+      };
+      await pushRunLog(runtime, `musicMidPath=${audio.midiPath}`);
+      await pushRunLog(runtime, `musicWavPath=${audio.wavPath}`);
     }
 
-    if (!renderScript) {
-      throw new Error(
-        `Unexpected: failed to generate renderScript. Reasons: ${reasons.join(" | ")}`,
-      );
-    }
+    const renderScript = mergeCreativeAssets({
+      storyBriefRef,
+      visualScript: creative.visualScript,
+      audioTrack,
+    });
 
-    await pushRunLog(runtime, "lynxReviewEnabled=false");
-    await pushRunLog(runtime, `renderScriptGeneratedInAttempts=${reasons.length + 1}`);
-
+    await writeCreativePlanArtifact(runtime, creative.creativePlan);
+    await writeVisualScriptArtifact(runtime, creative.visualScript);
+    await writeReviewLogArtifact(runtime, creative.reviewLog);
+    await writeMidiJsonArtifact(runtime, creative.midi);
     await writeRenderScriptArtifact(runtime, renderScript);
+    await writeStageArtifact(runtime, "creative-plan.json", creative.creativePlan);
+    await writeStageArtifact(runtime, "visual-script.json", creative.visualScript);
+    await writeStageArtifact(runtime, "review-log.json", creative.reviewLog);
+    await writeStageArtifact(runtime, "music-json.json", creative.midi);
     await writeStageArtifact(runtime, "render-script.json", renderScript);
     await writeStageArtifact(runtime, "script-stage.json", {
-      lynxEnabled: false,
-      rounds: 1,
-      finalPassed: true,
-      attempts: reasons.length + 1,
+      mode: "ocelot-creative-director",
+      rounds: creative.rounds.length,
+      finalPassed: creative.finalPassed,
+      warning: creative.warning,
       createdAt: new Date().toISOString(),
     });
+    await pushRunLog(runtime, "scriptMode=ocelot-creative-director");
+    await pushRunLog(runtime, `creativeReviewRounds=${creative.rounds.length}`);
+    await pushRunLog(runtime, `creativeReviewFinalPassed=${creative.finalPassed}`);
+    if (creative.warning) {
+      await pushRunLog(runtime, `warning=${creative.warning}`);
+      await emitProgressAndPersist(runtime, onProgress, {
+        stage: "script_warning",
+        message: creative.warning,
+      });
+    }
 
     await emitProgressAndPersist(runtime, onProgress, {
       stage: "script_done",
-      message: "RenderScript ready (lynx=disabled).",
+      message: `RenderScript ready (creative rounds=${creative.rounds.length}, passed=${creative.finalPassed}).`,
     });
 
     return {
       renderScript,
-      finalPassed: true,
-      rounds: 1,
+      finalPassed: creative.finalPassed,
+      rounds: creative.rounds.length,
     };
   }
 
-  if (!lynxAgentClient) {
-    throw new Error("Lynx review is enabled but lynxAgentClient is not provided.");
-  }
+  const reasons: string[] = [];
+  const maxAttempts = 3;
+  let revisionNotes: string[] | undefined = undefined;
 
-  const emitLynxProgress = async (message: string) =>
-    emitProgressAndPersist(runtime, onProgress, {
-      stage: "script_progress",
-      message,
+  const generateOnce = async () =>
+    ocelotAgentClient.generateRenderScript({
+      storyBriefRef,
+      storyBrief,
+      photos,
+      video,
+      revisionNotes,
+      debug: {
+        inputPath: runtime.ocelotInputPath,
+        outputPath: runtime.ocelotOutputPath,
+        promptLogPath: runtime.ocelotPromptLogPath,
+      },
     });
 
-  const toLynxProgressMessage = (event: ReviseRenderScriptWithLynxProgressEvent): string => {
-    if (event.type === "round_start") {
-      return `Lynx review: round ${event.round}/${event.maxRounds} · generating RenderScript...`;
-    }
-    if (event.type === "ocelot_attempt_start") {
-      return `Round ${event.round} · generating RenderScript (attempt ${event.attempt}/${event.maxAttempts})...`;
-    }
-    if (event.type === "ocelot_attempt_failed") {
-      return `Round ${event.round} · validation failed (attempt ${event.attempt}/${event.maxAttempts}), retrying... · ${truncateForUi(event.errorMessage)}`;
-    }
-    if (event.type === "lynx_review_start") {
-      return `Round ${event.round} · Lynx reviewing...`;
-    }
-    if (event.type === "lynx_review_done") {
-      return `Round ${event.round} · Lynx review ${event.passed ? "passed" : "found issues"}...`;
-    }
-    return "Lynx review: working...";
-  };
+  let renderScript: RenderScript | undefined = undefined;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    await emitProgressAndPersist(runtime, onProgress, {
+      stage: "script_progress",
+      message: `Generating RenderScript... (attempt ${attempt}/${maxAttempts})`,
+    });
+    try {
+      renderScript = await generateOnce();
+      break;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await emitProgressAndPersist(runtime, onProgress, {
+        stage: "script_progress",
+        message: `RenderScript invalid, retrying... (attempt ${attempt}/${maxAttempts}) · ${truncateForUi(message)}`,
+      });
+      reasons.push(`attempt ${attempt}: ${message}`);
+      if (attempt >= maxAttempts) {
+        throw error;
+      }
 
-  const result = await reviseRenderScriptWithLynx({
-    storyBriefRef,
-    storyBrief,
-    photos,
-    video,
-    ocelotClient: {
-      async generateRenderScript(request) {
-        return ocelotAgentClient.generateRenderScript({
-          ...request,
-          debug: {
-            inputPath: runtime.ocelotInputPath,
-            outputPath: runtime.ocelotOutputPath,
-            promptLogPath: runtime.ocelotPromptLogPath,
-          },
-        });
-      },
-    },
-    lynxClient: {
-      async reviewRenderScript(request) {
-        const promptLogPath = runtime.getLynxPromptLogPath(request.round);
-        runtime.lynxPromptLogPaths.push(promptLogPath);
-        return lynxAgentClient.reviewRenderScript({
-          ...request,
-          debug: { promptLogPath },
-        });
-      },
-    },
-    maxRounds: 3,
-    maxOcelotRetriesPerRound: 2,
-    onProgress: async (event) => {
-      await emitLynxProgress(toLynxProgressMessage(event));
-    },
-  });
-
-  for (const round of result.rounds) {
-    const ocelotRevisionPath = runtime.getOcelotRevisionPath(round.round);
-    runtime.ocelotRevisionPaths.push(ocelotRevisionPath);
-    await fs.writeFile(ocelotRevisionPath, JSON.stringify(round.renderScript, null, 2), "utf8");
-
-    const lynxReviewPath = runtime.getLynxReviewPath(round.round);
-    runtime.lynxReviewPaths.push(lynxReviewPath);
-    await fs.writeFile(lynxReviewPath, JSON.stringify(round.lynxReview, null, 2), "utf8");
+      revisionNotes = [
+        ...(revisionNotes ?? []),
+        "Previous attempt failed automated validation. Fix all validation errors and return a fully valid RenderScript JSON.",
+        `Validation error: ${message}`,
+        "Reminder: you MUST use every provided photoRef at least once in scenes[].photoRef.",
+      ];
+    }
   }
 
-  await pushRunLog(runtime, `renderScriptGeneratedInAttempts=${result.rounds.length}`);
-  await pushRunLog(runtime, "lynxReviewEnabled=true");
-  await pushRunLog(runtime, `lynxReviewRounds=${result.rounds.length}`);
-  await pushRunLog(runtime, `lynxFinalPassed=${result.finalPassed}`);
+  if (!renderScript) {
+    throw new Error(
+      `Unexpected: failed to generate renderScript. Reasons: ${reasons.join(" | ")}`,
+    );
+  }
 
-  await writeRenderScriptArtifact(runtime, result.finalScript);
-  await writeStageArtifact(runtime, "render-script.json", result.finalScript);
+  await pushRunLog(runtime, "scriptMode=ocelot-legacy-render-script");
+  await pushRunLog(runtime, `renderScriptGeneratedInAttempts=${reasons.length + 1}`);
+
+  await writeRenderScriptArtifact(runtime, renderScript);
+  await writeStageArtifact(runtime, "render-script.json", renderScript);
   await writeStageArtifact(runtime, "script-stage.json", {
-    lynxEnabled: true,
-    rounds: result.rounds.length,
-    finalPassed: result.finalPassed,
+    mode: "ocelot-legacy-render-script",
+    rounds: 1,
+    finalPassed: true,
+    attempts: reasons.length + 1,
     createdAt: new Date().toISOString(),
   });
 
   await emitProgressAndPersist(runtime, onProgress, {
     stage: "script_done",
-    message: `RenderScript ready (rounds=${result.rounds.length}, passed=${result.finalPassed}).`,
+    message: "RenderScript ready.",
   });
 
   return {
-    renderScript: result.finalScript,
-    finalPassed: result.finalPassed,
-    rounds: result.rounds.length,
+    renderScript,
+    finalPassed: true,
+    rounds: 1,
   };
 };

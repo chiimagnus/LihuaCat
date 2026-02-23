@@ -40,6 +40,15 @@ const RenderScriptTemplatePropsSchema = z.object({
       }),
     )
     .min(1),
+  audioTrack: z
+    .object({
+      path: z.string().min(1),
+      format: z.enum(["wav", "mp3"]),
+      startMs: z.number().min(0).optional(),
+      gain: z.number().positive().optional(),
+      durationSec: z.number().positive().optional(),
+    })
+    .optional(),
 });
 
 export const StoryTemplatePropsSchema = RenderScriptTemplatePropsSchema;
@@ -73,4 +82,3 @@ export const createDefaultStoryTemplateProps = (): StoryTemplateProps => ({
     },
   ],
 });
-

@@ -5,7 +5,8 @@ import type { TabbyAgentClient } from "../../agents/tabby/tabby.client.ts";
 import type { TabbySessionTui } from "../../agents/tabby/tabby.session.ts";
 import type { StoryBriefAgentClient } from "../../subagents/story-brief/story-brief.client.ts";
 import type { OcelotAgentClient } from "../../agents/ocelot/ocelot.client.ts";
-import type { LynxAgentClient } from "../../agents/lynx/lynx.client.ts";
+import type { KittenAgentClient } from "../../subagents/kitten/kitten.client.ts";
+import type { CubAgentClient } from "../../subagents/cub/cub.client.ts";
 import type { RunSummary } from "../../tools/artifacts/run-summary.ts";
 import type { WorkflowProgressReporter } from "./workflow-events.ts";
 import { resolveWorkflowPorts, type WorkflowPorts } from "./workflow-ports.ts";
@@ -47,8 +48,8 @@ export type RunStoryWorkflowV2Input = {
   tabbyTui: TabbySessionTui;
   storyBriefAgentClient: StoryBriefAgentClient;
   ocelotAgentClient: OcelotAgentClient;
-  lynxAgentClient?: LynxAgentClient;
-  enableLynxReview?: boolean;
+  kittenAgentClient?: KittenAgentClient;
+  cubAgentClient?: CubAgentClient;
   browserExecutablePath?: string;
   onProgress?: WorkflowProgressReporter;
   now?: Date;
@@ -63,8 +64,8 @@ export const runStoryWorkflowV2 = async (
     tabbyTui,
     storyBriefAgentClient,
     ocelotAgentClient,
-    lynxAgentClient,
-    enableLynxReview = false,
+    kittenAgentClient,
+    cubAgentClient,
     browserExecutablePath,
     onProgress,
     now,
@@ -114,8 +115,9 @@ export const runStoryWorkflowV2 = async (
       storyBriefRef: runtime.storyBriefPath,
       storyBrief: tabby.storyBrief,
       ocelotAgentClient,
-      lynxAgentClient,
-      enableLynxReview,
+      kittenAgentClient,
+      cubAgentClient,
+      runAudioPipelineImpl: ports.runAudioPipelineImpl,
       onProgress,
     });
 
@@ -155,4 +157,3 @@ const formatTimestamp = (value: Date): string => {
   const second = String(value.getSeconds()).padStart(2, "0");
   return `${year}${month}${day}-${hour}${minute}${second}`;
 };
-

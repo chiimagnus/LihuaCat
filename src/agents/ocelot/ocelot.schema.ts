@@ -1,3 +1,5 @@
+import { creativePlanOutputSchema } from "../../contracts/creative-plan.types.ts";
+
 export const renderScriptOutputSchema = {
   type: "object",
   required: ["storyBriefRef", "video", "scenes"],
@@ -66,3 +68,42 @@ export const renderScriptOutputSchema = {
   },
 } as const;
 
+export const ocelotCreativePlanOutputSchema = creativePlanOutputSchema;
+
+export const ocelotCreativeReviewOutputSchema = {
+  type: "object",
+  required: ["passed", "summary", "issues", "requiredChanges"],
+  additionalProperties: false,
+  properties: {
+    passed: { type: "boolean" },
+    summary: { type: "string", minLength: 1 },
+    issues: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["target", "message"],
+        additionalProperties: false,
+        properties: {
+          target: { type: "string", enum: ["kitten", "cub"] },
+          message: { type: "string", minLength: 1 },
+        },
+      },
+    },
+    requiredChanges: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["target", "instructions"],
+        additionalProperties: false,
+        properties: {
+          target: { type: "string", enum: ["kitten", "cub"] },
+          instructions: {
+            type: "array",
+            minItems: 1,
+            items: { type: "string", minLength: 1 },
+          },
+        },
+      },
+    },
+  },
+} as const;

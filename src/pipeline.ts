@@ -56,13 +56,25 @@ export {
 } from "./agents/ocelot/ocelot.client.ts";
 
 export type {
-  LynxAgentClient,
-  GenerateLynxReviewRequest,
-  CreateCodexLynxAgentClientInput,
-} from "./agents/lynx/lynx.client.ts";
+  CubAgentClient,
+  GenerateCubMidiRequest,
+  CreateCodexCubAgentClientInput,
+} from "./subagents/cub/cub.client.ts";
 export {
-  createCodexLynxAgentClient,
-  DEFAULT_LYNX_CODEX_MODEL,
-  DEFAULT_LYNX_CODEX_REASONING_EFFORT,
-  LynxAgentResponseParseError,
-} from "./agents/lynx/lynx.client.ts";
+  createCodexCubAgentClient,
+  DEFAULT_CUB_CODEX_MODEL,
+  DEFAULT_CUB_CODEX_REASONING_EFFORT,
+  CubAgentResponseParseError,
+} from "./subagents/cub/cub.client.ts";
+
+export type {
+  KittenAgentClient,
+  GenerateKittenVisualScriptRequest,
+  CreateCodexKittenAgentClientInput,
+} from "./subagents/kitten/kitten.client.ts";
+export {
+  createCodexKittenAgentClient,
+  DEFAULT_KITTEN_CODEX_MODEL,
+  DEFAULT_KITTEN_CODEX_REASONING_EFFORT,
+  KittenAgentResponseParseError,
+} from "./subagents/kitten/kitten.client.ts";

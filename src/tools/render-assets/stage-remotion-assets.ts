@@ -50,7 +50,7 @@ export const stageRemotionAssets = async <TAsset extends StageRemotionAsset>({
       continue;
     }
 
-    const extension = path.extname(localPath) || ".jpg";
+    const extension = path.extname(localPath) || ".bin";
     const ref = "photoRef" in asset ? asset.photoRef : asset.id;
     const safeRef = sanitizeForFileName(ref);
     const fileName = `${String(index + 1).padStart(3, "0")}-${safeRef}${extension.toLowerCase()}`;
@@ -96,4 +96,3 @@ const isInsideDir = (filePath: string, dirPath: string): boolean => {
   if (path.isAbsolute(relative)) return false;
   return true;
 };
-

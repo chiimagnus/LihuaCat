@@ -9,6 +9,7 @@ export type WorkflowProgressEvent = {
     | "tabby_done"
     | "script_start"
     | "script_progress"
+    | "script_warning"
     | "script_done"
     | "render_start"
     | "render_failed"
@@ -21,4 +22,3 @@ export type WorkflowProgressEvent = {
 export type WorkflowProgressReporter = (
   event: WorkflowProgressEvent,
 ) => Promise<void> | void;
-

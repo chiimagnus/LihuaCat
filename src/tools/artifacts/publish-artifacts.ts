@@ -8,13 +8,17 @@ export type PublishArtifactsInput = {
   outputDir: string;
   videoPath: string;
   storyBriefPath: string;
+  creativePlanPath?: string;
+  visualScriptPath?: string;
+  reviewLogPath?: string;
+  midiJsonPath?: string;
+  musicMidPath?: string;
+  musicWavPath?: string;
   renderScriptPath: string;
   tabbyConversationPath: string;
   ocelotInputPath: string;
   ocelotOutputPath: string;
   ocelotPromptLogPath: string;
-  lynxReviewPaths: string[];
-  lynxPromptLogPaths: string[];
   ocelotRevisionPaths: string[];
   runLogs: string[];
   errorLogs?: string[];
@@ -25,13 +29,17 @@ export const publishArtifacts = async ({
   outputDir,
   videoPath,
   storyBriefPath,
+  creativePlanPath,
+  visualScriptPath,
+  reviewLogPath,
+  midiJsonPath,
+  musicMidPath,
+  musicWavPath,
   renderScriptPath,
   tabbyConversationPath,
   ocelotInputPath,
   ocelotOutputPath,
   ocelotPromptLogPath,
-  lynxReviewPaths,
-  lynxPromptLogPaths,
   ocelotRevisionPaths,
   runLogs,
   errorLogs = [],
@@ -52,6 +60,12 @@ export const publishArtifacts = async ({
     mode: "template",
     videoPath,
     storyBriefPath,
+    creativePlanPath,
+    visualScriptPath,
+    reviewLogPath,
+    midiJsonPath,
+    musicMidPath,
+    musicWavPath,
     renderScriptPath,
     tabbyConversationPath,
     runLogPath,
@@ -59,9 +73,6 @@ export const publishArtifacts = async ({
     ocelotInputPath,
     ocelotOutputPath,
     ocelotPromptLogPath,
-    lynxReviewPaths,
-    lynxPromptLogPaths,
     ocelotRevisionPaths,
   });
 };
-

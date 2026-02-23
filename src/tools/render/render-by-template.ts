@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { RenderScript } from "../../contracts/render-script.types.ts";
+import type { RenderAudioTrack, RenderScript } from "../../contracts/render-script.types.ts";
 import { stageRemotionAssets } from "../../tools/render-assets/stage-remotion-assets.ts";
 import {
   validateRenderScriptSemantics,
@@ -69,11 +69,21 @@ export const renderByTemplateV2 = async ({
     assets,
     outputDir,
   });
+  const stagedAudioTrack = await stageAudioTrack({
+    audioTrack: structure.script.audioTrack,
+    outputDir,
+  });
+
+  const inputProps: Record<string, unknown> = {
+    ...structure.script,
+    assets: stagedAssets.assets,
+  };
+  if (stagedAudioTrack) {
+    inputProps.audioTrack = stagedAudioTrack;
+  }
+
   await renderAdapter({
-    inputProps: {
-      ...structure.script,
-      assets: stagedAssets.assets,
-    } as Record<string, unknown>,
+    inputProps,
     publicDir: stagedAssets.publicDir,
     outputDir,
     outputFilePath: videoPath,
@@ -133,3 +143,26 @@ const templateEntryPointPath = fileURLToPath(
     import.meta.url,
   ),
 );
+
+const stageAudioTrack = async ({
+  audioTrack,
+  outputDir,
+}: {
+  audioTrack?: RenderAudioTrack;
+  outputDir: string;
+}): Promise<RenderAudioTrack | undefined> => {
+  if (!audioTrack) {
+    return undefined;
+  }
+
+  const staged = await stageRemotionAssets({
+    assets: [{ id: "audio-track", path: audioTrack.path }],
+    outputDir,
+  });
+
+  const stagedPath = staged.assets[0]?.path ?? audioTrack.path;
+  return {
+    ...audioTrack,
+    path: stagedPath,
+  };
+};

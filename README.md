@@ -4,10 +4,14 @@
 
 Local-first CLI that turns a folder of images into a short story video. Follow the interactive prompts in your terminal and it renders `video.mp4` locally with Remotion.
 
+Current architecture in one line: `Tabby -> StoryBrief -> Ocelot (Creative Director) -> Kitten/Cub -> Remotion`.
+
 ## Prerequisites
 
 - Node.js >= 20
 - A Chromium-based browser (Chrome / Edge / Arc / Brave)
+- `fluidsynth` command available in `PATH` (for MIDI -> WAV synthesis)
+- A SoundFont (`.sf2`) file; set `LIHUACAT_SOUNDFONT_PATH` if not in default system locations
 
 ## Development in this repo
 
@@ -43,7 +47,6 @@ Use flags to prefill prompts and skip steps:
 - `--browser-executable <path>`: explicit browser executable path
 - `--model <name>`: override Codex model name
 - `--model-reasoning-effort <minimal|low|medium|high|xhigh>`: override reasoning effort
-- `--lynx-review`: enable Lynx review + revision loop for RenderScript (default: off)
 
 Defaults (when not provided):
 
@@ -65,11 +68,23 @@ Common artifacts:
 
 - `video.mp4`
 - `story-brief.json`
+- `creative-plan.json`
+- `visual-script.json`
+- `review-log.json`
+- `music-json.json`
+- `music.mid`
+- `music.wav`
 - `render-script.json`
 - `tabby-conversation.jsonl`
 - `run.log` (and `error.log` on failures)
 - `ocelot-input.json`, `ocelot-output.json`, `ocelot-prompt.log` (debug)
-- (when `--lynx-review` is enabled) `lynx-review-{N}.json`, `ocelot-revision-{N}.json`, `lynx-prompt-{N}.log`
+- `ocelot-revision-{N}.json` (when creative review rounds occur)
+
+## Failure strategy
+
+- Ocelot creative review loop has a max of 3 rounds; if still not approved, it records a warning and continues render with the latest version.
+- Cub failure degrades to no-music render and records fallback reason in `review-log.json`.
+- FluidSynth synthesis failure exits the run with an error; `music.mid` is kept for debugging/retry.
 
 ## Browser (manual override)
 
