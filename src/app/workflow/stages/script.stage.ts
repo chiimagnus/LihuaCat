@@ -11,8 +11,12 @@ import type { WorkflowProgressReporter } from "../workflow-events.ts";
 import {
   emitProgressAndPersist,
   pushRunLog,
+  writeCreativePlanArtifact,
+  writeMidiJsonArtifact,
   writeRenderScriptArtifact,
+  writeReviewLogArtifact,
   writeStageArtifact,
+  writeVisualScriptArtifact,
   type WorkflowRuntimeArtifacts,
 } from "../workflow-runtime.ts";
 import {
@@ -111,6 +115,10 @@ export const runScriptStage = async ({
       visualScript: creative.visualScript,
     });
 
+    await writeCreativePlanArtifact(runtime, creative.creativePlan);
+    await writeVisualScriptArtifact(runtime, creative.visualScript);
+    await writeReviewLogArtifact(runtime, creative.reviewLog);
+    await writeMidiJsonArtifact(runtime, creative.midi);
     await writeRenderScriptArtifact(runtime, renderScript);
     await writeStageArtifact(runtime, "creative-plan.json", creative.creativePlan);
     await writeStageArtifact(runtime, "visual-script.json", creative.visualScript);

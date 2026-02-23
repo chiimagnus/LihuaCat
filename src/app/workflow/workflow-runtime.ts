@@ -3,6 +3,10 @@ import path from "node:path";
 
 import type { StoryBrief } from "../../contracts/story-brief.types.ts";
 import type { RenderScript } from "../../contracts/render-script.types.ts";
+import type { CreativePlan } from "../../contracts/creative-plan.types.ts";
+import type { VisualScript } from "../../contracts/visual-script.types.ts";
+import type { ReviewLog } from "../../contracts/review-log.types.ts";
+import type { MidiComposition } from "../../contracts/midi.types.ts";
 import type {
   WorkflowProgressEvent,
   WorkflowProgressReporter,
@@ -16,6 +20,12 @@ export type WorkflowRuntimeArtifacts = {
   runLogPath: string;
   errorLogPath: string;
   storyBriefPath: string;
+  creativePlanPath: string;
+  visualScriptPath: string;
+  reviewLogPath: string;
+  midiJsonPath: string;
+  musicMidPath: string;
+  musicWavPath: string;
   renderScriptPath: string;
   tabbyConversationPath: string;
   ocelotInputPath: string;
@@ -58,6 +68,12 @@ export const initializeWorkflowRuntime = async ({
     runLogPath: path.join(outputDir, "run.log"),
     errorLogPath: path.join(outputDir, "error.log"),
     storyBriefPath: path.join(outputDir, "story-brief.json"),
+    creativePlanPath: path.join(outputDir, "creative-plan.json"),
+    visualScriptPath: path.join(outputDir, "visual-script.json"),
+    reviewLogPath: path.join(outputDir, "review-log.json"),
+    midiJsonPath: path.join(outputDir, "music-json.json"),
+    musicMidPath: path.join(outputDir, "music.mid"),
+    musicWavPath: path.join(outputDir, "music.wav"),
     renderScriptPath: path.join(outputDir, "render-script.json"),
     tabbyConversationPath: path.join(outputDir, "tabby-conversation.jsonl"),
     ocelotInputPath: path.join(outputDir, "ocelot-input.json"),
@@ -120,6 +136,34 @@ export const writeStoryBriefArtifact = async (
   await fs.writeFile(runtime.storyBriefPath, JSON.stringify(storyBrief, null, 2), "utf8");
 };
 
+export const writeCreativePlanArtifact = async (
+  runtime: WorkflowRuntimeArtifacts,
+  creativePlan: CreativePlan,
+) => {
+  await fs.writeFile(runtime.creativePlanPath, JSON.stringify(creativePlan, null, 2), "utf8");
+};
+
+export const writeVisualScriptArtifact = async (
+  runtime: WorkflowRuntimeArtifacts,
+  visualScript: VisualScript,
+) => {
+  await fs.writeFile(runtime.visualScriptPath, JSON.stringify(visualScript, null, 2), "utf8");
+};
+
+export const writeReviewLogArtifact = async (
+  runtime: WorkflowRuntimeArtifacts,
+  reviewLog: ReviewLog,
+) => {
+  await fs.writeFile(runtime.reviewLogPath, JSON.stringify(reviewLog, null, 2), "utf8");
+};
+
+export const writeMidiJsonArtifact = async (
+  runtime: WorkflowRuntimeArtifacts,
+  midiJson: MidiComposition,
+) => {
+  await fs.writeFile(runtime.midiJsonPath, JSON.stringify(midiJson, null, 2), "utf8");
+};
+
 export const writeRenderScriptArtifact = async (
   runtime: WorkflowRuntimeArtifacts,
   renderScript: RenderScript,
@@ -149,4 +193,3 @@ export const appendRenderAttempt = async (
 const appendJsonLine = async (filePath: string, data: Record<string, unknown>) => {
   await fs.appendFile(filePath, `${JSON.stringify(data)}\n`, "utf8");
 };
-

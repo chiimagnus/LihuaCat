@@ -6,6 +6,8 @@ import type { TabbySessionTui } from "../../agents/tabby/tabby.session.ts";
 import type { StoryBriefAgentClient } from "../../subagents/story-brief/story-brief.client.ts";
 import type { OcelotAgentClient } from "../../agents/ocelot/ocelot.client.ts";
 import type { LynxAgentClient } from "../../agents/lynx/lynx.client.ts";
+import type { KittenAgentClient } from "../../agents/kitten/kitten.client.ts";
+import type { CubAgentClient } from "../../agents/cub/cub.client.ts";
 import type { RunSummary } from "../../tools/artifacts/run-summary.ts";
 import type { WorkflowProgressReporter } from "./workflow-events.ts";
 import { resolveWorkflowPorts, type WorkflowPorts } from "./workflow-ports.ts";
@@ -47,6 +49,8 @@ export type RunStoryWorkflowV2Input = {
   tabbyTui: TabbySessionTui;
   storyBriefAgentClient: StoryBriefAgentClient;
   ocelotAgentClient: OcelotAgentClient;
+  kittenAgentClient?: KittenAgentClient;
+  cubAgentClient?: CubAgentClient;
   lynxAgentClient?: LynxAgentClient;
   enableLynxReview?: boolean;
   browserExecutablePath?: string;
@@ -63,6 +67,8 @@ export const runStoryWorkflowV2 = async (
     tabbyTui,
     storyBriefAgentClient,
     ocelotAgentClient,
+    kittenAgentClient,
+    cubAgentClient,
     lynxAgentClient,
     enableLynxReview = false,
     browserExecutablePath,
@@ -114,6 +120,8 @@ export const runStoryWorkflowV2 = async (
       storyBriefRef: runtime.storyBriefPath,
       storyBrief: tabby.storyBrief,
       ocelotAgentClient,
+      kittenAgentClient,
+      cubAgentClient,
       lynxAgentClient,
       enableLynxReview,
       onProgress,
@@ -155,4 +163,3 @@ const formatTimestamp = (value: Date): string => {
   const second = String(value.getSeconds()).padStart(2, "0");
   return `${year}${month}${day}-${hour}${minute}${second}`;
 };
-

@@ -78,3 +78,15 @@ export {
   DEFAULT_CUB_CODEX_REASONING_EFFORT,
   CubAgentResponseParseError,
 } from "./agents/cub/cub.client.ts";
+
+export type {
+  KittenAgentClient,
+  GenerateKittenVisualScriptRequest,
+  CreateCodexKittenAgentClientInput,
+} from "./agents/kitten/kitten.client.ts";
+export {
+  createCodexKittenAgentClient,
+  DEFAULT_KITTEN_CODEX_MODEL,
+  DEFAULT_KITTEN_CODEX_REASONING_EFFORT,
+  KittenAgentResponseParseError,
+} from "./agents/kitten/kitten.client.ts";

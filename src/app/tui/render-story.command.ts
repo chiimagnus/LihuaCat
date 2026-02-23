@@ -3,6 +3,8 @@ import { listAvailableBrowserExecutables } from "../../tools/render/browser-loca
 
 import { assertCodexCliAuthenticated } from "../../tools/auth/codex-auth-guard.ts";
 import {
+  createCodexCubAgentClient,
+  createCodexKittenAgentClient,
   createCodexLynxAgentClient,
   createCodexOcelotAgentClient,
   createCodexStoryBriefAgentClient,
@@ -79,6 +81,16 @@ export const runRenderStoryCommand = async ({
     modelReasoningEffort: resolvedReasoningEffort,
     workingDirectory: process.cwd(),
   });
+  const kittenAgentClient = createCodexKittenAgentClient({
+    model,
+    modelReasoningEffort: resolvedReasoningEffort,
+    workingDirectory: process.cwd(),
+  });
+  const cubAgentClient = createCodexCubAgentClient({
+    model,
+    modelReasoningEffort: resolvedReasoningEffort,
+    workingDirectory: process.cwd(),
+  });
   const lynxAgentClient = enableLynxReview
     ? createCodexLynxAgentClient({
         model,
@@ -111,6 +123,8 @@ export const runRenderStoryCommand = async ({
       },
       storyBriefAgentClient,
       ocelotAgentClient,
+      kittenAgentClient,
+      cubAgentClient,
       lynxAgentClient,
       enableLynxReview,
       browserExecutablePath,

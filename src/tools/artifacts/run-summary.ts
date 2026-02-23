@@ -4,6 +4,12 @@ export type RunSummaryInput = {
   mode: "template";
   videoPath: string;
   storyBriefPath: string;
+  creativePlanPath?: string;
+  visualScriptPath?: string;
+  reviewLogPath?: string;
+  midiJsonPath?: string;
+  musicMidPath?: string;
+  musicWavPath?: string;
   renderScriptPath: string;
   tabbyConversationPath: string;
   runLogPath: string;
@@ -19,4 +25,3 @@ export type RunSummaryInput = {
 export type RunSummary = RunSummaryInput;
 
 export const buildRunSummary = (input: RunSummaryInput): RunSummary => input;
-

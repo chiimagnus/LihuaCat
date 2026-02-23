@@ -61,8 +61,8 @@ export type ReviewCreativeAssetsRequest = {
 };
 
 export interface OcelotAgentClient {
-  generateCreativePlan(request: GenerateCreativePlanRequest): Promise<CreativePlan>;
-  reviewCreativeAssets(request: ReviewCreativeAssetsRequest): Promise<OcelotCreativeReview>;
+  generateCreativePlan?(request: GenerateCreativePlanRequest): Promise<CreativePlan>;
+  reviewCreativeAssets?(request: ReviewCreativeAssetsRequest): Promise<OcelotCreativeReview>;
   generateRenderScript(request: GenerateRenderScriptRequest): Promise<RenderScript>;
 }
 

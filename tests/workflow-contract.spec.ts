@@ -36,6 +36,39 @@ test("workflow contract: emits ordered core stage events on first-pass template 
           },
         },
         ocelotAgentClient: {
+          async generateCreativePlan() {
+            return {
+              storyBriefRef: "/tmp/run/story-brief.json",
+              narrativeArc: {
+                opening: "warm",
+                development: "lift",
+                climax: "peak",
+                resolution: "calm",
+              },
+              visualDirection: {
+                style: "film",
+                pacing: "medium" as const,
+                transitionTone: "restrained",
+                subtitleStyle: "short",
+              },
+              musicIntent: {
+                moodKeywords: ["warm"],
+                bpmTrend: "arc" as const,
+                keyMoments: [{ label: "peak", timeMs: 15000 }],
+                instrumentationHints: ["piano"],
+                durationMs: 30000,
+              },
+              alignmentPoints: [{ timeMs: 15000, visualCue: "close-up", musicCue: "lift" }],
+            };
+          },
+          async reviewCreativeAssets() {
+            return {
+              passed: true,
+              summary: "ok",
+              issues: [],
+              requiredChanges: [],
+            };
+          },
           async generateRenderScript() {
             return {
               storyBriefRef: "/tmp/run/story-brief.json",
@@ -49,6 +82,39 @@ test("workflow contract: emits ordered core stage events on first-pass template 
                   durationSec: 30,
                   transition: { type: "cut", durationMs: 0 },
                 },
+              ],
+            };
+          },
+        },
+        kittenAgentClient: {
+          async generateVisualScript() {
+            return {
+              creativePlanRef: "/tmp/run/creative-plan.json",
+              video: { width: 1080, height: 1920, fps: 30 },
+              scenes: [
+                {
+                  sceneId: "scene_001",
+                  photoRef: "1.jpg",
+                  subtitle: "hello",
+                  subtitlePosition: "bottom",
+                  durationSec: 30,
+                  transition: { type: "cut", durationMs: 0 },
+                },
+              ],
+            };
+          },
+        },
+        cubAgentClient: {
+          async generateMidiJson() {
+            return {
+              bpm: 96,
+              timeSignature: "4/4",
+              durationMs: 30000,
+              tracks: [
+                { name: "Piano", channel: 0, program: 0, notes: [] },
+                { name: "Strings", channel: 1, program: 48, notes: [] },
+                { name: "Bass", channel: 2, program: 33, notes: [] },
+                { name: "Drums", channel: 9, program: 0, notes: [] },
               ],
             };
           },
@@ -149,6 +215,12 @@ test("workflow contract: emits ordered core stage events on first-pass template 
           mode: "template",
           videoPath: input.videoPath,
           storyBriefPath: input.storyBriefPath,
+          creativePlanPath: input.creativePlanPath,
+          visualScriptPath: input.visualScriptPath,
+          reviewLogPath: input.reviewLogPath,
+          midiJsonPath: input.midiJsonPath,
+          musicMidPath: input.musicMidPath,
+          musicWavPath: input.musicWavPath,
           renderScriptPath: input.renderScriptPath,
           tabbyConversationPath: input.tabbyConversationPath,
           runLogPath: path.join(input.outputDir, "run.log"),
@@ -179,6 +251,10 @@ test("workflow contract: emits ordered core stage events on first-pass template 
     ]);
     assert.equal(summary.mode, "template");
     assert.match(summary.videoPath, /video\.mp4$/);
+    assert.ok(summary.creativePlanPath?.endsWith("creative-plan.json"));
+    assert.ok(summary.visualScriptPath?.endsWith("visual-script.json"));
+    assert.ok(summary.reviewLogPath?.endsWith("review-log.json"));
+    assert.ok(summary.midiJsonPath?.endsWith("music-json.json"));
   });
 });
 

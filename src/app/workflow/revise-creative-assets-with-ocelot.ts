@@ -53,6 +53,10 @@ export const reviseCreativeAssetsWithOcelot = async ({
   maxRounds?: number;
   onProgress?: (event: ReviseCreativeAssetsWithOcelotProgressEvent) => Promise<void> | void;
 }): Promise<ReviseCreativeAssetsWithOcelotResult> => {
+  if (!ocelotClient.generateCreativePlan || !ocelotClient.reviewCreativeAssets) {
+    throw new Error("Ocelot creative director methods are not available.");
+  }
+
   const creativePlan = await ocelotClient.generateCreativePlan({
     storyBriefRef,
     storyBrief,
@@ -174,4 +178,3 @@ const toReviewLog = ({
     })),
   };
 };
-

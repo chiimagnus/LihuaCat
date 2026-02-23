@@ -27,6 +27,12 @@ export const runPublishStage = async ({
     outputDir: runtime.outputDir,
     videoPath,
     storyBriefPath: runtime.storyBriefPath,
+    creativePlanPath: runtime.creativePlanPath,
+    visualScriptPath: runtime.visualScriptPath,
+    reviewLogPath: runtime.reviewLogPath,
+    midiJsonPath: runtime.midiJsonPath,
+    musicMidPath: runtime.musicMidPath,
+    musicWavPath: runtime.musicWavPath,
     renderScriptPath: runtime.renderScriptPath,
     tabbyConversationPath: runtime.tabbyConversationPath,
     ocelotInputPath: runtime.ocelotInputPath,
@@ -46,4 +52,3 @@ export const runPublishStage = async ({
 
   return summary;
 };
-

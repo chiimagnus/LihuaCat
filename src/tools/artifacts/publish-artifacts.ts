@@ -8,6 +8,12 @@ export type PublishArtifactsInput = {
   outputDir: string;
   videoPath: string;
   storyBriefPath: string;
+  creativePlanPath?: string;
+  visualScriptPath?: string;
+  reviewLogPath?: string;
+  midiJsonPath?: string;
+  musicMidPath?: string;
+  musicWavPath?: string;
   renderScriptPath: string;
   tabbyConversationPath: string;
   ocelotInputPath: string;
@@ -25,6 +31,12 @@ export const publishArtifacts = async ({
   outputDir,
   videoPath,
   storyBriefPath,
+  creativePlanPath,
+  visualScriptPath,
+  reviewLogPath,
+  midiJsonPath,
+  musicMidPath,
+  musicWavPath,
   renderScriptPath,
   tabbyConversationPath,
   ocelotInputPath,
@@ -52,6 +64,12 @@ export const publishArtifacts = async ({
     mode: "template",
     videoPath,
     storyBriefPath,
+    creativePlanPath,
+    visualScriptPath,
+    reviewLogPath,
+    midiJsonPath,
+    musicMidPath,
+    musicWavPath,
     renderScriptPath,
     tabbyConversationPath,
     runLogPath,
@@ -64,4 +82,3 @@ export const publishArtifacts = async ({
     ocelotRevisionPaths,
   });
 };
-
