@@ -79,12 +79,14 @@ Common artifacts:
 - `run.log` (and `error.log` on failures)
 - `ocelot-input.json`, `ocelot-output.json`, `ocelot-prompt.log` (debug)
 - `ocelot-revision-{N}.json` (when creative review rounds occur)
+- `stages/round-{N}-kitten-visual-script.json`, `stages/round-{N}-cub-midi-json.json`, `stages/round-{N}-ocelot-review.json` (per-round intermediate artifacts)
 
 ## Failure strategy
 
 - Ocelot creative review loop has a max of 3 rounds; if still not approved, it records a warning and continues render with the latest version.
 - Cub failure degrades to no-music render and records fallback reason in `review-log.json`.
-- FluidSynth synthesis failure exits the run with an error; `music.mid` is kept for debugging/retry.
+- If SoundFont/`fluidsynth` is missing, workflow degrades to no-music render and records warning in `run.log`.
+- Other FluidSynth synthesis failures still exit the run with an error; `music.mid` is kept for debugging/retry.
 
 ## Browser (manual override)
 

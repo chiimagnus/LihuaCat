@@ -81,12 +81,14 @@ lihuacat
 - `run.log`（失败时还有 `error.log`）
 - `ocelot-input.json`、`ocelot-output.json`、`ocelot-prompt.log`（调试用）
 - `ocelot-revision-{N}.json`（创意审稿发生多轮时）
+- `stages/round-{N}-kitten-visual-script.json`、`stages/round-{N}-cub-midi-json.json`、`stages/round-{N}-ocelot-review.json`（每轮中间产物）
 
 ## 失败策略
 
 - Ocelot 创意审稿循环最多 3 轮；超限会记录 warning 并继续渲染最新版本。
 - Cub 失败会降级为无配乐渲染，并在 `review-log.json` 记录降级原因。
-- FluidSynth 合成失败会直接报错退出；`music.mid` 会保留用于排查或重试。
+- 若 SoundFont 或 `fluidsynth` 缺失，会降级为无配乐渲染，并在 `run.log` 记录 warning。
+- 其他 FluidSynth 合成失败仍会直接报错退出；`music.mid` 会保留用于排查或重试。
 
 ## 浏览器（手动指定）
 
