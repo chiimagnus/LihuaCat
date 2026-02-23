@@ -240,6 +240,37 @@ test("returns warning and latest creative assets when max rounds reached", async
   assert.equal(result.reviewLog.warning, result.warning);
 });
 
+test("falls back to no-music render when cub generation fails", async () => {
+  const result = await reviseCreativeAssetsWithOcelot({
+    storyBriefRef: "/tmp/run/story-brief.json",
+    storyBrief: baseStoryBrief as any,
+    photos: [
+      { photoRef: "1.jpg", path: "/tmp/photos/1.jpg" },
+      { photoRef: "2.jpg", path: "/tmp/photos/2.jpg" },
+    ],
+    ocelotClient: buildOcelotClient({
+      onReview: async () => ({
+        passed: true,
+        summary: "not reached",
+        issues: [],
+        requiredChanges: [],
+      }),
+    }),
+    kittenClient: buildKittenClient({ onGenerate: async () => makeVisualScript("ok") }),
+    cubClient: buildCubClient({
+      onGenerate: async () => {
+        throw new Error("cub unavailable");
+      },
+    }),
+    maxRounds: 3,
+  });
+
+  assert.equal(result.finalPassed, false);
+  assert.ok(result.warning?.includes("Cub generation failed"));
+  assert.equal(result.midi.tracks.every((track) => track.notes.length === 0), true);
+  assert.equal(result.reviewLog.rounds[0]?.issues[0]?.target, "cub");
+});
+
 test("emits progress lifecycle events in expected order", async () => {
   const events: string[] = [];
 
@@ -306,4 +337,3 @@ const buildCubClient = ({
 }): CubAgentClient => ({
   generateMidiJson: onGenerate,
 });
-

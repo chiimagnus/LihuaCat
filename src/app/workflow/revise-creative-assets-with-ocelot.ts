@@ -42,6 +42,7 @@ export const reviseCreativeAssetsWithOcelot = async ({
   kittenClient,
   cubClient,
   maxRounds = 3,
+  allowCubFallback = true,
   onProgress,
 }: {
   storyBriefRef: string;
@@ -51,6 +52,7 @@ export const reviseCreativeAssetsWithOcelot = async ({
   kittenClient: KittenAgentClient;
   cubClient: CubAgentClient;
   maxRounds?: number;
+  allowCubFallback?: boolean;
   onProgress?: (event: ReviseCreativeAssetsWithOcelotProgressEvent) => Promise<void> | void;
 }): Promise<ReviseCreativeAssetsWithOcelotResult> => {
   if (!ocelotClient.generateCreativePlan || !ocelotClient.reviewCreativeAssets) {
@@ -80,11 +82,46 @@ export const reviseCreativeAssetsWithOcelot = async ({
     await onProgress?.({ type: "kitten_generate_done", round, maxRounds });
 
     await onProgress?.({ type: "cub_generate_start", round, maxRounds });
-    const midi = await cubClient.generateMidiJson({
-      creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
-      creativePlan,
-      revisionNotes: cubRevisionNotes,
-    });
+    let midi: MidiComposition;
+    try {
+      midi = await cubClient.generateMidiJson({
+        creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
+        creativePlan,
+        revisionNotes: cubRevisionNotes,
+      });
+    } catch (error) {
+      if (!allowCubFallback) {
+        throw error;
+      }
+      const reason = error instanceof Error ? error.message : String(error);
+      const warning = `Cub generation failed in round ${round}; fallback to no-music render. reason: ${reason}`;
+      const fallbackRound: CreativeRevisionRound = {
+        round,
+        visualScript,
+        midi: createSilentMidiFromCreativePlan(creativePlan),
+        review: {
+          passed: false,
+          summary: warning,
+          issues: [{ target: "cub", message: reason }],
+          requiredChanges: [],
+        },
+      };
+      const fallbackRounds = [...rounds, fallbackRound];
+      return {
+        creativePlan,
+        visualScript,
+        midi: fallbackRound.midi,
+        finalPassed: false,
+        warning,
+        rounds: fallbackRounds,
+        reviewLog: toReviewLog({
+          rounds: fallbackRounds,
+          maxRounds,
+          finalPassed: false,
+          warning,
+        }),
+      };
+    }
     await onProgress?.({ type: "cub_generate_done", round, maxRounds });
 
     await onProgress?.({ type: "ocelot_review_start", round, maxRounds });
@@ -144,6 +181,21 @@ export const reviseCreativeAssetsWithOcelot = async ({
       finalPassed: false,
       warning,
     }),
+  };
+};
+
+const createSilentMidiFromCreativePlan = (creativePlan: CreativePlan): MidiComposition => {
+  const durationMs = Math.max(1, creativePlan.musicIntent.durationMs);
+  return {
+    bpm: 90,
+    timeSignature: "4/4",
+    durationMs,
+    tracks: [
+      { name: "Piano", channel: 0, program: 0, notes: [] },
+      { name: "Strings", channel: 1, program: 48, notes: [] },
+      { name: "Bass", channel: 2, program: 33, notes: [] },
+      { name: "Drums", channel: 9, program: 0, notes: [] },
+    ],
   };
 };
 
