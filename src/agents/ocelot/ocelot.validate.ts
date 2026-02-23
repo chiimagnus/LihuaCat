@@ -1,4 +1,5 @@
 import type {
+  RenderAudioTrack,
   RenderScene,
   RenderScript,
   RenderScriptValidationResult,
@@ -16,6 +17,9 @@ const isFiniteNumber = (value: unknown): value is number =>
 
 const isPositiveInteger = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value) && value > 0;
+
+const isNonNegativeNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0;
 
 const SUBTITLE_POSITIONS = new Set(["bottom", "top", "center"]);
 const TRANSITION_TYPES = new Set(["cut", "fade", "dissolve", "slide"]);
@@ -111,6 +115,13 @@ export const validateRenderScriptStructure = (
     });
   }
 
+  if (input.audioTrack !== undefined) {
+    const trackResult = validateAudioTrack(input.audioTrack);
+    if (!trackResult.valid) {
+      errors.push(...trackResult.errors);
+    }
+  }
+
   if (errors.length > 0) {
     return { valid: false, errors };
   }
@@ -180,3 +191,35 @@ export const validateRenderScriptSemantics = (
   return { valid: errors.length === 0, errors };
 };
 
+const validateAudioTrack = (
+  input: unknown,
+): RenderScriptValidationResult & { audioTrack?: RenderAudioTrack } => {
+  const errors: string[] = [];
+  if (!isRecord(input)) {
+    return { valid: false, errors: ["audioTrack must be an object"] };
+  }
+
+  if (!isNonEmptyString(input.path)) {
+    errors.push("audioTrack.path is required");
+  }
+
+  if (!isNonEmptyString(input.format)) {
+    errors.push("audioTrack.format is required");
+  } else if (input.format !== "wav" && input.format !== "mp3") {
+    errors.push("audioTrack.format must be wav|mp3");
+  }
+
+  if (input.startMs !== undefined && !isNonNegativeNumber(input.startMs)) {
+    errors.push("audioTrack.startMs must be a non-negative number");
+  }
+
+  if (input.gain !== undefined && !isFiniteNumber(input.gain)) {
+    errors.push("audioTrack.gain must be a finite number");
+  }
+
+  if (errors.length > 0) {
+    return { valid: false, errors };
+  }
+
+  return { valid: true, errors: [], audioTrack: input as RenderAudioTrack };
+};
