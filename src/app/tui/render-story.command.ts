@@ -5,7 +5,6 @@ import { assertCodexCliAuthenticated } from "../../tools/auth/codex-auth-guard.t
 import {
   createCodexCubAgentClient,
   createCodexKittenAgentClient,
-  createCodexLynxAgentClient,
   createCodexOcelotAgentClient,
   createCodexStoryBriefAgentClient,
   createCodexTabbyAgentClient,
@@ -49,7 +48,6 @@ export const runRenderStoryCommand = async ({
     args.get("model-reasoning-effort"),
   );
   const resolvedReasoningEffort = modelReasoningEffort ?? DEFAULT_CODEX_REASONING_EFFORT;
-  const enableLynxReview = parseBooleanFlag(args.get("lynx-review"), false);
   let browserExecutablePath = args.get("browser-executable")
     ? path.resolve(args.get("browser-executable")!)
     : undefined;
@@ -91,13 +89,6 @@ export const runRenderStoryCommand = async ({
     modelReasoningEffort: resolvedReasoningEffort,
     workingDirectory: process.cwd(),
   });
-  const lynxAgentClient = enableLynxReview
-    ? createCodexLynxAgentClient({
-        model,
-        modelReasoningEffort: resolvedReasoningEffort,
-        workingDirectory: process.cwd(),
-      })
-    : undefined;
 
   ui.intro({
     model,
@@ -125,8 +116,6 @@ export const runRenderStoryCommand = async ({
       ocelotAgentClient,
       kittenAgentClient,
       cubAgentClient,
-      lynxAgentClient,
-      enableLynxReview,
       browserExecutablePath,
       onProgress: (event) => ui.onWorkflowProgress(event),
     });
@@ -203,16 +192,4 @@ const resolveInputPath = (input: string): string => {
     return path.resolve(initCwd, input);
   }
   return path.resolve(process.cwd(), input);
-};
-
-const parseBooleanFlag = (raw: string | undefined, defaultValue: boolean): boolean => {
-  if (raw === undefined) return defaultValue;
-  const normalized = raw.trim().toLowerCase();
-  if (normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "y") {
-    return true;
-  }
-  if (normalized === "false" || normalized === "0" || normalized === "no" || normalized === "n") {
-    return false;
-  }
-  return defaultValue;
 };

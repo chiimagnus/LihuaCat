@@ -56,18 +56,6 @@ export {
 } from "./agents/ocelot/ocelot.client.ts";
 
 export type {
-  LynxAgentClient,
-  GenerateLynxReviewRequest,
-  CreateCodexLynxAgentClientInput,
-} from "./agents/lynx/lynx.client.ts";
-export {
-  createCodexLynxAgentClient,
-  DEFAULT_LYNX_CODEX_MODEL,
-  DEFAULT_LYNX_CODEX_REASONING_EFFORT,
-  LynxAgentResponseParseError,
-} from "./agents/lynx/lynx.client.ts";
-
-export type {
   CubAgentClient,
   GenerateCubMidiRequest,
   CreateCodexCubAgentClientInput,

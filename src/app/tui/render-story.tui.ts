@@ -265,12 +265,6 @@ export const createClackRenderStoryTui = (): RenderStoryTui => {
           summary.ocelotRevisionPaths.length > 0
             ? `ocelotRevisions:\n${summary.ocelotRevisionPaths.map((p) => `- ${p}`).join("\n")}`
             : "",
-          summary.lynxReviewPaths.length > 0
-            ? `lynxReviews:\n${summary.lynxReviewPaths.map((p) => `- ${p}`).join("\n")}`
-            : "",
-          summary.lynxPromptLogPaths.length > 0
-            ? `lynxPrompts:\n${summary.lynxPromptLogPaths.map((p) => `- ${p}`).join("\n")}`
-            : "",
         ]
           .filter((line) => line.length > 0)
           .join("\n"),
