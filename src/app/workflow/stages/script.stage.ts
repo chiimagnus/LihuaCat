@@ -35,7 +35,6 @@ export const runScriptStage = async ({
   ocelotAgentClient,
   kittenAgentClient,
   cubAgentClient,
-  enableLynxReview,
   onProgress,
 }: {
   collected: Awaited<ReturnType<typeof collectImages>>;
@@ -45,7 +44,6 @@ export const runScriptStage = async ({
   ocelotAgentClient: OcelotAgentClient;
   kittenAgentClient?: KittenAgentClient;
   cubAgentClient?: CubAgentClient;
-  enableLynxReview?: boolean;
   onProgress?: WorkflowProgressReporter;
 }): Promise<{ renderScript: RenderScript; finalPassed: boolean; rounds: number }> => {
   await emitProgressAndPersist(runtime, onProgress, {
@@ -144,13 +142,6 @@ export const runScriptStage = async ({
       finalPassed: creative.finalPassed,
       rounds: creative.rounds.length,
     };
-  }
-
-  if (enableLynxReview) {
-    await emitProgressAndPersist(runtime, onProgress, {
-      stage: "script_warning",
-      message: "Lynx review has been removed. Continue with Ocelot-only script generation.",
-    });
   }
 
   const reasons: string[] = [];

@@ -5,7 +5,6 @@ import type { TabbyAgentClient } from "../../agents/tabby/tabby.client.ts";
 import type { TabbySessionTui } from "../../agents/tabby/tabby.session.ts";
 import type { StoryBriefAgentClient } from "../../subagents/story-brief/story-brief.client.ts";
 import type { OcelotAgentClient } from "../../agents/ocelot/ocelot.client.ts";
-import type { LynxAgentClient } from "../../agents/lynx/lynx.client.ts";
 import type { KittenAgentClient } from "../../agents/kitten/kitten.client.ts";
 import type { CubAgentClient } from "../../agents/cub/cub.client.ts";
 import type { RunSummary } from "../../tools/artifacts/run-summary.ts";
@@ -51,8 +50,6 @@ export type RunStoryWorkflowV2Input = {
   ocelotAgentClient: OcelotAgentClient;
   kittenAgentClient?: KittenAgentClient;
   cubAgentClient?: CubAgentClient;
-  lynxAgentClient?: LynxAgentClient;
-  enableLynxReview?: boolean;
   browserExecutablePath?: string;
   onProgress?: WorkflowProgressReporter;
   now?: Date;
@@ -69,8 +66,6 @@ export const runStoryWorkflowV2 = async (
     ocelotAgentClient,
     kittenAgentClient,
     cubAgentClient,
-    lynxAgentClient,
-    enableLynxReview = false,
     browserExecutablePath,
     onProgress,
     now,
@@ -122,8 +117,6 @@ export const runStoryWorkflowV2 = async (
       ocelotAgentClient,
       kittenAgentClient,
       cubAgentClient,
-      lynxAgentClient,
-      enableLynxReview,
       onProgress,
     });
 
