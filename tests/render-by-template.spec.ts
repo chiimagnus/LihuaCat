@@ -23,6 +23,35 @@ test("template render consumes render-script and produces video file", async () 
   });
 });
 
+test("template render stages optional audio track into remotion public assets", async () => {
+  await withTempDir(async (outputDir) => {
+    const assets = await writeTempAssets(outputDir);
+    const audioPath = path.join(outputDir, "music.wav");
+    await fs.writeFile(audioPath, "wav-data");
+
+    let seenAudioPath: string | undefined;
+    await renderByTemplateV2({
+      renderScript: {
+        ...buildValidRenderScript(),
+        audioTrack: {
+          path: audioPath,
+          format: "wav",
+          startMs: 0,
+        },
+      },
+      assets,
+      outputDir,
+      renderAdapter: async ({ inputProps, outputFilePath }) => {
+        seenAudioPath = (inputProps as { audioTrack?: { path?: string } }).audioTrack?.path;
+        await fs.writeFile(outputFilePath, "video");
+      },
+    });
+
+    assert.equal(typeof seenAudioPath, "string");
+    assert.match(seenAudioPath ?? "", /^lihuacat-assets\//);
+  });
+});
+
 test("template render rejects invalid semantic script", async () => {
   await withTempDir(async (outputDir) => {
     const assets = await writeTempAssets(outputDir);
