@@ -66,3 +66,15 @@ export {
   DEFAULT_LYNX_CODEX_REASONING_EFFORT,
   LynxAgentResponseParseError,
 } from "./agents/lynx/lynx.client.ts";
+
+export type {
+  CubAgentClient,
+  GenerateCubMidiRequest,
+  CreateCodexCubAgentClientInput,
+} from "./agents/cub/cub.client.ts";
+export {
+  createCodexCubAgentClient,
+  DEFAULT_CUB_CODEX_MODEL,
+  DEFAULT_CUB_CODEX_REASONING_EFFORT,
+  CubAgentResponseParseError,
+} from "./agents/cub/cub.client.ts";

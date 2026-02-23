@@ -41,6 +41,7 @@
     "@openai/codex-sdk": "^0.98.0",
     "@remotion/bundler": "^4.0.419",
     "@remotion/renderer": "^4.0.343",
+    "@tonejs/midi": "^2.0.28",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "remotion": "^4.0.343",
