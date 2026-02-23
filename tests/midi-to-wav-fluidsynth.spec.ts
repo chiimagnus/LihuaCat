@@ -50,16 +50,21 @@ test("synthesizeMidiToWavWithFluidSynth throws when soundfont is missing", async
     const wavPath = path.join(dir, "music.wav");
     await fs.writeFile(midiPath, "mid");
 
-    await assert.rejects(
-      synthesizeMidiToWavWithFluidSynth({
-        midiPath,
-        wavPath,
-        soundFontPath: path.join(dir, "missing.sf2"),
-        env: {},
-        runner: async () => ({ code: 0, stdout: "", stderr: "" }),
-      }),
-      FluidSynthSynthesisError,
-    );
+    await assert.rejects(async () => {
+      try {
+        await synthesizeMidiToWavWithFluidSynth({
+          midiPath,
+          wavPath,
+          soundFontPath: path.join(dir, "missing.sf2"),
+          env: {},
+          runner: async () => ({ code: 0, stdout: "", stderr: "" }),
+        });
+      } catch (error) {
+        assert.ok(error instanceof FluidSynthSynthesisError);
+        assert.equal(error.code, "soundfont_not_found");
+        throw error;
+      }
+    }, FluidSynthSynthesisError);
   });
 });
 
@@ -97,4 +102,3 @@ const withTempDir = async (run: (dir: string) => Promise<void>) => {
     await fs.rm(dir, { recursive: true, force: true });
   }
 };
-

@@ -19,9 +19,11 @@ import {
 import {
   reviseCreativeAssetsWithOcelot,
   type ReviseCreativeAssetsWithOcelotProgressEvent,
+  type ReviseCreativeAssetsWithOcelotResult,
 } from "../revise-creative-assets-with-ocelot.ts";
 import { mergeCreativeAssets } from "../../../tools/render/merge-creative-assets.ts";
 import type { runAudioPipeline } from "../../../tools/audio/audio-pipeline.ts";
+import { FluidSynthSynthesisError } from "../../../tools/audio/midi-to-wav-fluidsynth.ts";
 
 const truncateForUi = (value: string): string => {
   if (value.length <= 120) return value;
@@ -102,20 +104,37 @@ export const runScriptStage = async ({
       },
     });
 
+    await persistCreativeRoundArtifacts(runtime, creative);
+
     let audioTrack: RenderAudioTrack | undefined = undefined;
+    let audioWarning: string | undefined = undefined;
     if (creative.audioAvailable) {
-      const audio = await runAudioPipelineImpl({
-        midiJson: creative.midi,
-        outputDir: runtime.outputDir,
-      });
-      audioTrack = {
-        path: audio.wavPath,
-        format: "wav",
-        startMs: 0,
-        durationSec: creative.midi.durationMs / 1000,
-      };
-      await pushRunLog(runtime, `musicMidPath=${audio.midiPath}`);
-      await pushRunLog(runtime, `musicWavPath=${audio.wavPath}`);
+      try {
+        const audio = await runAudioPipelineImpl({
+          midiJson: creative.midi,
+          outputDir: runtime.outputDir,
+        });
+        audioTrack = {
+          path: audio.wavPath,
+          format: "wav",
+          startMs: 0,
+          durationSec: creative.midi.durationMs / 1000,
+        };
+        await pushRunLog(runtime, `musicMidPath=${audio.midiPath}`);
+        await pushRunLog(runtime, `musicWavPath=${audio.wavPath}`);
+      } catch (error) {
+        if (!isRecoverableAudioSynthesisError(error)) {
+          throw error;
+        }
+
+        audioWarning = `Audio synthesis skipped: ${error.message}`;
+        await pushRunLog(runtime, "musicSynthesisSkipped=true");
+        await pushRunLog(runtime, `warning=${audioWarning}`);
+        await emitProgressAndPersist(runtime, onProgress, {
+          stage: "script_warning",
+          message: audioWarning,
+        });
+      }
     }
 
     const renderScript = mergeCreativeAssets({
@@ -124,20 +143,14 @@ export const runScriptStage = async ({
       audioTrack,
     });
 
-    await writeCreativePlanArtifact(runtime, creative.creativePlan);
-    await writeVisualScriptArtifact(runtime, creative.visualScript);
-    await writeReviewLogArtifact(runtime, creative.reviewLog);
-    await writeMidiJsonArtifact(runtime, creative.midi);
     await writeRenderScriptArtifact(runtime, renderScript);
-    await writeStageArtifact(runtime, "creative-plan.json", creative.creativePlan);
-    await writeStageArtifact(runtime, "visual-script.json", creative.visualScript);
-    await writeStageArtifact(runtime, "review-log.json", creative.reviewLog);
-    await writeStageArtifact(runtime, "music-json.json", creative.midi);
     await writeStageArtifact(runtime, "render-script.json", renderScript);
     await writeStageArtifact(runtime, "script-stage.json", {
       mode: "ocelot-creative-director",
       rounds: creative.rounds.length,
       finalPassed: creative.finalPassed,
+      audioSynthesisSkipped: Boolean(audioWarning),
+      ...(audioWarning ? { audioWarning } : {}),
       warning: creative.warning,
       createdAt: new Date().toISOString(),
     });
@@ -240,4 +253,40 @@ export const runScriptStage = async ({
     finalPassed: true,
     rounds: 1,
   };
+};
+
+const persistCreativeRoundArtifacts = async (
+  runtime: WorkflowRuntimeArtifacts,
+  creative: ReviseCreativeAssetsWithOcelotResult,
+) => {
+  await writeCreativePlanArtifact(runtime, creative.creativePlan);
+  await writeVisualScriptArtifact(runtime, creative.visualScript);
+  await writeReviewLogArtifact(runtime, creative.reviewLog);
+  await writeMidiJsonArtifact(runtime, creative.midi);
+  await writeStageArtifact(runtime, "creative-plan.json", creative.creativePlan);
+  await writeStageArtifact(runtime, "visual-script.json", creative.visualScript);
+  await writeStageArtifact(runtime, "review-log.json", creative.reviewLog);
+  await writeStageArtifact(runtime, "music-json.json", creative.midi);
+
+  for (const round of creative.rounds) {
+    await writeStageArtifact(
+      runtime,
+      `round-${round.round}-kitten-visual-script.json`,
+      round.visualScript,
+    );
+    await writeStageArtifact(runtime, `round-${round.round}-cub-midi-json.json`, round.midi);
+    await writeStageArtifact(runtime, `round-${round.round}-ocelot-review.json`, round.review);
+  }
+};
+
+const isRecoverableAudioSynthesisError = (
+  error: unknown,
+): error is FluidSynthSynthesisError => {
+  if (!(error instanceof FluidSynthSynthesisError)) {
+    return false;
+  }
+  return (
+    error.code === "soundfont_not_found" ||
+    error.code === "fluidsynth_not_found"
+  );
 };

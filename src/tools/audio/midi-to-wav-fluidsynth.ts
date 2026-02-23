@@ -22,10 +22,20 @@ export type MidiToWavWithFluidSynthInput = {
   runner?: CommandRunner;
 };
 
+export type FluidSynthSynthesisErrorCode =
+  | "soundfont_not_found"
+  | "fluidsynth_not_found"
+  | "fluidsynth_failed"
+  | "midi_missing"
+  | "wav_missing";
+
 export class FluidSynthSynthesisError extends Error {
-  constructor(message: string) {
+  readonly code: FluidSynthSynthesisErrorCode;
+
+  constructor(code: FluidSynthSynthesisErrorCode, message: string) {
     super(message);
     this.name = "FluidSynthSynthesisError";
+    this.code = code;
   }
 }
 
@@ -43,7 +53,7 @@ export const synthesizeMidiToWavWithFluidSynth = async ({
   env = process.env,
   runner = defaultRunner,
 }: MidiToWavWithFluidSynthInput): Promise<{ wavPath: string }> => {
-  await assertFileExists(midiPath, "MIDI file");
+  await assertFileExists(midiPath, "MIDI file", "midi_missing");
   const resolvedSoundFontPath = await resolveSoundFontPath({
     explicitPath: soundFontPath,
     env,
@@ -67,11 +77,12 @@ export const synthesizeMidiToWavWithFluidSynth = async ({
 
   if (result.code !== 0) {
     throw new FluidSynthSynthesisError(
+      "fluidsynth_failed",
       `fluidsynth failed (code=${result.code}): ${result.stderr || result.stdout || "unknown error"}`,
     );
   }
 
-  await assertFileExists(wavPath, "WAV output");
+  await assertFileExists(wavPath, "WAV output", "wav_missing");
   return { wavPath };
 };
 
@@ -98,15 +109,20 @@ export const resolveSoundFontPath = async ({
   }
 
   throw new FluidSynthSynthesisError(
+    "soundfont_not_found",
     `SoundFont not found. Set LIHUACAT_SOUNDFONT_PATH or install one of: ${DEFAULT_SOUND_FONT_CANDIDATES.join(", ")}`,
   );
 };
 
-const assertFileExists = async (targetPath: string, label: string): Promise<void> => {
+const assertFileExists = async (
+  targetPath: string,
+  label: string,
+  code: "midi_missing" | "wav_missing",
+): Promise<void> => {
   try {
     await fs.access(targetPath);
   } catch {
-    throw new FluidSynthSynthesisError(`${label} does not exist: ${targetPath}`);
+    throw new FluidSynthSynthesisError(code, `${label} does not exist: ${targetPath}`);
   }
 };
 
@@ -127,6 +143,7 @@ const defaultRunner: CommandRunner = async ({ command, args }) => {
     child.on("error", (error) => {
       reject(
         new FluidSynthSynthesisError(
+          "fluidsynth_not_found",
           `failed to execute fluidsynth: ${error instanceof Error ? error.message : String(error)}`,
         ),
       );
@@ -140,4 +157,3 @@ const defaultRunner: CommandRunner = async ({ command, args }) => {
     });
   });
 };
-
