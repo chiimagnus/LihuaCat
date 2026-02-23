@@ -1,7 +1,7 @@
 import type { collectImages } from "../../../tools/material-intake/collect-images.ts";
 import type { OcelotAgentClient } from "../../../agents/ocelot/ocelot.client.ts";
-import type { KittenAgentClient } from "../../../agents/kitten/kitten.client.ts";
-import type { CubAgentClient } from "../../../agents/cub/cub.client.ts";
+import type { KittenAgentClient } from "../../../subagents/kitten/kitten.client.ts";
+import type { CubAgentClient } from "../../../subagents/cub/cub.client.ts";
 import type { StoryBrief } from "../../../contracts/story-brief.types.ts";
 import type { RenderAudioTrack, RenderScript } from "../../../contracts/render-script.types.ts";
 import type { WorkflowProgressReporter } from "../workflow-events.ts";

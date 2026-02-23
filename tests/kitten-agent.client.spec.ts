@@ -5,7 +5,7 @@ import {
   createCodexKittenAgentClient,
   KittenAgentResponseParseError,
   type GenerateKittenVisualScriptRequest,
-} from "../src/agents/kitten/kitten.client.ts";
+} from "../src/subagents/kitten/kitten.client.ts";
 
 test("calls Codex SDK with model override and returns validated visual script", async () => {
   const calls: {

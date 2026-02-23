@@ -5,7 +5,7 @@ import {
   createCodexCubAgentClient,
   CubAgentResponseParseError,
   type GenerateCubMidiRequest,
-} from "../src/agents/cub/cub.client.ts";
+} from "../src/subagents/cub/cub.client.ts";
 
 test("calls Codex SDK with model override and returns validated midi json", async () => {
   const calls: {

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { validateCubOutput } from "../src/agents/cub/cub.validate.ts";
+import { validateCubOutput } from "../src/subagents/cub/cub.validate.ts";
 import type { CreativePlan } from "../src/contracts/creative-plan.types.ts";
 import type { MidiComposition } from "../src/contracts/midi.types.ts";
 

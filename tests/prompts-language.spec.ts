@@ -4,8 +4,8 @@ import assert from "node:assert/strict";
 import { buildTabbyTurnPromptInput } from "../src/agents/tabby/tabby.prompt.ts";
 import { buildStoryBriefPromptInput } from "../src/subagents/story-brief/story-brief.prompt.ts";
 import { buildRenderScriptPromptInput } from "../src/agents/ocelot/ocelot.prompt.ts";
-import { buildKittenPromptInput } from "../src/agents/kitten/kitten.prompt.ts";
-import { buildCubPromptInput } from "../src/agents/cub/cub.prompt.ts";
+import { buildKittenPromptInput } from "../src/subagents/kitten/kitten.prompt.ts";
+import { buildCubPromptInput } from "../src/subagents/cub/cub.prompt.ts";
 
 test("agent prompts are Chinese and include language rules", () => {
   const tabby = buildTabbyTurnPromptInput({

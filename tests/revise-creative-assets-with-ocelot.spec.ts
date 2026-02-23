@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 
 import { reviseCreativeAssetsWithOcelot } from "../src/app/workflow/revise-creative-assets-with-ocelot.ts";
 import type { OcelotAgentClient } from "../src/agents/ocelot/ocelot.client.ts";
-import type { KittenAgentClient } from "../src/agents/kitten/kitten.client.ts";
-import type { CubAgentClient } from "../src/agents/cub/cub.client.ts";
+import type { KittenAgentClient } from "../src/subagents/kitten/kitten.client.ts";
+import type { CubAgentClient } from "../src/subagents/cub/cub.client.ts";
 
 const baseStoryBrief = {
   intent: {

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { validateKittenOutput } from "../src/agents/kitten/kitten.validate.ts";
+import { validateKittenOutput } from "../src/subagents/kitten/kitten.validate.ts";
 import type { CreativePlan } from "../src/contracts/creative-plan.types.ts";
 import type { VisualScript } from "../src/contracts/visual-script.types.ts";
 

@@ -4,8 +4,8 @@ import type { VisualScript } from "../../contracts/visual-script.types.ts";
 import type { MidiComposition } from "../../contracts/midi.types.ts";
 import type { ReviewLog } from "../../contracts/review-log.types.ts";
 import type { OcelotAgentClient } from "../../agents/ocelot/ocelot.client.ts";
-import type { KittenAgentClient } from "../../agents/kitten/kitten.client.ts";
-import type { CubAgentClient } from "../../agents/cub/cub.client.ts";
+import type { KittenAgentClient } from "../../subagents/kitten/kitten.client.ts";
+import type { CubAgentClient } from "../../subagents/cub/cub.client.ts";
 import type { OcelotCreativeReview } from "../../agents/ocelot/ocelot.validate.ts";
 
 export type CreativeRevisionRound = {
