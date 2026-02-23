@@ -1,8 +1,5 @@
-import fs from "node:fs/promises";
-
 import type { collectImages } from "../../../tools/material-intake/collect-images.ts";
 import type { OcelotAgentClient } from "../../../agents/ocelot/ocelot.client.ts";
-import type { LynxAgentClient } from "../../../agents/lynx/lynx.client.ts";
 import type { KittenAgentClient } from "../../../agents/kitten/kitten.client.ts";
 import type { CubAgentClient } from "../../../agents/cub/cub.client.ts";
 import type { StoryBrief } from "../../../contracts/story-brief.types.ts";
@@ -19,10 +16,6 @@ import {
   writeVisualScriptArtifact,
   type WorkflowRuntimeArtifacts,
 } from "../workflow-runtime.ts";
-import {
-  reviseRenderScriptWithLynx,
-  type ReviseRenderScriptWithLynxProgressEvent,
-} from "../revise-render-script-with-lynx.ts";
 import {
   reviseCreativeAssetsWithOcelot,
   type ReviseCreativeAssetsWithOcelotProgressEvent,
@@ -42,7 +35,6 @@ export const runScriptStage = async ({
   ocelotAgentClient,
   kittenAgentClient,
   cubAgentClient,
-  lynxAgentClient,
   enableLynxReview,
   onProgress,
 }: {
@@ -53,7 +45,6 @@ export const runScriptStage = async ({
   ocelotAgentClient: OcelotAgentClient;
   kittenAgentClient?: KittenAgentClient;
   cubAgentClient?: CubAgentClient;
-  lynxAgentClient?: LynxAgentClient;
   enableLynxReview?: boolean;
   onProgress?: WorkflowProgressReporter;
 }): Promise<{ renderScript: RenderScript; finalPassed: boolean; rounds: number }> => {
@@ -155,180 +146,87 @@ export const runScriptStage = async ({
     };
   }
 
-  if (!enableLynxReview) {
-    const reasons: string[] = [];
-    const maxAttempts = 3;
-    let revisionNotes: string[] | undefined = undefined;
+  if (enableLynxReview) {
+    await emitProgressAndPersist(runtime, onProgress, {
+      stage: "script_warning",
+      message: "Lynx review has been removed. Continue with Ocelot-only script generation.",
+    });
+  }
 
-    const generateOnce = async () =>
-      ocelotAgentClient.generateRenderScript({
-        storyBriefRef,
-        storyBrief,
-        photos,
-        video,
-        revisionNotes,
-        debug: {
-          inputPath: runtime.ocelotInputPath,
-          outputPath: runtime.ocelotOutputPath,
-          promptLogPath: runtime.ocelotPromptLogPath,
-        },
-      });
+  const reasons: string[] = [];
+  const maxAttempts = 3;
+  let revisionNotes: string[] | undefined = undefined;
 
-    let renderScript: RenderScript | undefined = undefined;
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+  const generateOnce = async () =>
+    ocelotAgentClient.generateRenderScript({
+      storyBriefRef,
+      storyBrief,
+      photos,
+      video,
+      revisionNotes,
+      debug: {
+        inputPath: runtime.ocelotInputPath,
+        outputPath: runtime.ocelotOutputPath,
+        promptLogPath: runtime.ocelotPromptLogPath,
+      },
+    });
+
+  let renderScript: RenderScript | undefined = undefined;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    await emitProgressAndPersist(runtime, onProgress, {
+      stage: "script_progress",
+      message: `Generating RenderScript... (attempt ${attempt}/${maxAttempts})`,
+    });
+    try {
+      renderScript = await generateOnce();
+      break;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       await emitProgressAndPersist(runtime, onProgress, {
         stage: "script_progress",
-        message: `Generating RenderScript... (attempt ${attempt}/${maxAttempts})`,
+        message: `RenderScript invalid, retrying... (attempt ${attempt}/${maxAttempts}) · ${truncateForUi(message)}`,
       });
-      try {
-        renderScript = await generateOnce();
-        break;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        await emitProgressAndPersist(runtime, onProgress, {
-          stage: "script_progress",
-          message: `RenderScript invalid, retrying... (attempt ${attempt}/${maxAttempts}) · ${truncateForUi(message)}`,
-        });
-        reasons.push(`attempt ${attempt}: ${message}`);
-        if (attempt >= maxAttempts) {
-          throw error;
-        }
-
-        revisionNotes = [
-          ...(revisionNotes ?? []),
-          "Previous attempt failed automated validation. Fix all validation errors and return a fully valid RenderScript JSON.",
-          `Validation error: ${message}`,
-          "Reminder: you MUST use every provided photoRef at least once in scenes[].photoRef.",
-        ];
+      reasons.push(`attempt ${attempt}: ${message}`);
+      if (attempt >= maxAttempts) {
+        throw error;
       }
+
+      revisionNotes = [
+        ...(revisionNotes ?? []),
+        "Previous attempt failed automated validation. Fix all validation errors and return a fully valid RenderScript JSON.",
+        `Validation error: ${message}`,
+        "Reminder: you MUST use every provided photoRef at least once in scenes[].photoRef.",
+      ];
     }
-
-    if (!renderScript) {
-      throw new Error(
-        `Unexpected: failed to generate renderScript. Reasons: ${reasons.join(" | ")}`,
-      );
-    }
-
-    await pushRunLog(runtime, "lynxReviewEnabled=false");
-    await pushRunLog(runtime, `renderScriptGeneratedInAttempts=${reasons.length + 1}`);
-
-    await writeRenderScriptArtifact(runtime, renderScript);
-    await writeStageArtifact(runtime, "render-script.json", renderScript);
-    await writeStageArtifact(runtime, "script-stage.json", {
-      lynxEnabled: false,
-      rounds: 1,
-      finalPassed: true,
-      attempts: reasons.length + 1,
-      createdAt: new Date().toISOString(),
-    });
-
-    await emitProgressAndPersist(runtime, onProgress, {
-      stage: "script_done",
-      message: "RenderScript ready (lynx=disabled).",
-    });
-
-    return {
-      renderScript,
-      finalPassed: true,
-      rounds: 1,
-    };
   }
 
-  if (!lynxAgentClient) {
-    throw new Error("Lynx review is enabled but lynxAgentClient is not provided.");
+  if (!renderScript) {
+    throw new Error(
+      `Unexpected: failed to generate renderScript. Reasons: ${reasons.join(" | ")}`,
+    );
   }
 
-  const emitLynxProgress = async (message: string) =>
-    emitProgressAndPersist(runtime, onProgress, {
-      stage: "script_progress",
-      message,
-    });
+  await pushRunLog(runtime, "scriptMode=ocelot-legacy-render-script");
+  await pushRunLog(runtime, `renderScriptGeneratedInAttempts=${reasons.length + 1}`);
 
-  const toLynxProgressMessage = (event: ReviseRenderScriptWithLynxProgressEvent): string => {
-    if (event.type === "round_start") {
-      return `Lynx review: round ${event.round}/${event.maxRounds} · generating RenderScript...`;
-    }
-    if (event.type === "ocelot_attempt_start") {
-      return `Round ${event.round} · generating RenderScript (attempt ${event.attempt}/${event.maxAttempts})...`;
-    }
-    if (event.type === "ocelot_attempt_failed") {
-      return `Round ${event.round} · validation failed (attempt ${event.attempt}/${event.maxAttempts}), retrying... · ${truncateForUi(event.errorMessage)}`;
-    }
-    if (event.type === "lynx_review_start") {
-      return `Round ${event.round} · Lynx reviewing...`;
-    }
-    if (event.type === "lynx_review_done") {
-      return `Round ${event.round} · Lynx review ${event.passed ? "passed" : "found issues"}...`;
-    }
-    return "Lynx review: working...";
-  };
-
-  const result = await reviseRenderScriptWithLynx({
-    storyBriefRef,
-    storyBrief,
-    photos,
-    video,
-    ocelotClient: {
-      async generateRenderScript(request) {
-        return ocelotAgentClient.generateRenderScript({
-          ...request,
-          debug: {
-            inputPath: runtime.ocelotInputPath,
-            outputPath: runtime.ocelotOutputPath,
-            promptLogPath: runtime.ocelotPromptLogPath,
-          },
-        });
-      },
-    },
-    lynxClient: {
-      async reviewRenderScript(request) {
-        const promptLogPath = runtime.getLynxPromptLogPath(request.round);
-        runtime.lynxPromptLogPaths.push(promptLogPath);
-        return lynxAgentClient.reviewRenderScript({
-          ...request,
-          debug: { promptLogPath },
-        });
-      },
-    },
-    maxRounds: 3,
-    maxOcelotRetriesPerRound: 2,
-    onProgress: async (event) => {
-      await emitLynxProgress(toLynxProgressMessage(event));
-    },
-  });
-
-  for (const round of result.rounds) {
-    const ocelotRevisionPath = runtime.getOcelotRevisionPath(round.round);
-    runtime.ocelotRevisionPaths.push(ocelotRevisionPath);
-    await fs.writeFile(ocelotRevisionPath, JSON.stringify(round.renderScript, null, 2), "utf8");
-
-    const lynxReviewPath = runtime.getLynxReviewPath(round.round);
-    runtime.lynxReviewPaths.push(lynxReviewPath);
-    await fs.writeFile(lynxReviewPath, JSON.stringify(round.lynxReview, null, 2), "utf8");
-  }
-
-  await pushRunLog(runtime, `renderScriptGeneratedInAttempts=${result.rounds.length}`);
-  await pushRunLog(runtime, "lynxReviewEnabled=true");
-  await pushRunLog(runtime, `lynxReviewRounds=${result.rounds.length}`);
-  await pushRunLog(runtime, `lynxFinalPassed=${result.finalPassed}`);
-
-  await writeRenderScriptArtifact(runtime, result.finalScript);
-  await writeStageArtifact(runtime, "render-script.json", result.finalScript);
+  await writeRenderScriptArtifact(runtime, renderScript);
+  await writeStageArtifact(runtime, "render-script.json", renderScript);
   await writeStageArtifact(runtime, "script-stage.json", {
-    lynxEnabled: true,
-    rounds: result.rounds.length,
-    finalPassed: result.finalPassed,
+    mode: "ocelot-legacy-render-script",
+    rounds: 1,
+    finalPassed: true,
+    attempts: reasons.length + 1,
     createdAt: new Date().toISOString(),
   });
 
   await emitProgressAndPersist(runtime, onProgress, {
     stage: "script_done",
-    message: `RenderScript ready (rounds=${result.rounds.length}, passed=${result.finalPassed}).`,
+    message: "RenderScript ready.",
   });
 
   return {
-    renderScript: result.finalScript,
-    finalPassed: result.finalPassed,
-    rounds: result.rounds.length,
+    renderScript,
+    finalPassed: true,
+    rounds: 1,
   };
 };
