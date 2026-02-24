@@ -7,6 +7,7 @@ import type { OcelotAgentClient } from "../../agents/ocelot/ocelot.client.ts";
 import type { KittenAgentClient } from "../../subagents/kitten/kitten.client.ts";
 import type { CubAgentClient } from "../../subagents/cub/cub.client.ts";
 import type { OcelotCreativeReview } from "../../agents/ocelot/ocelot.validate.ts";
+import { runWithProgressHeartbeat } from "./with-progress-heartbeat.ts";
 
 export type CreativeRevisionRound = {
   round: number;
@@ -33,7 +34,14 @@ export type ReviseCreativeAssetsWithOcelotProgressEvent =
   | { type: "cub_generate_start"; round: number; maxRounds: number }
   | { type: "cub_generate_done"; round: number; maxRounds: number }
   | { type: "ocelot_review_start"; round: number; maxRounds: number }
-  | { type: "ocelot_review_done"; round: number; maxRounds: number; passed: boolean };
+  | { type: "ocelot_review_done"; round: number; maxRounds: number; passed: boolean }
+  | {
+      type: "step_heartbeat";
+      round: number;
+      maxRounds: number;
+      step: "kitten" | "cub" | "ocelot_review";
+      elapsedSec: number;
+    };
 
 export const reviseCreativeAssetsWithOcelot = async ({
   storyBriefRef,
@@ -75,23 +83,45 @@ export const reviseCreativeAssetsWithOcelot = async ({
     await onProgress?.({ type: "round_start", round, maxRounds });
 
     await onProgress?.({ type: "kitten_generate_start", round, maxRounds });
-    const visualScript = await generateKittenVisualScriptWithRetries({
-      kittenClient,
-      creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
-      creativePlan,
-      photos,
-      baseRevisionNotes: kittenRevisionNotes,
-      maxAttempts: maxKittenAttemptsPerRound,
+    const visualScript = await runWithProgressHeartbeat({
+      task: async () =>
+        generateKittenVisualScriptWithRetries({
+          kittenClient,
+          creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
+          creativePlan,
+          photos,
+          baseRevisionNotes: kittenRevisionNotes,
+          maxAttempts: maxKittenAttemptsPerRound,
+        }),
+      onHeartbeat: (elapsedSec) =>
+        onProgress?.({
+          type: "step_heartbeat",
+          round,
+          maxRounds,
+          step: "kitten",
+          elapsedSec,
+        }),
     });
     await onProgress?.({ type: "kitten_generate_done", round, maxRounds });
 
     await onProgress?.({ type: "cub_generate_start", round, maxRounds });
     let midi: MidiComposition;
     try {
-      midi = await cubClient.generateMidiJson({
-        creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
-        creativePlan,
-        revisionNotes: cubRevisionNotes,
+      midi = await runWithProgressHeartbeat({
+        task: async () =>
+          cubClient.generateMidiJson({
+            creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
+            creativePlan,
+            revisionNotes: cubRevisionNotes,
+          }),
+        onHeartbeat: (elapsedSec) =>
+          onProgress?.({
+            type: "step_heartbeat",
+            round,
+            maxRounds,
+            step: "cub",
+            elapsedSec,
+          }),
       });
     } catch (error) {
       if (!allowCubFallback) {
@@ -130,14 +160,25 @@ export const reviseCreativeAssetsWithOcelot = async ({
     await onProgress?.({ type: "cub_generate_done", round, maxRounds });
 
     await onProgress?.({ type: "ocelot_review_start", round, maxRounds });
-    const review = await ocelotClient.reviewCreativeAssets({
-      storyBriefRef,
-      storyBrief,
-      creativePlan,
-      visualScript,
-      midi,
-      round,
-      maxRounds,
+    const review = await runWithProgressHeartbeat({
+      task: async () =>
+        ocelotClient.reviewCreativeAssets!({
+          storyBriefRef,
+          storyBrief,
+          creativePlan,
+          visualScript,
+          midi,
+          round,
+          maxRounds,
+        }),
+      onHeartbeat: (elapsedSec) =>
+        onProgress?.({
+          type: "step_heartbeat",
+          round,
+          maxRounds,
+          step: "ocelot_review",
+          elapsedSec,
+        }),
     });
     await onProgress?.({ type: "ocelot_review_done", round, maxRounds, passed: review.passed });
 

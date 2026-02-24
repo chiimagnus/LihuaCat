@@ -7,6 +7,7 @@ import {
   emitProgressAndPersist,
   type WorkflowRuntimeArtifacts,
 } from "../workflow-runtime.ts";
+import { runWithProgressHeartbeat } from "../with-progress-heartbeat.ts";
 
 export const runRenderStage = async ({
   runtime,
@@ -37,14 +38,23 @@ export const runRenderStage = async ({
   });
 
   try {
-    const rendered = await renderByTemplateV2Impl({
-      renderScript,
-      assets: collected.images.map((image) => ({
-        photoRef: image.fileName,
-        path: image.absolutePath,
-      })),
-      outputDir: runtime.outputDir,
-      browserExecutablePath,
+    const rendered = await runWithProgressHeartbeat({
+      task: async () =>
+        renderByTemplateV2Impl({
+          renderScript,
+          assets: collected.images.map((image) => ({
+            photoRef: image.fileName,
+            path: image.absolutePath,
+          })),
+          outputDir: runtime.outputDir,
+          browserExecutablePath,
+        }),
+      onHeartbeat: async (elapsedSec) => {
+        await emitProgressAndPersist(runtime, onProgress, {
+          stage: "render_progress",
+          message: `Rendering still running... (${elapsedSec}s)`,
+        });
+      },
     });
 
     await emitProgressAndPersist(runtime, onProgress, {

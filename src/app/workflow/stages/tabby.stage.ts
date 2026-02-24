@@ -14,6 +14,7 @@ import {
   writeStoryBriefArtifact,
   type WorkflowRuntimeArtifacts,
 } from "../workflow-runtime.ts";
+import { runWithProgressHeartbeat } from "../with-progress-heartbeat.ts";
 
 export type TabbyStageResult = {
   conversation: TabbyConversationEvent[];
@@ -65,12 +66,21 @@ export const runTabbyStage = async ({
     message: "已确认「就是这个感觉」，正在生成 StoryBrief...",
   });
 
-  const briefResult = await generateStoryBriefImpl({
-    photos,
-    conversation: session.conversation,
-    confirmedSummary: session.confirmedSummary,
-    client: storyBriefAgentClient,
-    maxRetries: 2,
+  const briefResult = await runWithProgressHeartbeat({
+    task: async () =>
+      generateStoryBriefImpl({
+        photos,
+        conversation: session.conversation,
+        confirmedSummary: session.confirmedSummary,
+        client: storyBriefAgentClient,
+        maxRetries: 2,
+      }),
+    onHeartbeat: async (elapsedSec) => {
+      await emitProgressAndPersist(runtime, onProgress, {
+        stage: "tabby_progress",
+        message: `正在生成 StoryBrief... (${elapsedSec}s)`,
+      });
+    },
   });
 
   await pushRunLog(runtime, `storyBriefGeneratedInAttempts=${briefResult.attempts}`);
@@ -94,4 +104,3 @@ export const runTabbyStage = async ({
     attempts: briefResult.attempts,
   };
 };
-

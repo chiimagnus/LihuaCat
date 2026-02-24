@@ -16,6 +16,7 @@ import {
   writeVisualScriptArtifact,
   type WorkflowRuntimeArtifacts,
 } from "../workflow-runtime.ts";
+import { runWithProgressHeartbeat } from "../with-progress-heartbeat.ts";
 import {
   reviseCreativeAssetsWithOcelot,
   type ReviseCreativeAssetsWithOcelotProgressEvent,
@@ -85,6 +86,15 @@ export const runScriptStage = async ({
       if (event.type === "ocelot_review_start") {
         return `Round ${event.round} · Ocelot reviewing creative assets...`;
       }
+      if (event.type === "step_heartbeat") {
+        if (event.step === "kitten") {
+          return `Round ${event.round} · Kitten still generating visual script... (${event.elapsedSec}s)`;
+        }
+        if (event.step === "cub") {
+          return `Round ${event.round} · Cub still generating MIDI JSON... (${event.elapsedSec}s)`;
+        }
+        return `Round ${event.round} · Ocelot still reviewing creative assets... (${event.elapsedSec}s)`;
+      }
       return `Round ${event.round} · Ocelot review ${event.passed ? "passed" : "needs changes"}`;
     };
 
@@ -110,9 +120,18 @@ export const runScriptStage = async ({
     let audioWarning: string | undefined = undefined;
     if (creative.audioAvailable) {
       try {
-        const audio = await runAudioPipelineImpl({
-          midiJson: creative.midi,
-          outputDir: runtime.outputDir,
+        const audio = await runWithProgressHeartbeat({
+          task: async () =>
+            runAudioPipelineImpl({
+              midiJson: creative.midi,
+              outputDir: runtime.outputDir,
+            }),
+          onHeartbeat: async (elapsedSec) => {
+            await emitProgressAndPersist(runtime, onProgress, {
+              stage: "script_progress",
+              message: `Synthesizing audio... (${elapsedSec}s)`,
+            });
+          },
         });
         audioTrack = {
           path: audio.wavPath,

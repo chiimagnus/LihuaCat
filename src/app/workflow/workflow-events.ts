@@ -12,6 +12,7 @@ export type WorkflowProgressEvent = {
     | "script_warning"
     | "script_done"
     | "render_start"
+    | "render_progress"
     | "render_failed"
     | "render_success"
     | "publish_start"
