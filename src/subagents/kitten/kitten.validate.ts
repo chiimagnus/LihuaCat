@@ -12,6 +12,9 @@ export const validateKittenOutput = (
   context: {
     creativePlan?: CreativePlan;
     expectedPhotoRefs?: string[];
+    expectedTotalDurationSec?: number;
+    durationToleranceSec?: number;
+    expectedVideo?: { width: number; height: number; fps: number };
   } = {},
 ): KittenValidationResult => {
   const structure = validateVisualScript(input);
@@ -34,18 +37,36 @@ export const validateKittenOutput = (
     }
   }
 
-  const expectedDurationMs = context.creativePlan?.musicIntent.durationMs;
-  if (
-    typeof expectedDurationMs === "number" &&
-    Number.isInteger(expectedDurationMs) &&
-    expectedDurationMs > 0
-  ) {
-    const totalDurationMs = Math.round(
-      structure.script.scenes.reduce((sum, scene) => sum + scene.durationSec, 0) * 1000,
-    );
-    if (totalDurationMs !== expectedDurationMs) {
+  structure.script.scenes.forEach((scene, index) => {
+    if (SUBTITLE_TIMELINE_RE.test(scene.subtitle) || SUBTITLE_TECHNICAL_RE.test(scene.subtitle)) {
       errors.push(
-        `total visual duration must equal creativePlan.musicIntent.durationMs (${expectedDurationMs}ms)`,
+        `scenes[${index}].subtitle must be audience-facing narration, without timeline/music production terms`,
+      );
+    }
+  });
+
+  if (context.expectedVideo) {
+    const video = structure.script.video;
+    if (video.width !== context.expectedVideo.width) {
+      errors.push(`video.width must be ${context.expectedVideo.width}, got ${video.width}`);
+    }
+    if (video.height !== context.expectedVideo.height) {
+      errors.push(`video.height must be ${context.expectedVideo.height}, got ${video.height}`);
+    }
+    if (video.fps !== context.expectedVideo.fps) {
+      errors.push(`video.fps must be ${context.expectedVideo.fps}, got ${video.fps}`);
+    }
+  }
+
+  if (typeof context.expectedTotalDurationSec === "number") {
+    const totalDurationSec = structure.script.scenes.reduce(
+      (sum, scene) => sum + scene.durationSec,
+      0,
+    );
+    const tolerance = context.durationToleranceSec ?? 1e-6;
+    if (Math.abs(totalDurationSec - context.expectedTotalDurationSec) > tolerance) {
+      errors.push(
+        `total visual duration must equal ${context.expectedTotalDurationSec}s`,
       );
     }
   }
@@ -57,3 +78,6 @@ export const validateKittenOutput = (
   return { valid: true, errors: [], script: structure.script };
 };
 
+const SUBTITLE_TIMELINE_RE = /\d+\s*[-~到]\s*\d+\s*秒|\d+\s*秒后|\d+\s*ms\b/i;
+const SUBTITLE_TECHNICAL_RE =
+  /(midi|bpm|track|tracks|velocity|db\b|hz\b|acoustic guitar|piano|strings|bass|drums|音轨|手鼓|拍掌|木吉他|钢琴|弦乐|贝斯|鼓点|高频|低频)/i;

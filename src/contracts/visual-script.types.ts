@@ -174,7 +174,7 @@ export const validateVisualScript = (
         }
       }
 
-      if (scene.kenBurns !== undefined) {
+      if (scene.kenBurns !== undefined && scene.kenBurns !== null) {
         if (!isRecord(scene.kenBurns)) {
           errors.push(`scenes[${index}].kenBurns must be an object`);
         } else {

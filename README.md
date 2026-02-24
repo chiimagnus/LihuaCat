@@ -6,12 +6,56 @@ Local-first CLI that turns a folder of images into a short story video. Follow t
 
 Current architecture in one line: `Tabby -> StoryBrief -> Ocelot (Creative Director) -> Kitten/Cub -> Remotion`.
 
+Duration rule: final video length is driven by `musicIntent.durationMs` in `creative-plan.json` (not a fixed 30s).
+
 ## Prerequisites
 
 - Node.js >= 20
 - A Chromium-based browser (Chrome / Edge / Arc / Brave)
 - `fluidsynth` command available in `PATH` (for MIDI -> WAV synthesis)
-- A SoundFont (`.sf2`) file; set `LIHUACAT_SOUNDFONT_PATH` if not in default system locations
+- A SoundFont (`.sf2`) file; project default recommendation is `SGM-V2.01`
+
+## Audio Setup (Recommended)
+
+Standard SoundFont for this project: `SGM-V2.01.sf2`.
+
+Install `fluidsynth`:
+
+- macOS (Homebrew): `brew install fluid-synth`
+- Ubuntu/Debian: `sudo apt install fluidsynth`
+- Windows (Chocolatey): `choco install fluidsynth` (or install manually and add it to `PATH`)
+
+Download `SGM-V2.01.sf2` (example path):
+
+```bash
+mkdir -p "$HOME/.local/share/soundfonts"
+curl -L "https://archive.org/download/SGM-V2.01/SGM-V2.01.sf2" -o "$HOME/.local/share/soundfonts/SGM-V2.01.sf2"
+```
+
+Set environment variable:
+
+```bash
+export LIHUACAT_SOUNDFONT_PATH="$HOME/.local/share/soundfonts/SGM-V2.01.sf2"
+```
+
+Persist it (zsh):
+
+```bash
+echo 'export LIHUACAT_SOUNDFONT_PATH="$HOME/.local/share/soundfonts/SGM-V2.01.sf2"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+Windows PowerShell (example):
+
+```powershell
+setx LIHUACAT_SOUNDFONT_PATH "C:\soundfonts\SGM-V2.01.sf2"
+```
+
+Quick check:
+
+```bash
+fluidsynth --version
+```
 
 ## Development in this repo
 
@@ -79,12 +123,14 @@ Common artifacts:
 - `run.log` (and `error.log` on failures)
 - `ocelot-input.json`, `ocelot-output.json`, `ocelot-prompt.log` (debug)
 - `ocelot-revision-{N}.json` (when creative review rounds occur)
+- `stages/round-{N}-kitten-visual-script.json`, `stages/round-{N}-cub-midi-json.json`, `stages/round-{N}-ocelot-review.json` (per-round intermediate artifacts)
 
 ## Failure strategy
 
 - Ocelot creative review loop has a max of 3 rounds; if still not approved, it records a warning and continues render with the latest version.
 - Cub failure degrades to no-music render and records fallback reason in `review-log.json`.
-- FluidSynth synthesis failure exits the run with an error; `music.mid` is kept for debugging/retry.
+- If SoundFont/`fluidsynth` is missing, workflow degrades to no-music render and records warning in `run.log`.
+- Other FluidSynth synthesis failures still exit the run with an error; `music.mid` is kept for debugging/retry.
 
 ## Browser (manual override)
 

@@ -56,7 +56,7 @@ test("template render rejects invalid semantic script", async () => {
   await withTempDir(async (outputDir) => {
     const assets = await writeTempAssets(outputDir);
     const invalid = buildValidRenderScript();
-    invalid.scenes[0]!.durationSec = 1;
+    invalid.scenes = [invalid.scenes[0]!];
     await assert.rejects(
       renderByTemplateV2({
         renderScript: invalid,

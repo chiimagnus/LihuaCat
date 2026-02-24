@@ -209,6 +209,61 @@ test("propagates review required changes to kitten and cub revision notes", asyn
   assert.deepEqual(cubNotes[1], ["delay drum lift"]);
 });
 
+test("normalizes misplaced music changes from kitten target to cub target", async () => {
+  const kittenNotes: Array<string[] | undefined> = [];
+  const cubNotes: Array<string[] | undefined> = [];
+  let reviewRound = 0;
+
+  const result = await reviseCreativeAssetsWithOcelot({
+    storyBriefRef: "/tmp/run/story-brief.json",
+    storyBrief: baseStoryBrief as any,
+    photos: [
+      { photoRef: "1.jpg", path: "/tmp/photos/1.jpg" },
+      { photoRef: "2.jpg", path: "/tmp/photos/2.jpg" },
+    ],
+    ocelotClient: buildOcelotClient({
+      onReview: async () => {
+        reviewRound += 1;
+        if (reviewRound === 1) {
+          return {
+            passed: false,
+            summary: "needs music changes",
+            issues: [{ target: "kitten", message: "MIDI rhythm too flat" }],
+            requiredChanges: [
+              { target: "kitten", instructions: ["在 MIDI 里增加鼓点与力度变化"] },
+            ],
+          };
+        }
+        return {
+          passed: true,
+          summary: "ok",
+          issues: [],
+          requiredChanges: [],
+        };
+      },
+    }),
+    kittenClient: buildKittenClient({
+      onGenerate: async ({ revisionNotes }) => {
+        kittenNotes.push(revisionNotes);
+        return makeVisualScript("ok");
+      },
+    }),
+    cubClient: buildCubClient({
+      onGenerate: async ({ revisionNotes }) => {
+        cubNotes.push(revisionNotes);
+        return makeMidi(0);
+      },
+    }),
+    maxRounds: 3,
+  });
+
+  assert.equal(result.finalPassed, true);
+  assert.equal(result.rounds.length, 2);
+  assert.deepEqual(kittenNotes[1], []);
+  assert.deepEqual(cubNotes[1], ["在 MIDI 里增加鼓点与力度变化"]);
+  assert.equal(result.reviewLog.rounds[0]?.issues[0]?.target, "cub");
+});
+
 test("returns warning and latest creative assets when max rounds reached", async () => {
   const result = await reviseCreativeAssetsWithOcelot({
     storyBriefRef: "/tmp/run/story-brief.json",
@@ -269,6 +324,46 @@ test("falls back to no-music render when cub generation fails", async () => {
   assert.ok(result.warning?.includes("Cub generation failed"));
   assert.equal(result.midi.tracks.every((track) => track.notes.length === 0), true);
   assert.equal(result.reviewLog.rounds[0]?.issues[0]?.target, "cub");
+});
+
+test("retries kitten generation within the same round on validation error", async () => {
+  const kittenNotes: Array<string[] | undefined> = [];
+  let kittenAttempts = 0;
+
+  const result = await reviseCreativeAssetsWithOcelot({
+    storyBriefRef: "/tmp/run/story-brief.json",
+    storyBrief: baseStoryBrief as any,
+    photos: [
+      { photoRef: "1.jpg", path: "/tmp/photos/1.jpg" },
+      { photoRef: "2.jpg", path: "/tmp/photos/2.jpg" },
+    ],
+    ocelotClient: buildOcelotClient({
+      onReview: async () => ({
+        passed: true,
+        summary: "ok",
+        issues: [],
+        requiredChanges: [],
+      }),
+    }),
+    kittenClient: buildKittenClient({
+      onGenerate: async ({ revisionNotes }) => {
+        kittenAttempts += 1;
+        kittenNotes.push(revisionNotes);
+        if (kittenAttempts === 1) {
+          throw new Error("kitten output invalid: total visual duration must equal target duration");
+        }
+        return makeVisualScript("ok");
+      },
+    }),
+    cubClient: buildCubClient({ onGenerate: async () => makeMidi(0) }),
+    maxRounds: 3,
+  });
+
+  assert.equal(kittenAttempts, 2);
+  assert.equal(result.finalPassed, true);
+  assert.equal(result.rounds.length, 1);
+  assert.deepEqual(kittenNotes[0], undefined);
+  assert.ok(kittenNotes[1]?.some((note) => note.includes("自动校验错误")));
 });
 
 test("emits progress lifecycle events in expected order", async () => {

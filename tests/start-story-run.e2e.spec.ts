@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { runStoryWorkflowV2 } from "../src/app/workflow/start-story-run.ts";
+import { FluidSynthSynthesisError } from "../src/tools/audio/midi-to-wav-fluidsynth.ts";
 
 const compressImagesNoop = async ({
   images,
@@ -437,6 +438,15 @@ test("workflow publishes creative artifacts when kitten/cub path is enabled", as
     await assert.doesNotReject(fs.access(summary.midiJsonPath!));
     await assert.doesNotReject(fs.access(summary.musicMidPath!));
     await assert.doesNotReject(fs.access(summary.musicWavPath!));
+    await assert.doesNotReject(
+      fs.access(path.join(summary.outputDir, "stages", "round-1-kitten-visual-script.json")),
+    );
+    await assert.doesNotReject(
+      fs.access(path.join(summary.outputDir, "stages", "round-1-cub-midi-json.json")),
+    );
+    await assert.doesNotReject(
+      fs.access(path.join(summary.outputDir, "stages", "round-1-ocelot-review.json")),
+    );
   });
 });
 
@@ -581,6 +591,176 @@ test("workflow falls back to no-music render when cub generation fails", async (
     assert.equal(summary.musicWavPath, undefined);
     const reviewLogRaw = await fs.readFile(summary.reviewLogPath!, "utf8");
     assert.match(reviewLogRaw, /Cub generation failed/);
+  });
+});
+
+test("workflow degrades to no-music render when soundfont is missing", async () => {
+  await withTempDir(async (sourceDir) => {
+    await fs.writeFile(path.join(sourceDir, "1.jpg"), "fake-image");
+
+    const events: string[] = [];
+    const summary = await runStoryWorkflowV2(
+      {
+        sourceDir,
+        tabbyAgentClient: { async generateTurn() { throw new Error("not used"); } },
+        tabbyTui: {
+          async chooseOption() { throw new Error("not used"); },
+          async askFreeInput() { throw new Error("not used"); },
+        },
+        storyBriefAgentClient: { async generateStoryBrief() { throw new Error("not used"); } },
+        ocelotAgentClient: {
+          async generateCreativePlan() {
+            return {
+              storyBriefRef: "/tmp/run/story-brief.json",
+              narrativeArc: {
+                opening: "warm",
+                development: "lift",
+                climax: "peak",
+                resolution: "calm",
+              },
+              visualDirection: {
+                style: "film",
+                pacing: "medium" as const,
+                transitionTone: "restrained",
+                subtitleStyle: "short",
+              },
+              musicIntent: {
+                moodKeywords: ["warm"],
+                bpmTrend: "arc" as const,
+                keyMoments: [{ label: "peak", timeMs: 15000 }],
+                instrumentationHints: ["piano"],
+                durationMs: 30000,
+              },
+              alignmentPoints: [],
+            };
+          },
+          async reviewCreativeAssets() {
+            return {
+              passed: true,
+              summary: "ok",
+              issues: [],
+              requiredChanges: [],
+            };
+          },
+          async generateRenderScript() {
+            throw new Error("legacy path not used");
+          },
+        },
+        kittenAgentClient: {
+          async generateVisualScript() {
+            return {
+              creativePlanRef: "/tmp/run/creative-plan.json",
+              video: { width: 1080, height: 1920, fps: 30 },
+              scenes: [
+                {
+                  sceneId: "scene_001",
+                  photoRef: "1.jpg",
+                  subtitle: "hello",
+                  subtitlePosition: "bottom",
+                  durationSec: 30,
+                  transition: { type: "cut", durationMs: 0 },
+                },
+              ],
+            };
+          },
+        },
+        cubAgentClient: {
+          async generateMidiJson() {
+            return {
+              bpm: 96,
+              timeSignature: "4/4",
+              durationMs: 30000,
+              tracks: [
+                { name: "Piano", channel: 0, program: 0, notes: [] },
+                { name: "Strings", channel: 1, program: 48, notes: [] },
+                { name: "Bass", channel: 2, program: 33, notes: [] },
+                { name: "Drums", channel: 9, program: 0, notes: [] },
+              ],
+            };
+          },
+        },
+        onProgress: (event) => {
+          events.push(`${event.stage}:${event.message}`);
+        },
+      },
+      {
+        collectImagesImpl: async () => ({
+          sourceDir,
+          images: [
+            {
+              index: 1,
+              fileName: "1.jpg",
+              absolutePath: path.join(sourceDir, "1.jpg"),
+              extension: ".jpg",
+            },
+          ],
+        }),
+        compressImagesImpl: compressImagesNoop,
+        runTabbySessionImpl: async ({ conversationLogPath }) => {
+          if (conversationLogPath) {
+            await fs.appendFile(conversationLogPath, `{"type":"user"}\n`, "utf8");
+          }
+          return {
+            conversation: [{ type: "user", time: "t", input: { kind: "option", id: "x", label: "x" } }],
+            confirmedSummary: "summary",
+          };
+        },
+        generateStoryBriefImpl: async () => ({
+          brief: createStoryBrief(["1.jpg"]),
+          attempts: 1,
+        }),
+        runAudioPipelineImpl: async ({ outputDir }) => {
+          const midiPath = path.join(outputDir, "music.mid");
+          await fs.writeFile(midiPath, "mid", "utf8");
+          throw new FluidSynthSynthesisError(
+            "soundfont_not_found",
+            "SoundFont not found for test",
+          );
+        },
+        renderByTemplateV2Impl: async ({ outputDir, renderScript }) => {
+          assert.equal(renderScript.audioTrack, undefined);
+          const videoPath = path.join(outputDir, "video.mp4");
+          await fs.mkdir(outputDir, { recursive: true });
+          await fs.writeFile(videoPath, "template-video");
+          return { mode: "template", videoPath };
+        },
+        publishArtifactsImpl: async (input) => ({
+          runId: input.runId,
+          outputDir: input.outputDir,
+          mode: "template",
+          videoPath: input.videoPath,
+          storyBriefPath: input.storyBriefPath,
+          creativePlanPath: input.creativePlanPath,
+          visualScriptPath: input.visualScriptPath,
+          reviewLogPath: input.reviewLogPath,
+          midiJsonPath: input.midiJsonPath,
+          musicMidPath: input.musicMidPath,
+          musicWavPath: input.musicWavPath,
+          renderScriptPath: input.renderScriptPath,
+          tabbyConversationPath: input.tabbyConversationPath,
+          runLogPath: path.join(input.outputDir, "run.log"),
+          ocelotInputPath: input.ocelotInputPath,
+          ocelotOutputPath: input.ocelotOutputPath,
+          ocelotPromptLogPath: input.ocelotPromptLogPath,
+          ocelotRevisionPaths: input.ocelotRevisionPaths,
+        }),
+      },
+    );
+
+    await assert.doesNotReject(fs.access(summary.creativePlanPath!));
+    await assert.doesNotReject(fs.access(summary.visualScriptPath!));
+    await assert.doesNotReject(fs.access(summary.reviewLogPath!));
+    await assert.doesNotReject(fs.access(summary.midiJsonPath!));
+    await assert.doesNotReject(fs.access(summary.musicMidPath!));
+    assert.equal(summary.musicWavPath, undefined);
+    assert.ok(events.some((event) => event.startsWith("script_warning:Audio synthesis skipped:")));
+    const scriptStage = JSON.parse(
+      await fs.readFile(path.join(summary.outputDir, "stages", "script-stage.json"), "utf8"),
+    );
+    assert.equal(scriptStage.audioSynthesisSkipped, true);
+    assert.match(String(scriptStage.audioWarning), /SoundFont not found/);
+    const runLog = await fs.readFile(path.join(summary.outputDir, "run.log"), "utf8");
+    assert.match(runLog, /musicSynthesisSkipped=true/);
   });
 });
 

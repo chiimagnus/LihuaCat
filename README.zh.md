@@ -6,6 +6,8 @@
 
 当前架构一句话：`Tabby -> StoryBrief -> Ocelot（创意总监）-> Kitten/Cub -> Remotion`。
 
+时长规则：最终视频总时长由 `creative-plan.json` 中 `musicIntent.durationMs` 决定，不再固定为 30 秒。
+
 > 说明：当前 CLI 交互文案为英文（项目整体以英文为主），本文件仅提供中文使用说明。
 
 ## 环境要求
@@ -13,7 +15,49 @@
 - Node.js >= 20
 - Chromium 内核浏览器（Chrome / Edge / Arc / Brave）
 - `PATH` 中可用的 `fluidsynth` 命令（用于 MIDI -> WAV 合成）
-- 可用的 SoundFont（`.sf2`）文件；若系统默认路径不可用，请设置 `LIHUACAT_SOUNDFONT_PATH`
+- 可用的 SoundFont（`.sf2`）文件；本项目默认推荐 `SGM-V2.01`
+
+## 音频环境配置（推荐）
+
+本项目统一推荐音色：`SGM-V2.01.sf2`。
+
+安装 `fluidsynth`：
+
+- macOS（Homebrew）：`brew install fluid-synth`
+- Ubuntu/Debian：`sudo apt install fluidsynth`
+- Windows（Chocolatey）：`choco install fluidsynth`（或手动安装后加入 `PATH`）
+
+下载 `SGM-V2.01.sf2`（示例路径）：
+
+```bash
+mkdir -p "$HOME/.local/share/soundfonts"
+curl -L "https://archive.org/download/SGM-V2.01/SGM-V2.01.sf2" -o "$HOME/.local/share/soundfonts/SGM-V2.01.sf2"
+```
+
+设置环境变量：
+
+```bash
+export LIHUACAT_SOUNDFONT_PATH="$HOME/.local/share/soundfonts/SGM-V2.01.sf2"
+```
+
+写入 zsh（持久生效）：
+
+```bash
+echo 'export LIHUACAT_SOUNDFONT_PATH="$HOME/.local/share/soundfonts/SGM-V2.01.sf2"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+Windows PowerShell（示例）：
+
+```powershell
+setx LIHUACAT_SOUNDFONT_PATH "C:\soundfonts\SGM-V2.01.sf2"
+```
+
+快速检查：
+
+```bash
+fluidsynth --version
+```
 
 ## 仓库开发说明
 
@@ -81,12 +125,14 @@ lihuacat
 - `run.log`（失败时还有 `error.log`）
 - `ocelot-input.json`、`ocelot-output.json`、`ocelot-prompt.log`（调试用）
 - `ocelot-revision-{N}.json`（创意审稿发生多轮时）
+- `stages/round-{N}-kitten-visual-script.json`、`stages/round-{N}-cub-midi-json.json`、`stages/round-{N}-ocelot-review.json`（每轮中间产物）
 
 ## 失败策略
 
 - Ocelot 创意审稿循环最多 3 轮；超限会记录 warning 并继续渲染最新版本。
 - Cub 失败会降级为无配乐渲染，并在 `review-log.json` 记录降级原因。
-- FluidSynth 合成失败会直接报错退出；`music.mid` 会保留用于排查或重试。
+- 若 SoundFont 或 `fluidsynth` 缺失，会降级为无配乐渲染，并在 `run.log` 记录 warning。
+- 其他 FluidSynth 合成失败仍会直接报错退出；`music.mid` 会保留用于排查或重试。
 
 ## 浏览器（手动指定）
 

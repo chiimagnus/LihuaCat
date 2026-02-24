@@ -7,6 +7,7 @@ import type { OcelotAgentClient } from "../../agents/ocelot/ocelot.client.ts";
 import type { KittenAgentClient } from "../../subagents/kitten/kitten.client.ts";
 import type { CubAgentClient } from "../../subagents/cub/cub.client.ts";
 import type { OcelotCreativeReview } from "../../agents/ocelot/ocelot.validate.ts";
+import { runWithProgressHeartbeat } from "./with-progress-heartbeat.ts";
 
 export type CreativeRevisionRound = {
   round: number;
@@ -33,7 +34,14 @@ export type ReviseCreativeAssetsWithOcelotProgressEvent =
   | { type: "cub_generate_start"; round: number; maxRounds: number }
   | { type: "cub_generate_done"; round: number; maxRounds: number }
   | { type: "ocelot_review_start"; round: number; maxRounds: number }
-  | { type: "ocelot_review_done"; round: number; maxRounds: number; passed: boolean };
+  | { type: "ocelot_review_done"; round: number; maxRounds: number; passed: boolean }
+  | {
+      type: "step_heartbeat";
+      round: number;
+      maxRounds: number;
+      step: "kitten" | "cub" | "ocelot_review";
+      elapsedSec: number;
+    };
 
 export const reviseCreativeAssetsWithOcelot = async ({
   storyBriefRef,
@@ -69,26 +77,51 @@ export const reviseCreativeAssetsWithOcelot = async ({
   const rounds: CreativeRevisionRound[] = [];
   let kittenRevisionNotes: string[] | undefined = undefined;
   let cubRevisionNotes: string[] | undefined = undefined;
+  const maxKittenAttemptsPerRound = 3;
 
   for (let round = 1; round <= maxRounds; round += 1) {
     await onProgress?.({ type: "round_start", round, maxRounds });
 
     await onProgress?.({ type: "kitten_generate_start", round, maxRounds });
-    const visualScript = await kittenClient.generateVisualScript({
-      creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
-      creativePlan,
-      photos,
-      revisionNotes: kittenRevisionNotes,
+    const visualScript = await runWithProgressHeartbeat({
+      task: async () =>
+        generateKittenVisualScriptWithRetries({
+          kittenClient,
+          creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
+          creativePlan,
+          photos,
+          baseRevisionNotes: kittenRevisionNotes,
+          maxAttempts: maxKittenAttemptsPerRound,
+        }),
+      onHeartbeat: (elapsedSec) =>
+        onProgress?.({
+          type: "step_heartbeat",
+          round,
+          maxRounds,
+          step: "kitten",
+          elapsedSec,
+        }),
     });
     await onProgress?.({ type: "kitten_generate_done", round, maxRounds });
 
     await onProgress?.({ type: "cub_generate_start", round, maxRounds });
     let midi: MidiComposition;
     try {
-      midi = await cubClient.generateMidiJson({
-        creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
-        creativePlan,
-        revisionNotes: cubRevisionNotes,
+      midi = await runWithProgressHeartbeat({
+        task: async () =>
+          cubClient.generateMidiJson({
+            creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
+            creativePlan,
+            revisionNotes: cubRevisionNotes,
+          }),
+        onHeartbeat: (elapsedSec) =>
+          onProgress?.({
+            type: "step_heartbeat",
+            round,
+            maxRounds,
+            step: "cub",
+            elapsedSec,
+          }),
       });
     } catch (error) {
       if (!allowCubFallback) {
@@ -127,25 +160,42 @@ export const reviseCreativeAssetsWithOcelot = async ({
     await onProgress?.({ type: "cub_generate_done", round, maxRounds });
 
     await onProgress?.({ type: "ocelot_review_start", round, maxRounds });
-    const review = await ocelotClient.reviewCreativeAssets({
-      storyBriefRef,
-      storyBrief,
-      creativePlan,
-      visualScript,
-      midi,
+    const review = await runWithProgressHeartbeat({
+      task: async () =>
+        ocelotClient.reviewCreativeAssets!({
+          storyBriefRef,
+          storyBrief,
+          creativePlan,
+          visualScript,
+          midi,
+          round,
+          maxRounds,
+        }),
+      onHeartbeat: (elapsedSec) =>
+        onProgress?.({
+          type: "step_heartbeat",
+          round,
+          maxRounds,
+          step: "ocelot_review",
+          elapsedSec,
+        }),
+    });
+    const normalizedReview = normalizeReviewTargets(review);
+    await onProgress?.({
+      type: "ocelot_review_done",
       round,
       maxRounds,
+      passed: normalizedReview.passed,
     });
-    await onProgress?.({ type: "ocelot_review_done", round, maxRounds, passed: review.passed });
 
     rounds.push({
       round,
       visualScript,
       midi,
-      review,
+      review: normalizedReview,
     });
 
-    if (review.passed) {
+    if (normalizedReview.passed) {
       return {
         creativePlan,
         visualScript,
@@ -157,10 +207,10 @@ export const reviseCreativeAssetsWithOcelot = async ({
       };
     }
 
-    kittenRevisionNotes = review.requiredChanges
+    kittenRevisionNotes = normalizedReview.requiredChanges
       .filter((change) => change.target === "kitten")
       .flatMap((change) => change.instructions);
-    cubRevisionNotes = review.requiredChanges
+    cubRevisionNotes = normalizedReview.requiredChanges
       .filter((change) => change.target === "cub")
       .flatMap((change) => change.instructions);
   }
@@ -186,6 +236,56 @@ export const reviseCreativeAssetsWithOcelot = async ({
       warning,
     }),
   };
+};
+
+const generateKittenVisualScriptWithRetries = async ({
+  kittenClient,
+  creativePlanRef,
+  creativePlan,
+  photos,
+  baseRevisionNotes,
+  maxAttempts,
+}: {
+  kittenClient: KittenAgentClient;
+  creativePlanRef: string;
+  creativePlan: CreativePlan;
+  photos: Array<{ photoRef: string; path: string }>;
+  baseRevisionNotes?: string[];
+  maxAttempts: number;
+}): Promise<VisualScript> => {
+  let revisionNotes = baseRevisionNotes ? [...baseRevisionNotes] : undefined;
+  let lastError: unknown;
+  const targetDurationSec = creativePlan.musicIntent.durationMs / 1000;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await kittenClient.generateVisualScript({
+        creativePlanRef,
+        creativePlan,
+        photos,
+        revisionNotes,
+      });
+    } catch (error) {
+      lastError = error;
+      if (attempt >= maxAttempts) {
+        throw error;
+      }
+
+      const reason = error instanceof Error ? error.message : String(error);
+      revisionNotes = [
+        ...(revisionNotes ?? []),
+        "上一次输出未通过自动校验，请只返回合法的 VisualScript JSON。",
+        `自动校验错误：${reason}`,
+        "提醒：video.width=1080、video.height=1920、video.fps=30。",
+        "提醒：subtitle 必须是面向观众的叙事句，不能出现时间轴写法（如 10-25秒）或 MIDI/BPM/音轨/乐器术语。",
+        `提醒：sum(scenes[].durationSec) 必须精确等于 ${targetDurationSec} 秒（来自 CreativePlan.musicIntent.durationMs），且必须覆盖所有 photoRef。`,
+      ];
+    }
+  }
+
+  throw (lastError instanceof Error
+    ? lastError
+    : new Error("Unexpected: kitten generation retries exhausted"));
 };
 
 const createSilentMidiFromCreativePlan = (creativePlan: CreativePlan): MidiComposition => {
@@ -234,3 +334,41 @@ const toReviewLog = ({
     })),
   };
 };
+
+const normalizeReviewTargets = (
+  review: OcelotCreativeReview,
+): OcelotCreativeReview => {
+  return {
+    ...review,
+    issues: review.issues.map((issue) => ({
+      ...issue,
+      target: normalizeTarget(issue.target, [issue.message]),
+    })),
+    requiredChanges: review.requiredChanges.map((change) => ({
+      ...change,
+      target: normalizeTarget(change.target, change.instructions),
+    })),
+  };
+};
+
+const normalizeTarget = (
+  current: "kitten" | "cub",
+  texts: string[],
+): "kitten" | "cub" => {
+  const hasMusicHint = texts.some((text) => MUSIC_SIGNAL_RE.test(text));
+  const hasVisualHint = texts.some((text) => VISUAL_SIGNAL_RE.test(text));
+
+  if (current === "kitten" && hasMusicHint && !hasVisualHint) {
+    return "cub";
+  }
+  if (current === "cub" && hasVisualHint && !hasMusicHint) {
+    return "kitten";
+  }
+  return current;
+};
+
+const MUSIC_SIGNAL_RE =
+  /(midi|bpm|track|tracks|note|notes|velocity|chord|melody|harmony|audio|music|drum|piano|guitar|strings|bass|配乐|音乐|音轨|鼓|手鼓|拍掌|木吉他|钢琴|弦乐|贝斯|节奏|音量|高频|低频)/i;
+
+const VISUAL_SIGNAL_RE =
+  /(visual|subtitle|scene|scenes|photoRef|kenBurns|transition|镜头|分镜|视觉|字幕|转场|画面|构图|文案)/i;

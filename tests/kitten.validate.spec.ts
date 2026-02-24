@@ -56,6 +56,7 @@ test("validateKittenOutput accepts valid visual script", () => {
   const result = validateKittenOutput(buildVisualScript(), {
     creativePlan,
     expectedPhotoRefs: ["1.jpg", "2.jpg"],
+    expectedTotalDurationSec: 30,
   });
   assert.equal(result.valid, true);
   assert.ok(result.script);
@@ -68,22 +69,69 @@ test("validateKittenOutput rejects missing expected photoRef", () => {
   const result = validateKittenOutput(script, {
     creativePlan,
     expectedPhotoRefs: ["1.jpg", "2.jpg"],
+    expectedTotalDurationSec: 30,
   });
 
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((error) => error.includes("2.jpg")));
 });
 
-test("validateKittenOutput rejects duration mismatch with creative plan", () => {
+test("validateKittenOutput rejects duration mismatch with expected visual duration", () => {
   const script = buildVisualScript();
   script.scenes[0]!.durationSec = 10;
 
   const result = validateKittenOutput(script, {
     creativePlan,
     expectedPhotoRefs: ["1.jpg", "2.jpg"],
+    expectedTotalDurationSec: 30,
   });
 
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((error) => error.includes("total visual duration")));
 });
 
+test("validateKittenOutput rejects mismatched fixed video spec", () => {
+  const script = buildVisualScript();
+  script.video = { width: 1920, height: 1080, fps: 25 };
+
+  const result = validateKittenOutput(script, {
+    creativePlan,
+    expectedPhotoRefs: ["1.jpg", "2.jpg"],
+    expectedTotalDurationSec: 30,
+    expectedVideo: { width: 1080, height: 1920, fps: 30 },
+  });
+
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((error) => error.includes("video.width")));
+  assert.ok(result.errors.some((error) => error.includes("video.height")));
+  assert.ok(result.errors.some((error) => error.includes("video.fps")));
+});
+
+test("validateKittenOutput rejects technical/timeline subtitle text", () => {
+  const script = buildVisualScript();
+  script.scenes[0]!.subtitle = "10-25秒手鼓拍掌推进，BPM继续上扬";
+
+  const result = validateKittenOutput(script, {
+    creativePlan,
+    expectedPhotoRefs: ["1.jpg", "2.jpg"],
+    expectedTotalDurationSec: 30,
+  });
+
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((error) => error.includes("audience-facing narration")));
+});
+
+test("validateKittenOutput accepts non-30 target durations when expected total matches", () => {
+  const script = buildVisualScript();
+  script.scenes[0]!.durationSec = 32.5;
+  script.scenes[1]!.durationSec = 32.5;
+
+  const result = validateKittenOutput(script, {
+    creativePlan,
+    expectedPhotoRefs: ["1.jpg", "2.jpg"],
+    expectedTotalDurationSec: 65,
+  });
+
+  assert.equal(result.valid, true);
+  assert.ok(result.script);
+});

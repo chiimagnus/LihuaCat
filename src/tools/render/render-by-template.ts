@@ -54,7 +54,6 @@ export const renderByTemplateV2 = async ({
   }
   const semantic = validateRenderScriptSemantics(structure.script, {
     fixedVideo: { width: 1080, height: 1920, fps: 30 },
-    expectedTotalDurationSec: 30,
     expectedPhotoRefs: assets.map((asset) => asset.photoRef),
     requireAllPhotosUsed: true,
     allowedSlideDirections: ["left", "right"],

@@ -96,6 +96,49 @@ test("throws parse error when visual script misses expected photo refs", async (
   await assert.rejects(client.generateVisualScript(buildRequest()), /photoRef/i);
 });
 
+test("throws parse error when visual duration does not match creative plan duration", async () => {
+  const client = createCodexKittenAgentClient({
+    codexFactory: () => ({
+      startThread() {
+        return {
+          async run() {
+            return { finalResponse: JSON.stringify(buildValidVisualScript()) };
+          },
+        };
+      },
+    }),
+    assertAuthenticated: async () => {
+      return;
+    },
+  });
+
+  await assert.rejects(
+    client.generateVisualScript(buildRequest({ musicDurationMs: 65000 })),
+    /total visual duration/i,
+  );
+});
+
+test("throws parse error when visual script video spec is not 1080x1920@30", async () => {
+  const client = createCodexKittenAgentClient({
+    codexFactory: () => ({
+      startThread() {
+        return {
+          async run() {
+            const invalid = buildValidVisualScript();
+            invalid.video = { width: 1920, height: 1080, fps: 25 };
+            return { finalResponse: JSON.stringify(invalid) };
+          },
+        };
+      },
+    }),
+    assertAuthenticated: async () => {
+      return;
+    },
+  });
+
+  await assert.rejects(client.generateVisualScript(buildRequest()), /video.width/i);
+});
+
 test("propagates auth failure before calling SDK", async () => {
   let called = false;
   const client = createCodexKittenAgentClient({
@@ -118,7 +161,7 @@ test("propagates auth failure before calling SDK", async () => {
   assert.equal(called, false);
 });
 
-const buildRequest = (): GenerateKittenVisualScriptRequest => ({
+const buildRequest = (options: { musicDurationMs?: number } = {}): GenerateKittenVisualScriptRequest => ({
   creativePlanRef: "/tmp/run/creative-plan.json",
   creativePlan: {
     storyBriefRef: "/tmp/run/story-brief.json",
@@ -139,7 +182,7 @@ const buildRequest = (): GenerateKittenVisualScriptRequest => ({
       bpmTrend: "arc",
       keyMoments: [{ label: "climax", timeMs: 15000 }],
       instrumentationHints: ["piano"],
-      durationMs: 30000,
+      durationMs: options.musicDurationMs ?? 30000,
     },
     alignmentPoints: [],
   },
@@ -171,4 +214,3 @@ const buildValidVisualScript = () => ({
     },
   ],
 });
-
