@@ -37,6 +37,14 @@ export const validateKittenOutput = (
     }
   }
 
+  structure.script.scenes.forEach((scene, index) => {
+    if (SUBTITLE_TIMELINE_RE.test(scene.subtitle) || SUBTITLE_TECHNICAL_RE.test(scene.subtitle)) {
+      errors.push(
+        `scenes[${index}].subtitle must be audience-facing narration, without timeline/music production terms`,
+      );
+    }
+  });
+
   if (context.expectedVideo) {
     const video = structure.script.video;
     if (video.width !== context.expectedVideo.width) {
@@ -69,3 +77,7 @@ export const validateKittenOutput = (
 
   return { valid: true, errors: [], script: structure.script };
 };
+
+const SUBTITLE_TIMELINE_RE = /\d+\s*[-~到]\s*\d+\s*秒|\d+\s*秒后|\d+\s*ms\b/i;
+const SUBTITLE_TECHNICAL_RE =
+  /(midi|bpm|track|tracks|velocity|db\b|hz\b|acoustic guitar|piano|strings|bass|drums|音轨|手鼓|拍掌|木吉他|钢琴|弦乐|贝斯|鼓点|高频|低频)/i;

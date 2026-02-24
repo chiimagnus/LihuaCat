@@ -36,6 +36,7 @@ export const buildKittenPromptInput = ({
     "- 忠实执行 CreativePlan.visualDirection。",
     "- 分镜节奏需与 CreativePlan.narrativeArc 保持一致。",
     "- 优先确保字幕短句、自然、不过度抒情。",
+    "- subtitle 必须是面向观众的叙事句子，不要写时间轴（如 10-25秒）或音乐制作术语（如 MIDI/BPM/音轨/乐器编制）。",
     "",
     ...(revisionNotes && revisionNotes.length > 0
       ? [

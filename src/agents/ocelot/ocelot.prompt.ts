@@ -116,6 +116,8 @@ export const buildCreativeReviewPromptInput = (
     "- 忠实表达 StoryBrief.intent。",
     "- 视觉与音乐在关键时刻一致。",
     "- requiredChanges 需明确指向 kitten 或 cub，且每条可直接执行。",
+    "- target=kitten 仅用于视觉脚本修改（字幕、分镜、转场、画面节奏）。",
+    "- target=cub 仅用于音乐/MIDI 修改（配器、节奏、音符、力度、结构）。",
     "",
     `Round: ${request.round}/${request.maxRounds}`,
     "",

@@ -180,16 +180,22 @@ export const reviseCreativeAssetsWithOcelot = async ({
           elapsedSec,
         }),
     });
-    await onProgress?.({ type: "ocelot_review_done", round, maxRounds, passed: review.passed });
+    const normalizedReview = normalizeReviewTargets(review);
+    await onProgress?.({
+      type: "ocelot_review_done",
+      round,
+      maxRounds,
+      passed: normalizedReview.passed,
+    });
 
     rounds.push({
       round,
       visualScript,
       midi,
-      review,
+      review: normalizedReview,
     });
 
-    if (review.passed) {
+    if (normalizedReview.passed) {
       return {
         creativePlan,
         visualScript,
@@ -201,10 +207,10 @@ export const reviseCreativeAssetsWithOcelot = async ({
       };
     }
 
-    kittenRevisionNotes = review.requiredChanges
+    kittenRevisionNotes = normalizedReview.requiredChanges
       .filter((change) => change.target === "kitten")
       .flatMap((change) => change.instructions);
-    cubRevisionNotes = review.requiredChanges
+    cubRevisionNotes = normalizedReview.requiredChanges
       .filter((change) => change.target === "cub")
       .flatMap((change) => change.instructions);
   }
@@ -271,6 +277,7 @@ const generateKittenVisualScriptWithRetries = async ({
         "上一次输出未通过自动校验，请只返回合法的 VisualScript JSON。",
         `自动校验错误：${reason}`,
         "提醒：video.width=1080、video.height=1920、video.fps=30。",
+        "提醒：subtitle 必须是面向观众的叙事句，不能出现时间轴写法（如 10-25秒）或 MIDI/BPM/音轨/乐器术语。",
         `提醒：sum(scenes[].durationSec) 必须精确等于 ${targetDurationSec} 秒（来自 CreativePlan.musicIntent.durationMs），且必须覆盖所有 photoRef。`,
       ];
     }
@@ -327,3 +334,41 @@ const toReviewLog = ({
     })),
   };
 };
+
+const normalizeReviewTargets = (
+  review: OcelotCreativeReview,
+): OcelotCreativeReview => {
+  return {
+    ...review,
+    issues: review.issues.map((issue) => ({
+      ...issue,
+      target: normalizeTarget(issue.target, [issue.message]),
+    })),
+    requiredChanges: review.requiredChanges.map((change) => ({
+      ...change,
+      target: normalizeTarget(change.target, change.instructions),
+    })),
+  };
+};
+
+const normalizeTarget = (
+  current: "kitten" | "cub",
+  texts: string[],
+): "kitten" | "cub" => {
+  const hasMusicHint = texts.some((text) => MUSIC_SIGNAL_RE.test(text));
+  const hasVisualHint = texts.some((text) => VISUAL_SIGNAL_RE.test(text));
+
+  if (current === "kitten" && hasMusicHint && !hasVisualHint) {
+    return "cub";
+  }
+  if (current === "cub" && hasVisualHint && !hasMusicHint) {
+    return "kitten";
+  }
+  return current;
+};
+
+const MUSIC_SIGNAL_RE =
+  /(midi|bpm|track|tracks|note|notes|velocity|chord|melody|harmony|audio|music|drum|piano|guitar|strings|bass|配乐|音乐|音轨|鼓|手鼓|拍掌|木吉他|钢琴|弦乐|贝斯|节奏|音量|高频|低频)/i;
+
+const VISUAL_SIGNAL_RE =
+  /(visual|subtitle|scene|scenes|photoRef|kenBurns|transition|镜头|分镜|视觉|字幕|转场|画面|构图|文案)/i;
