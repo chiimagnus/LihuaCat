@@ -64,3 +64,23 @@ test("validateVisualScript rejects empty scenes", () => {
   assert.ok(result.errors.some((error) => error.includes("non-empty array")));
 });
 
+test("validateVisualScript accepts kenBurns as null", () => {
+  const result = validateVisualScript({
+    creativePlanRef: "/tmp/run/creative-plan.json",
+    video: { width: 1080, height: 1920, fps: 30 },
+    scenes: [
+      {
+        sceneId: "scene_001",
+        photoRef: "1.jpg",
+        subtitle: "x",
+        subtitlePosition: "bottom",
+        durationSec: 30,
+        transition: { type: "cut", durationMs: 0 },
+        kenBurns: null,
+      },
+    ],
+  });
+
+  assert.equal(result.valid, true);
+  assert.ok(result.script);
+});
