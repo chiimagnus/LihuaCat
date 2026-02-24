@@ -94,6 +94,7 @@ export const createCodexKittenAgentClient = ({
       const validation = validateKittenOutput(parsed, {
         creativePlan: request.creativePlan,
         expectedPhotoRefs: request.photos.map((photo) => photo.photoRef),
+        expectedTotalDurationSec: 30,
       });
 
       if (!validation.valid || !validation.script) {
@@ -117,4 +118,3 @@ export const createCodexKittenAgentClient = ({
     },
   };
 };
-

@@ -271,6 +271,46 @@ test("falls back to no-music render when cub generation fails", async () => {
   assert.equal(result.reviewLog.rounds[0]?.issues[0]?.target, "cub");
 });
 
+test("retries kitten generation within the same round on validation error", async () => {
+  const kittenNotes: Array<string[] | undefined> = [];
+  let kittenAttempts = 0;
+
+  const result = await reviseCreativeAssetsWithOcelot({
+    storyBriefRef: "/tmp/run/story-brief.json",
+    storyBrief: baseStoryBrief as any,
+    photos: [
+      { photoRef: "1.jpg", path: "/tmp/photos/1.jpg" },
+      { photoRef: "2.jpg", path: "/tmp/photos/2.jpg" },
+    ],
+    ocelotClient: buildOcelotClient({
+      onReview: async () => ({
+        passed: true,
+        summary: "ok",
+        issues: [],
+        requiredChanges: [],
+      }),
+    }),
+    kittenClient: buildKittenClient({
+      onGenerate: async ({ revisionNotes }) => {
+        kittenAttempts += 1;
+        kittenNotes.push(revisionNotes);
+        if (kittenAttempts === 1) {
+          throw new Error("kitten output invalid: total visual duration must equal 30s");
+        }
+        return makeVisualScript("ok");
+      },
+    }),
+    cubClient: buildCubClient({ onGenerate: async () => makeMidi(0) }),
+    maxRounds: 3,
+  });
+
+  assert.equal(kittenAttempts, 2);
+  assert.equal(result.finalPassed, true);
+  assert.equal(result.rounds.length, 1);
+  assert.deepEqual(kittenNotes[0], undefined);
+  assert.ok(kittenNotes[1]?.some((note) => note.includes("自动校验错误")));
+});
+
 test("emits progress lifecycle events in expected order", async () => {
   const events: string[] = [];
 

@@ -12,6 +12,8 @@ export const validateKittenOutput = (
   context: {
     creativePlan?: CreativePlan;
     expectedPhotoRefs?: string[];
+    expectedTotalDurationSec?: number;
+    durationToleranceSec?: number;
   } = {},
 ): KittenValidationResult => {
   const structure = validateVisualScript(input);
@@ -34,18 +36,15 @@ export const validateKittenOutput = (
     }
   }
 
-  const expectedDurationMs = context.creativePlan?.musicIntent.durationMs;
-  if (
-    typeof expectedDurationMs === "number" &&
-    Number.isInteger(expectedDurationMs) &&
-    expectedDurationMs > 0
-  ) {
-    const totalDurationMs = Math.round(
-      structure.script.scenes.reduce((sum, scene) => sum + scene.durationSec, 0) * 1000,
+  if (typeof context.expectedTotalDurationSec === "number") {
+    const totalDurationSec = structure.script.scenes.reduce(
+      (sum, scene) => sum + scene.durationSec,
+      0,
     );
-    if (totalDurationMs !== expectedDurationMs) {
+    const tolerance = context.durationToleranceSec ?? 1e-6;
+    if (Math.abs(totalDurationSec - context.expectedTotalDurationSec) > tolerance) {
       errors.push(
-        `total visual duration must equal creativePlan.musicIntent.durationMs (${expectedDurationMs}ms)`,
+        `total visual duration must equal ${context.expectedTotalDurationSec}s`,
       );
     }
   }
@@ -56,4 +55,3 @@ export const validateKittenOutput = (
 
   return { valid: true, errors: [], script: structure.script };
 };
-

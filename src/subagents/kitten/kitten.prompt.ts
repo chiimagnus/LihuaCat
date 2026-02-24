@@ -23,6 +23,7 @@ export const buildKittenPromptInput = ({
     "硬约束：",
     "- creativePlanRef 必须由输入给定。",
     "- scenes 必须非空，且 durationSec > 0。",
+    "- sum(scenes[].durationSec) 必须精确等于 30 秒。",
     "- 所有提供的 photoRef 都必须在 scenes[].photoRef 中至少出现一次。",
     "- transition.type 必须是 cut|fade|dissolve|slide。",
     "- 若 transition.type 是 slide，必须提供合法 direction。",
@@ -54,4 +55,3 @@ export const buildKittenPromptInput = ({
     ...photos.map((photo) => ({ type: "local_image" as const, path: photo.path })),
   ];
 };
-

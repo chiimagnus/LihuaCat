@@ -69,16 +69,19 @@ export const reviseCreativeAssetsWithOcelot = async ({
   const rounds: CreativeRevisionRound[] = [];
   let kittenRevisionNotes: string[] | undefined = undefined;
   let cubRevisionNotes: string[] | undefined = undefined;
+  const maxKittenAttemptsPerRound = 3;
 
   for (let round = 1; round <= maxRounds; round += 1) {
     await onProgress?.({ type: "round_start", round, maxRounds });
 
     await onProgress?.({ type: "kitten_generate_start", round, maxRounds });
-    const visualScript = await kittenClient.generateVisualScript({
+    const visualScript = await generateKittenVisualScriptWithRetries({
+      kittenClient,
       creativePlanRef: storyBriefRef.replace("story-brief.json", "creative-plan.json"),
       creativePlan,
       photos,
-      revisionNotes: kittenRevisionNotes,
+      baseRevisionNotes: kittenRevisionNotes,
+      maxAttempts: maxKittenAttemptsPerRound,
     });
     await onProgress?.({ type: "kitten_generate_done", round, maxRounds });
 
@@ -186,6 +189,53 @@ export const reviseCreativeAssetsWithOcelot = async ({
       warning,
     }),
   };
+};
+
+const generateKittenVisualScriptWithRetries = async ({
+  kittenClient,
+  creativePlanRef,
+  creativePlan,
+  photos,
+  baseRevisionNotes,
+  maxAttempts,
+}: {
+  kittenClient: KittenAgentClient;
+  creativePlanRef: string;
+  creativePlan: CreativePlan;
+  photos: Array<{ photoRef: string; path: string }>;
+  baseRevisionNotes?: string[];
+  maxAttempts: number;
+}): Promise<VisualScript> => {
+  let revisionNotes = baseRevisionNotes ? [...baseRevisionNotes] : undefined;
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await kittenClient.generateVisualScript({
+        creativePlanRef,
+        creativePlan,
+        photos,
+        revisionNotes,
+      });
+    } catch (error) {
+      lastError = error;
+      if (attempt >= maxAttempts) {
+        throw error;
+      }
+
+      const reason = error instanceof Error ? error.message : String(error);
+      revisionNotes = [
+        ...(revisionNotes ?? []),
+        "上一次输出未通过自动校验，请只返回合法的 VisualScript JSON。",
+        `自动校验错误：${reason}`,
+        "提醒：sum(scenes[].durationSec) 必须精确等于 30 秒，且必须覆盖所有 photoRef。",
+      ];
+    }
+  }
+
+  throw (lastError instanceof Error
+    ? lastError
+    : new Error("Unexpected: kitten generation retries exhausted"));
 };
 
 const createSilentMidiFromCreativePlan = (creativePlan: CreativePlan): MidiComposition => {

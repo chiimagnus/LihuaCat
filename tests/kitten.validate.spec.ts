@@ -56,6 +56,7 @@ test("validateKittenOutput accepts valid visual script", () => {
   const result = validateKittenOutput(buildVisualScript(), {
     creativePlan,
     expectedPhotoRefs: ["1.jpg", "2.jpg"],
+    expectedTotalDurationSec: 30,
   });
   assert.equal(result.valid, true);
   assert.ok(result.script);
@@ -68,22 +69,43 @@ test("validateKittenOutput rejects missing expected photoRef", () => {
   const result = validateKittenOutput(script, {
     creativePlan,
     expectedPhotoRefs: ["1.jpg", "2.jpg"],
+    expectedTotalDurationSec: 30,
   });
 
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((error) => error.includes("2.jpg")));
 });
 
-test("validateKittenOutput rejects duration mismatch with creative plan", () => {
+test("validateKittenOutput rejects duration mismatch with expected visual duration", () => {
   const script = buildVisualScript();
   script.scenes[0]!.durationSec = 10;
 
   const result = validateKittenOutput(script, {
     creativePlan,
     expectedPhotoRefs: ["1.jpg", "2.jpg"],
+    expectedTotalDurationSec: 30,
   });
 
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((error) => error.includes("total visual duration")));
 });
 
+test("validateKittenOutput does not bind visual duration to musicIntent.durationMs", () => {
+  const script = buildVisualScript();
+  const plan = {
+    ...creativePlan,
+    musicIntent: {
+      ...creativePlan.musicIntent,
+      durationMs: 65000,
+    },
+  };
+
+  const result = validateKittenOutput(script, {
+    creativePlan: plan,
+    expectedPhotoRefs: ["1.jpg", "2.jpg"],
+    expectedTotalDurationSec: 30,
+  });
+
+  assert.equal(result.valid, true);
+  assert.ok(result.script);
+});
