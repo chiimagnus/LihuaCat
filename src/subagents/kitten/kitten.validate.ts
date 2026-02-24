@@ -14,6 +14,7 @@ export const validateKittenOutput = (
     expectedPhotoRefs?: string[];
     expectedTotalDurationSec?: number;
     durationToleranceSec?: number;
+    expectedVideo?: { width: number; height: number; fps: number };
   } = {},
 ): KittenValidationResult => {
   const structure = validateVisualScript(input);
@@ -33,6 +34,19 @@ export const validateKittenOutput = (
       if (!used.has(photoRef)) {
         errors.push(`photoRef ${photoRef} is not used in scenes`);
       }
+    }
+  }
+
+  if (context.expectedVideo) {
+    const video = structure.script.video;
+    if (video.width !== context.expectedVideo.width) {
+      errors.push(`video.width must be ${context.expectedVideo.width}, got ${video.width}`);
+    }
+    if (video.height !== context.expectedVideo.height) {
+      errors.push(`video.height must be ${context.expectedVideo.height}, got ${video.height}`);
+    }
+    if (video.fps !== context.expectedVideo.fps) {
+      errors.push(`video.fps must be ${context.expectedVideo.fps}, got ${video.fps}`);
     }
   }
 

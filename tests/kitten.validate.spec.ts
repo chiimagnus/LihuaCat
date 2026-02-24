@@ -90,6 +90,23 @@ test("validateKittenOutput rejects duration mismatch with expected visual durati
   assert.ok(result.errors.some((error) => error.includes("total visual duration")));
 });
 
+test("validateKittenOutput rejects mismatched fixed video spec", () => {
+  const script = buildVisualScript();
+  script.video = { width: 1920, height: 1080, fps: 25 };
+
+  const result = validateKittenOutput(script, {
+    creativePlan,
+    expectedPhotoRefs: ["1.jpg", "2.jpg"],
+    expectedTotalDurationSec: 30,
+    expectedVideo: { width: 1080, height: 1920, fps: 30 },
+  });
+
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((error) => error.includes("video.width")));
+  assert.ok(result.errors.some((error) => error.includes("video.height")));
+  assert.ok(result.errors.some((error) => error.includes("video.fps")));
+});
+
 test("validateKittenOutput accepts non-30 target durations when expected total matches", () => {
   const script = buildVisualScript();
   script.scenes[0]!.durationSec = 32.5;

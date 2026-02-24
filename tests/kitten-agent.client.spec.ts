@@ -118,6 +118,27 @@ test("throws parse error when visual duration does not match creative plan durat
   );
 });
 
+test("throws parse error when visual script video spec is not 1080x1920@30", async () => {
+  const client = createCodexKittenAgentClient({
+    codexFactory: () => ({
+      startThread() {
+        return {
+          async run() {
+            const invalid = buildValidVisualScript();
+            invalid.video = { width: 1920, height: 1080, fps: 25 };
+            return { finalResponse: JSON.stringify(invalid) };
+          },
+        };
+      },
+    }),
+    assertAuthenticated: async () => {
+      return;
+    },
+  });
+
+  await assert.rejects(client.generateVisualScript(buildRequest()), /video.width/i);
+});
+
 test("propagates auth failure before calling SDK", async () => {
   let called = false;
   const client = createCodexKittenAgentClient({
