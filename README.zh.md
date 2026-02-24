@@ -6,6 +6,8 @@
 
 当前架构一句话：`Tabby -> StoryBrief -> Ocelot（创意总监）-> Kitten/Cub -> Remotion`。
 
+时长规则：最终视频总时长由 `creative-plan.json` 中 `musicIntent.durationMs` 决定，不再固定为 30 秒。
+
 > 说明：当前 CLI 交互文案为英文（项目整体以英文为主），本文件仅提供中文使用说明。
 
 ## 环境要求

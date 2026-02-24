@@ -6,6 +6,8 @@ Local-first CLI that turns a folder of images into a short story video. Follow t
 
 Current architecture in one line: `Tabby -> StoryBrief -> Ocelot (Creative Director) -> Kitten/Cub -> Remotion`.
 
+Duration rule: final video length is driven by `musicIntent.durationMs` in `creative-plan.json` (not a fixed 30s).
+
 ## Prerequisites
 
 - Node.js >= 20
