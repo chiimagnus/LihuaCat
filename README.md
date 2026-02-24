@@ -11,7 +11,49 @@ Current architecture in one line: `Tabby -> StoryBrief -> Ocelot (Creative Direc
 - Node.js >= 20
 - A Chromium-based browser (Chrome / Edge / Arc / Brave)
 - `fluidsynth` command available in `PATH` (for MIDI -> WAV synthesis)
-- A SoundFont (`.sf2`) file; set `LIHUACAT_SOUNDFONT_PATH` if not in default system locations
+- A SoundFont (`.sf2`) file; project default recommendation is `SGM-V2.01`
+
+## Audio Setup (Recommended)
+
+Standard SoundFont for this project: `SGM-V2.01.sf2`.
+
+Install `fluidsynth`:
+
+- macOS (Homebrew): `brew install fluid-synth`
+- Ubuntu/Debian: `sudo apt install fluidsynth`
+- Windows (Chocolatey): `choco install fluidsynth` (or install manually and add it to `PATH`)
+
+Download `SGM-V2.01.sf2` (example path):
+
+```bash
+mkdir -p "$HOME/.local/share/soundfonts"
+curl -L "https://archive.org/download/SGM-V2.01/SGM-V2.01.sf2" -o "$HOME/.local/share/soundfonts/SGM-V2.01.sf2"
+```
+
+Set environment variable:
+
+```bash
+export LIHUACAT_SOUNDFONT_PATH="$HOME/.local/share/soundfonts/SGM-V2.01.sf2"
+```
+
+Persist it (zsh):
+
+```bash
+echo 'export LIHUACAT_SOUNDFONT_PATH="$HOME/.local/share/soundfonts/SGM-V2.01.sf2"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+Windows PowerShell (example):
+
+```powershell
+setx LIHUACAT_SOUNDFONT_PATH "C:\soundfonts\SGM-V2.01.sf2"
+```
+
+Quick check:
+
+```bash
+fluidsynth --version
+```
 
 ## Development in this repo
 

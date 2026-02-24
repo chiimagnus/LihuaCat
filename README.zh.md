@@ -13,7 +13,49 @@
 - Node.js >= 20
 - Chromium 内核浏览器（Chrome / Edge / Arc / Brave）
 - `PATH` 中可用的 `fluidsynth` 命令（用于 MIDI -> WAV 合成）
-- 可用的 SoundFont（`.sf2`）文件；若系统默认路径不可用，请设置 `LIHUACAT_SOUNDFONT_PATH`
+- 可用的 SoundFont（`.sf2`）文件；本项目默认推荐 `SGM-V2.01`
+
+## 音频环境配置（推荐）
+
+本项目统一推荐音色：`SGM-V2.01.sf2`。
+
+安装 `fluidsynth`：
+
+- macOS（Homebrew）：`brew install fluid-synth`
+- Ubuntu/Debian：`sudo apt install fluidsynth`
+- Windows（Chocolatey）：`choco install fluidsynth`（或手动安装后加入 `PATH`）
+
+下载 `SGM-V2.01.sf2`（示例路径）：
+
+```bash
+mkdir -p "$HOME/.local/share/soundfonts"
+curl -L "https://archive.org/download/SGM-V2.01/SGM-V2.01.sf2" -o "$HOME/.local/share/soundfonts/SGM-V2.01.sf2"
+```
+
+设置环境变量：
+
+```bash
+export LIHUACAT_SOUNDFONT_PATH="$HOME/.local/share/soundfonts/SGM-V2.01.sf2"
+```
+
+写入 zsh（持久生效）：
+
+```bash
+echo 'export LIHUACAT_SOUNDFONT_PATH="$HOME/.local/share/soundfonts/SGM-V2.01.sf2"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+Windows PowerShell（示例）：
+
+```powershell
+setx LIHUACAT_SOUNDFONT_PATH "C:\soundfonts\SGM-V2.01.sf2"
+```
+
+快速检查：
+
+```bash
+fluidsynth --version
+```
 
 ## 仓库开发说明
 
