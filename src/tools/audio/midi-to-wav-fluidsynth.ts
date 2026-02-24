@@ -62,12 +62,12 @@ export const synthesizeMidiToWavWithFluidSynth = async ({
 
   const args = [
     "-ni",
-    resolvedSoundFontPath,
-    midiPath,
     "-F",
     wavPath,
     "-r",
     String(sampleRate),
+    resolvedSoundFontPath,
+    midiPath,
   ];
 
   const result = await runner({

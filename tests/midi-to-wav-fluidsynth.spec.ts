@@ -34,12 +34,12 @@ test("synthesizeMidiToWavWithFluidSynth runs fluidsynth with expected args", asy
     assert.equal(result.wavPath, wavPath);
     assert.deepEqual(seenArgs, [
       "-ni",
-      sf2Path,
-      midiPath,
       "-F",
       wavPath,
       "-r",
       "44100",
+      sf2Path,
+      midiPath,
     ]);
   });
 });
