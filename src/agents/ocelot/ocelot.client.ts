@@ -221,7 +221,6 @@ export const createCodexOcelotAgentClient = ({
       const expectedPhotoRefs = request.photos.map((photo) => photo.photoRef);
       const semantic = validateRenderScriptSemantics(structure.script, {
         fixedVideo: request.video,
-        expectedTotalDurationSec: 30,
         expectedPhotoRefs,
         requireAllPhotosUsed: true,
         allowedSlideDirections: ["left", "right"],

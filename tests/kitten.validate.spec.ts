@@ -90,20 +90,15 @@ test("validateKittenOutput rejects duration mismatch with expected visual durati
   assert.ok(result.errors.some((error) => error.includes("total visual duration")));
 });
 
-test("validateKittenOutput does not bind visual duration to musicIntent.durationMs", () => {
+test("validateKittenOutput accepts non-30 target durations when expected total matches", () => {
   const script = buildVisualScript();
-  const plan = {
-    ...creativePlan,
-    musicIntent: {
-      ...creativePlan.musicIntent,
-      durationMs: 65000,
-    },
-  };
+  script.scenes[0]!.durationSec = 32.5;
+  script.scenes[1]!.durationSec = 32.5;
 
   const result = validateKittenOutput(script, {
-    creativePlan: plan,
+    creativePlan,
     expectedPhotoRefs: ["1.jpg", "2.jpg"],
-    expectedTotalDurationSec: 30,
+    expectedTotalDurationSec: 65,
   });
 
   assert.equal(result.valid, true);

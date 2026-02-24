@@ -295,7 +295,7 @@ test("retries kitten generation within the same round on validation error", asyn
         kittenAttempts += 1;
         kittenNotes.push(revisionNotes);
         if (kittenAttempts === 1) {
-          throw new Error("kitten output invalid: total visual duration must equal 30s");
+          throw new Error("kitten output invalid: total visual duration must equal target duration");
         }
         return makeVisualScript("ok");
       },

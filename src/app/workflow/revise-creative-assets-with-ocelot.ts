@@ -208,6 +208,7 @@ const generateKittenVisualScriptWithRetries = async ({
 }): Promise<VisualScript> => {
   let revisionNotes = baseRevisionNotes ? [...baseRevisionNotes] : undefined;
   let lastError: unknown;
+  const targetDurationSec = creativePlan.musicIntent.durationMs / 1000;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
@@ -228,7 +229,7 @@ const generateKittenVisualScriptWithRetries = async ({
         ...(revisionNotes ?? []),
         "上一次输出未通过自动校验，请只返回合法的 VisualScript JSON。",
         `自动校验错误：${reason}`,
-        "提醒：sum(scenes[].durationSec) 必须精确等于 30 秒，且必须覆盖所有 photoRef。",
+        `提醒：sum(scenes[].durationSec) 必须精确等于 ${targetDurationSec} 秒（来自 CreativePlan.musicIntent.durationMs），且必须覆盖所有 photoRef。`,
       ];
     }
   }

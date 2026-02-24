@@ -94,7 +94,7 @@ export const createCodexKittenAgentClient = ({
       const validation = validateKittenOutput(parsed, {
         creativePlan: request.creativePlan,
         expectedPhotoRefs: request.photos.map((photo) => photo.photoRef),
-        expectedTotalDurationSec: 30,
+        expectedTotalDurationSec: request.creativePlan.musicIntent.durationMs / 1000,
       });
 
       if (!validation.valid || !validation.script) {
